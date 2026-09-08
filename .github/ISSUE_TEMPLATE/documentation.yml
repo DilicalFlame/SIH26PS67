@@ -1,0 +1,52 @@
+name: Documentation improvement
+description: Report missing, incorrect, or unclear documentation.
+title: "[Docs]: "
+labels:
+  - documentation
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Documentation issues are valuable.
+        Please point to the exact location and the change you expect.
+
+  - type: input
+    id: location
+    attributes:
+      label: Affected docs location
+      description: Link or path to the page/file/section.
+      placeholder: README section "Development"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is wrong or missing?
+      description: Explain what is unclear, inaccurate, or absent.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: Share corrected text or structure if you have one.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: Documentation type
+      # to be changed later as per this repository.
+      options:
+        - Setup/installation
+        - Usage/how-to
+        - API/reference
+        - Troubleshooting
+        - Release notes/changelog
+        - Other
+    validations:
+      required: true

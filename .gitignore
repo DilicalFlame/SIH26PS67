@@ -32,4 +32,8 @@ models/experiments/
 .mypy_cache/
 .ruff_cache/
 
+# This is 20+ GB of data
 data/
+
+# Jupyter
+.ipynb_checkpoints/

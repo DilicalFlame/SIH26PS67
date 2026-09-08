@@ -1,0 +1,92 @@
+name: Bug report
+description: Report incorrect or unexpected behavior.
+title: "[Bug]: "
+labels:
+  - bug
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+        Please complete the required sections so maintainers can reproduce the problem.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: A short and clear description of the bug.
+      placeholder: Saving a note fails when the title has emoji characters
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_behavior
+    attributes:
+      label: Current behavior
+      description: What is happening right now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal, reliable reproduction path.
+      placeholder: |
+        1. Open the app
+        2. Click "New"
+        3. Enter ...
+        4. Observe the error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: reproducibility
+    attributes:
+      label: Reproducibility
+      options:
+        - Always
+        - Sometimes
+        - Rarely
+        - Unable to reproduce
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Share environment details that might matter.
+      placeholder: |
+        App version:
+        OS and version:
+        Architecture (x64/arm64):
+        Install method (release/dev build):
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Paste logs, stack traces, or screenshots if available.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I searched existing issues for duplicates.
+          required: true
+        - label: I tested on the latest available version.
+          required: true

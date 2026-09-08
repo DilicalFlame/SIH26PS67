@@ -1,0 +1,68 @@
+name: Feature request
+description: Suggest a new capability or an improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea.
+        Clear, outcome-focused requests are easier to prioritize.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user problem are you trying to solve?
+      placeholder: It is hard to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior, UX, or API you want.
+      placeholder: Add a setting that allows...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or other approaches did you consider?
+
+  - type: textarea
+    id: user_impact
+    attributes:
+      label: User impact
+      description: Who benefits and how much does it help?
+      placeholder: This helps power users by...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Estimated scope
+      description: Your rough estimate is enough.
+      options:
+        - Small (few hours)
+        - Medium (few days)
+        - Large (1+ weeks)
+        - Unknown
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I searched existing issues and discussions for similar ideas.
+          required: true
+        - label: This request focuses on one feature, not multiple unrelated changes.
+          required: true
