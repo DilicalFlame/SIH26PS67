@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Upload a .pmtiles file into the project's MinIO instance under
+# vector/<layer>/<layer>.pmtiles, matching layers.config.ts's objectPath
+# convention. Requires the `mc` CLI and a running `infra/docker` MinIO.
+#
+# Usage: scripts/upload-tiles.sh <path/to/file.pmtiles> <layer-id>
+# Example: scripts/upload-tiles.sh data/processed/coastlines.pmtiles coastlines
+
+set -euo pipefail
+
+FILE="${1:?usage: upload-tiles.sh <path/to/file.pmtiles> <layer-id>}"
+LAYER="${2:?usage: upload-tiles.sh <path/to/file.pmtiles> <layer-id>}"
+
+MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://localhost:9000}"
+MINIO_ROOT_USER="${MINIO_ROOT_USER:-thalassa}"
+MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-admin@123}"
+MINIO_BUCKET="${MINIO_BUCKET:-tiles}"
+
+if [[ ! -f "$FILE" ]]; then
+	echo "error: no such file: $FILE" >&2
+	exit 1
+fi
+
+mc alias set thalassa-upload "$MINIO_ENDPOINT" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+mc mb --ignore-existing "thalassa-upload/$MINIO_BUCKET" >/dev/null
+mc anonymous set download "thalassa-upload/$MINIO_BUCKET" >/dev/null
+
+DEST="thalassa-upload/$MINIO_BUCKET/vector/$LAYER/$LAYER.pmtiles"
+mc cp "$FILE" "$DEST"
+
+echo "Uploaded: $DEST"
+echo "Add to apps/web/src/lib/tiles/layers.config.ts:"
+echo "  { id: '$LAYER', objectPath: 'vector/$LAYER/$LAYER.pmtiles', color: 0xd8d8d8, minZoom: 0, maxZoom: 10 }"

@@ -11,7 +11,6 @@ uniform vec3  u_lineColor;   // RGB line color
 uniform float u_globalAlpha; // master fade (used during projection morph)
 
 varying float v_alpha;
-varying float v_isGraticule;
 
 void main() {
 	float alpha = v_alpha * u_globalAlpha;

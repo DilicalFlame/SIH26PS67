@@ -19,11 +19,9 @@
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.3.0",
-		"@types/d3-geo": "^3.1.1",
+		"@types/earcut": "^3.0.0",
 		"@types/geojson": "^7946.0.16",
 		"@types/three": "^0.185.4",
-		"@types/topojson-client": "^3.1.5",
-		"@types/topojson-specification": "^1.0.5",
 		"@vitest/browser-playwright": "^4.1.8",
 		"playwright": "^1.60.0",
 		"svelte": "^5.56.1",
@@ -36,8 +34,11 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
-		"d3-geo": "^3.1.1",
-		"three": "^0.185.1",
-		"topojson-client": "^3.1.0"
+		"@mapbox/vector-tile": "^3.0.0",
+		"comlink": "^4.4.2",
+		"earcut": "^3.2.3",
+		"pbf": "^5.1.2",
+		"pmtiles": "^4.5.0",
+		"three": "^0.185.1"
 	}
 }

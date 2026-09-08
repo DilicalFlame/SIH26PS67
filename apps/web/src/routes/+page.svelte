@@ -1,19 +1,3 @@
-<!--
-  +page.svelte
-  ============
-  Oceanographic Visualization Platform — main view.
-
-  Layout:
-  ┌─────────────────────────────────┐
-  │                                 │
-  │         GlobeCanvas             │
-  │     (full-screen WebGL)         │
-  │                                 │
-  │   ┌─── Projection Buttons ───┐  │
-  │   │  🌐  ⬜  🗺  🥚          │  │
-  │   └─────────────────────────┘  │
-  └─────────────────────────────────┘
--->
 <script lang="ts">
 	import GlobeCanvas from '$lib/components/GlobeCanvas.svelte';
 	import { ProjectionType, PROJECTIONS } from '$lib/types/projection';
@@ -22,8 +6,8 @@
 </script>
 
 <svelte:head>
-	<title>OceanScope — Global Projection Engine</title>
-	<meta name="description" content="GPU-driven interactive world map with true-spherical dragging across four projections: 3D Sphere, Equirectangular, Mercator, and Mollweide." />
+	<title>SIH26PS67</title>
+	<meta name="description" content="Optimised Ocean Data Visualisation Platform." />
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -51,12 +35,10 @@
 		{/each}
 	</nav>
 
-	<!-- Subtle attribution -->
-	<footer class="attribution">OceanScope</footer>
 </main>
 
 <style>
-	/* ── Reset / base ─────────────────────────────────────────────────────── */
+	/* Reset / base */
 	:global(*, *::before, *::after) {
 		box-sizing: border-box;
 		margin: 0;
@@ -71,7 +53,7 @@
 		font-family: 'Inter', system-ui, sans-serif;
 	}
 
-	/* ── Viewport ─────────────────────────────────────────────────────────── */
+	/* Viewport */
 	.viewport {
 		position: relative;
 		width: 100vw;
@@ -84,7 +66,7 @@
 		inset: 0;
 	}
 
-	/* ── Projection bar ───────────────────────────────────────────────────── */
+	/* Projection bar */
 	.projection-bar {
 		position: fixed;
 		bottom: 2rem;
@@ -104,7 +86,7 @@
 		z-index: 10;
 	}
 
-	/* ── Individual buttons ───────────────────────────────────────────────── */
+	/* Individual buttons */
 	.proj-btn {
 		display: flex;
 		align-items: center;
@@ -154,20 +136,7 @@
 		text-transform: uppercase;
 	}
 
-	/* ── Attribution ──────────────────────────────────────────────────────── */
-	.attribution {
-		position: fixed;
-		bottom: 0.75rem;
-		left: 1rem;
-		font-size: 0.65rem;
-		color: rgba(255, 255, 255, 0.18);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		pointer-events: none;
-		user-select: none;
-	}
-
-	/* ── Responsive ───────────────────────────────────────────────────────── */
+	/* Responsive */
 	@media (max-width: 480px) {
 		.proj-label {
 			display: none;

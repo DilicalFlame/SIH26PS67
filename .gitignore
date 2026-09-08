@@ -32,9 +32,4 @@ models/experiments/
 .mypy_cache/
 .ruff_cache/
 
-digest.txt
-
-# For gitingest:
-
-pnpm-lock.yaml
-uv.lock
+data/
