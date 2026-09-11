@@ -65,6 +65,19 @@ export interface WheelVelocityParams {
 	velocityPxPerMs: number; // signed: positive = zooming in
 }
 
+/** Diagnostic snapshot for TileDebugOverlay — see getDebugInfo(). */
+export interface TileDebugInfo {
+	layerId: string;
+	/** The zoom actually used to build `desired` this frame, i.e. after the
+	 *  MAX_TILES_PER_LAYER budget backoff — not the raw zoomForScale(), which
+	 *  can disagree with what's actually rendering on a wide/polar view. */
+	effectiveZoom: number;
+	/** Count of cache entries currently in the scene, keyed by their own zoom
+	 *  (not `effectiveZoom`) — the direct evidence of whether a stale or
+	 *  wrong-zoom tile is still resident. */
+	tileCountsByZoom: Record<number, number>;
+}
+
 export class TileManager {
 	private pool = new TileWorkerPool();
 	private layers: LayerRuntime[] = [];
@@ -75,6 +88,7 @@ export class TileManager {
 	private materials = new Map<string, THREE.ShaderMaterial>();
 	/** Failure counts per tile key, kept outside the entry so retries can't reset them. */
 	private failures = new Map<string, number>();
+	private debugInfo = new Map<string, TileDebugInfo>();
 
 	async init(
 		scene: THREE.Scene,
@@ -178,6 +192,12 @@ export class TileManager {
 		for (const mat of this.materials.values()) mat.dispose();
 		this.materials.clear();
 		this.pool.dispose();
+	}
+
+	/** Snapshot for TileDebugOverlay, refreshed once per layer at the end of
+	 *  each updateLayer() call. */
+	getDebugInfo(): TileDebugInfo[] {
+		return [...this.debugInfo.values()];
 	}
 
 	// -- internals ------------------------------------------------------------
@@ -294,6 +314,13 @@ export class TileManager {
 				entry.markedForDisposal = true;
 			}
 		}
+
+		const tileCountsByZoom: Record<number, number> = {};
+		for (const [, entry] of cache.entries()) {
+			if (!entry.inScene) continue;
+			tileCountsByZoom[entry.z] = (tileCountsByZoom[entry.z] ?? 0) + 1;
+		}
+		this.debugInfo.set(layer.config.id, { layerId: layer.config.id, effectiveZoom: z, tileCountsByZoom });
 	}
 
 	private createPendingEntry(z: number, x: number, y: number, key: string): TileEntry {

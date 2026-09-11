@@ -14,6 +14,16 @@
 export const MAX_TILE_ZOOM = 14;
 
 /**
+ * Deepest CAMERA zoom to allow — one level past MAX_TILE_ZOOM. TileManager
+ * already clamps its own tile requests to MAX_TILE_ZOOM (see updateLayer in
+ * tile-manager.ts), so letting the camera go one level further is a plain
+ * overzoom: the deepest available tile gets magnified past its native
+ * resolution instead of the zoom simply hitting a wall, which is the same
+ * trade-off every slippy-map viewer makes past a tileset's max zoom.
+ */
+export const MAX_CAMERA_ZOOM = MAX_TILE_ZOOM + 1;
+
+/**
  * Shallowest zoom to request. Tiles at z0-2 span up to a quarter of the globe
  * each, and their triangles are then large enough that projecting only their
  * vertices visibly facets the sphere. Starting at z3 keeps every tile under

@@ -21,13 +21,13 @@ export const PROJECTIONS: ProjectionMeta[] = [
 	{
 		type: ProjectionType.Sphere,
 		label: 'Globe',
-		icon: '\u{1F310}',
+		icon: '',
 		description: '3D orthographic globe',
 	},
 	{
 		type: ProjectionType.Equirectangular,
 		label: 'Map',
-		icon: '\u{1F5FA}',
+		icon: '',
 		description: 'Equirectangular map, wrapping east-west',
 	},
 ];

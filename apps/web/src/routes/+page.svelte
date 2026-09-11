@@ -1,8 +1,10 @@
 <script lang="ts">
 	import GlobeCanvas from '$lib/components/GlobeCanvas.svelte';
+	import StatusBar from '$lib/components/StatusBar.svelte';
 	import { ProjectionType, PROJECTIONS } from '$lib/types/projection';
 
 	let activeProjection = $state<ProjectionType>(ProjectionType.Sphere);
+	let statusBarRef = $state<StatusBar | undefined>(undefined);
 </script>
 
 <svelte:head>
@@ -10,13 +12,13 @@
 	<meta name="description" content="Optimised Ocean Data Visualisation Platform." />
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 </svelte:head>
 
 <main class="viewport">
 	<!-- Full-screen Three.js canvas -->
 	<div class="canvas-wrapper">
-		<GlobeCanvas {activeProjection} />
+		<GlobeCanvas {activeProjection} statusBar={statusBarRef} />
 	</div>
 
 	<!-- Floating projection picker -->
@@ -35,6 +37,7 @@
 		{/each}
 	</nav>
 
+	<StatusBar bind:this={statusBarRef} />
 </main>
 
 <style>
@@ -50,7 +53,7 @@
 		height: 100%;
 		overflow: hidden;
 		background: #0d0d0f;
-		font-family: 'Inter', system-ui, sans-serif;
+		font-family: 'Noto Sans', system-ui, sans-serif;
 	}
 
 	/* Viewport */
@@ -69,7 +72,7 @@
 	/* Projection bar */
 	.projection-bar {
 		position: fixed;
-		bottom: 2rem;
+		bottom: 3.25rem;
 		left: 50%;
 		transform: translateX(-50%);
 		display: flex;

@@ -6,8 +6,15 @@
 	import { buildSouthPolarCap } from '$lib/geo/polar-cap';
 	import { ProjectionType } from '$lib/types/projection';
 	import { TileManager } from '$lib/tiles/tile-manager';
-	import { TILE_LAYERS, MAX_TILE_ZOOM, OCEAN_COLOR, VOID_COLOR } from '$lib/tiles/layers.config';
+	import { TILE_LAYERS, MAX_CAMERA_ZOOM, OCEAN_COLOR, VOID_COLOR } from '$lib/tiles/layers.config';
 	import { unprojectPoint, viewDirection, zoomForScale, scaleForZoom } from '$lib/tiles/projection-math';
+	import { lonLatToTile } from '$lib/tiles/tile-math';
+	import { formatLatLonDMS } from '$lib/geo/dms';
+	import { pickNiceScale } from '$lib/geo/scale-bar';
+	import { viewStatus } from '$lib/state/view-status.svelte';
+	import type StatusBar from '$lib/components/StatusBar.svelte';
+	import HeadingControl from '$lib/components/HeadingControl.svelte';
+	import TileDebugOverlay from '$lib/components/TileDebugOverlay.svelte';
 
 	// Imported without ?raw so vite-plugin-glsl resolves the #include of the
 	// shared projection chunk.
@@ -22,11 +29,20 @@
 	// Props
 	interface Props {
 		activeProjection?: ProjectionType;
+		statusBar?: StatusBar;
 	}
-	const { activeProjection = ProjectionType.Sphere }: Props = $props();
+	const { activeProjection = ProjectionType.Sphere, statusBar }: Props = $props();
 
 	// Canvas ref
 	let canvasEl: HTMLCanvasElement;
+	// Heading-control instance (rendered below), for the same direct-call
+	// pattern used with statusBar — imperative, not a reactive prop.
+	let headingControl: HeadingControl | undefined;
+	// TEMPORARY diagnostic overlay — see TileDebugOverlay.svelte.
+	let tileDebugOverlay: TileDebugOverlay | undefined;
+	let lastHoverLonDeg = 0;
+	let lastHoverLatDeg = 0;
+	let hasHover = false;
 
 	// Three.js core
 	let renderer: THREE.WebGLRenderer;
@@ -61,19 +77,50 @@
 	// Floor chosen so the globe/map always fills a decent share of the
 	// viewport — below this it shrinks into an island in a black void.
 	const MIN_SCALE  = 0.62;
-	// Max zoom is derived from the deepest tile zoom the data actually carries,
-	// so camera zoom and tile detail can't drift apart. Recomputed on resize
-	// since it depends on canvas width. Past this the camera would only be
-	// magnifying z14 geometry, which tile-manager already clamps to.
+	// Max zoom is derived from MAX_CAMERA_ZOOM (one level past the deepest tile
+	// zoom the data carries), so it's a deliberate one-level overzoom rather
+	// than an arbitrary cap. Recomputed on resize since it depends on canvas
+	// width. Past this the camera would only be magnifying the deepest tile's
+	// geometry further, which tile-manager already clamps its own requests to.
 	let maxScale = 4096;
 	// Smoothstep tween duration (ms) for projection morphing.
 	const TWEEN_MS = 800;
 
+	// Status-bar readout (altitude + scale bar): pinhole-camera constants and
+	// throttle so this doesn't recompute/dirty $state on every frame.
+	const EARTH_RADIUS_KM = 6371;
+	const ALTITUDE_FOV_DEG = 60;
+	const MAX_SCALE_BAR_PX = 120;
+	const MIN_SCALE_BAR_PX = 40;
+	const STATUS_PUSH_INTERVAL_MS = 66; // ~15fps
+	let lastStatusPushTime = 0;
+
 	// Trackball state
-	// A single quaternion accumulates all drags for both sphere and 2D modes.
-	const rotQuat = new THREE.Quaternion();
+	// panQuat accumulates trackball-drag (lon/lat) rotation and the
+	// cursor-anchored zoom correction. headingAngle is a separate compass
+	// rotation around the view axis, driven only by the heading control —
+	// kept apart from panQuat so "reset to north" can zero it out without
+	// disturbing whatever the user has panned to. rotMat3 (uploaded to the
+	// shader as u_globeRotation) is always the two composed together; see
+	// updateRotMat3().
+	const panQuat = new THREE.Quaternion();
+	const headingQuat = new THREE.Quaternion();
+	const HEADING_AXIS = new THREE.Vector3(1, 0, 0); // "depth/forward" — the view axis
+	let headingAngle = 0;
+	let targetHeadingAngle = 0;
+	const HEADING_DAMPING = 0.22;
 	const rotMat3 = new THREE.Matrix3();
 	const tmpMat4 = new THREE.Matrix4();
+	const tmpQuat = new THREE.Quaternion();
+
+	/** Recomputes rotMat3 = headingQuat * panQuat — heading applied on the
+	 *  outside, so it always rotates the current pan's view about the screen
+	 *  center rather than changing which point is centered. */
+	function updateRotMat3(): void {
+		tmpQuat.copy(headingQuat).multiply(panQuat);
+		tmpMat4.makeRotationFromQuaternion(tmpQuat);
+		rotMat3.setFromMatrix4(tmpMat4);
+	}
 
 	// Zoom state. currentScale eases toward targetScale each frame so wheel
 	// input feels smooth rather than stepped, and so the tile LOD changes are
@@ -288,7 +335,7 @@
 		gratMat = makeLineMat();
 		fillMat.uniforms.u_aspect.value = aspect;
 		gratMat.uniforms.u_aspect.value = aspect;
-		maxScale = scaleForZoom(MAX_TILE_ZOOM, w);
+		maxScale = scaleForZoom(MAX_CAMERA_ZOOM, w);
 		syncOceanScale();
 
 		// Whole-world furniture: the graticule, and the south polar cap that
@@ -357,6 +404,11 @@
 		canvasEl.addEventListener('pointermove',  onPointerMove);
 		canvasEl.addEventListener('pointerup',    onPointerUp);
 		canvasEl.addEventListener('pointerleave', onPointerUp);
+		canvasEl.addEventListener('pointerleave', () => {
+			statusBar?.clearCoords();
+			hasHover = false;
+			pushTileDebugInfo();
+		});
 		canvasEl.addEventListener('wheel',        onWheel, { passive: false });
 		// Prevent context-menu on long-press (mobile)
 		canvasEl.addEventListener('contextmenu',  (e) => e.preventDefault());
@@ -388,7 +440,7 @@
 		bodyMat.uniforms.u_aspect.value = aspect;
 		syncOceanScale();
 
-		maxScale = scaleForZoom(MAX_TILE_ZOOM, w);
+		maxScale = scaleForZoom(MAX_CAMERA_ZOOM, w);
 	}
 
 	// =========================================================================
@@ -400,6 +452,29 @@
 	}
 
 	function onPointerMove(e: PointerEvent): void {
+		// Hover readout: runs on every move, independent of drag state. Placed
+		// first because the drag branches below return early.
+		const hoverRect = canvasEl.getBoundingClientRect();
+		const hoverNdcX = ((e.clientX - hoverRect.left) / hoverRect.width) * 2 - 1;
+		const hoverNdcY = -(((e.clientY - hoverRect.top) / hoverRect.height) * 2 - 1);
+		const hoverGeo = unprojectPoint(hoverNdcX, hoverNdcY, {
+			rotMat3,
+			scale: currentScale,
+			aspect: gratMat.uniforms.u_aspect.value,
+			projectionType: tweenActive ? pendingProjection : currentProjection,
+			pan: mapPan,
+		});
+		if (hoverGeo) {
+			lastHoverLonDeg = (hoverGeo.lon * 180) / Math.PI;
+			lastHoverLatDeg = (hoverGeo.lat * 180) / Math.PI;
+			hasHover = true;
+			statusBar?.setCoords(formatLatLonDMS(lastHoverLatDeg, lastHoverLonDeg));
+		} else {
+			hasHover = false;
+			statusBar?.clearCoords();
+		}
+		pushTileDebugInfo();
+
 		if (!isDragging) return;
 
 		if (isFlatMode()) {
@@ -435,11 +510,8 @@
 		const qLat = new THREE.Quaternion().setFromAxisAngle(
 			new THREE.Vector3(0, 1, 0), dy
 		);
-		rotQuat.premultiply(qLon).premultiply(qLat).normalize();
-
-		// Extract mat3 for the shader uniform
-		tmpMat4.makeRotationFromQuaternion(rotQuat);
-		rotMat3.setFromMatrix4(tmpMat4);
+		panQuat.premultiply(qLon).premultiply(qLat).normalize();
+		updateRotMat3();
 	}
 
 	function onPointerUp(e: PointerEvent): void {
@@ -518,10 +590,32 @@
 		if (!before || !after) return;
 
 		// R' = Q·R with Q·before = after keeps the same world point under the cursor.
+		// Q is computed in the outer (screen) frame, same as heading, but it
+		// belongs to panQuat (zoom shouldn't touch heading) — so it's conjugated
+		// through headingQuat into pan's frame before being applied there.
 		const q = new THREE.Quaternion().setFromUnitVectors(before, after);
-		rotQuat.premultiply(q).normalize();
-		tmpMat4.makeRotationFromQuaternion(rotQuat);
-		rotMat3.setFromMatrix4(tmpMat4);
+		const qInPanFrame = tmpQuat.copy(headingQuat).invert().multiply(q).multiply(headingQuat);
+		panQuat.premultiply(qInPanFrame).normalize();
+		updateRotMat3();
+	}
+
+	// =========================================================================
+	// Heading control (sphere projection only)
+	// =========================================================================
+	/** Called with each incremental angle (radians) as the compass knob is
+	 *  dragged. Applied immediately (not eased) so the drag feels 1:1; the
+	 *  target is kept in sync so the animate()-loop easing below stays inert
+	 *  until a reset is requested. */
+	function onHeadingDrag(deltaRad: number): void {
+		headingAngle += deltaRad;
+		targetHeadingAngle = headingAngle;
+		headingQuat.setFromAxisAngle(HEADING_AXIS, headingAngle);
+		updateRotMat3();
+		headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
+	}
+
+	function onResetNorth(): void {
+		targetHeadingAngle = 0;
 	}
 
 	// =========================================================================
@@ -588,6 +682,21 @@
 		if (currentScale < floor) currentScale = floor;
 		clampPan();
 
+		// Ease heading back toward its target — only moves when "Reset to
+		// North" set a new target; a live drag keeps target == current so
+		// this is a no-op while the knob is actually being dragged.
+		if (Math.abs(targetHeadingAngle - headingAngle) > 1e-4) {
+			headingAngle += (targetHeadingAngle - headingAngle) * HEADING_DAMPING;
+			headingQuat.setFromAxisAngle(HEADING_AXIS, headingAngle);
+			updateRotMat3();
+			headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
+		} else if (headingAngle !== targetHeadingAngle) {
+			headingAngle = targetHeadingAngle;
+			headingQuat.setFromAxisAngle(HEADING_AXIS, headingAngle);
+			updateRotMat3();
+			headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
+		}
+
 		gratMat.uniforms.u_scale.value = currentScale;
 		gratMat.uniforms.u_pan.value.copy(mapPan);
 		bodyMat.uniforms.u_pan.value.copy(mapPan);
@@ -604,6 +713,15 @@
 		const gratFade = 1 - Math.min(1, Math.max(0, (currentScale / BASE_SCALE - 2) / 10));
 		gratMat.uniforms.u_globalAlpha.value = 0.28 * gratFade;
 
+		// Heading only makes sense while looking at a rotatable sphere. Driven
+		// every frame from isFlatMode() (not just at the start of a projection
+		// switch) so reversing direction mid-tween — e.g. Sphere→Map→Sphere
+		// before the first tween finishes, where switchProjection's `next ===
+		// currentProjection` guard means it's never called again — can't leave
+		// this stuck hidden; the $state setter behind it already no-ops on an
+		// unchanged value, so this costs nothing extra on a steady frame.
+		headingControl?.setVisible(!isFlatMode());
+
 		// Push rotation uniform
 		syncUniforms();
 
@@ -619,6 +737,101 @@
 		});
 
 		renderer.render(scene, camera);
+
+		// Status-bar readout (altitude + scale bar): throttled to ~15fps since
+		// it only needs to track zoom, not every rendered frame.
+		if (now - lastStatusPushTime >= STATUS_PUSH_INTERVAL_MS) {
+			lastStatusPushTime = now;
+			pushStatusReadout();
+			pushTileDebugInfo();
+		}
+	}
+
+	/** TEMPORARY diagnostic — see TileDebugOverlay.svelte. Reads the last
+	 *  hovered lon/lat (tracked in onPointerMove) so this also refreshes on
+	 *  zoom changes alone, without requiring the mouse to move. */
+	function pushTileDebugInfo(): void {
+		if (!tileDebugOverlay) return;
+		const infos = tileManager?.getDebugInfo() ?? [];
+		const primary = infos[0];
+		const lines: string[] = ['[TILE DEBUG]'];
+		if (primary) {
+			lines.push(`zoom (effective): ${primary.effectiveZoom}`);
+			const counts = Object.entries(primary.tileCountsByZoom)
+				.sort(([a], [b]) => Number(a) - Number(b))
+				.map(([z, n]) => `z${z}:${n}`)
+				.join(' ');
+			lines.push(`in scene: ${counts || '(none)'}`);
+		} else {
+			lines.push('zoom (effective): —');
+		}
+		if (hasHover) {
+			const z = primary?.effectiveZoom ?? Math.round(zoomForScale(currentScale, canvasEl.clientWidth));
+			const { x, y } = lonLatToTile(lastHoverLonDeg, lastHoverLatDeg, z);
+			lines.push(`hover tile: z${z} / x${Math.floor(x)} / y${Math.floor(y)}`);
+		} else {
+			lines.push('hover tile: —');
+		}
+		tileDebugOverlay.setInfo(lines.join('\n'));
+	}
+
+	/** Derives simulated altitude and the scale-bar label/width from the
+	 *  current zoom, and writes them into the shared viewStatus state. */
+	function pushStatusReadout(): void {
+		const canvasWidthPx = canvasEl.clientWidth;
+		const canvasHeightPx = canvasEl.clientHeight;
+		const flat = isFlatMode();
+
+		let kmPerPx: number;
+		if (flat) {
+			// Vertical direction is scale-accurate everywhere in equirectangular,
+			// but a horizontal bar needs the cos(latitude) correction since
+			// longitude spacing shrinks toward the poles — sample the view's
+			// center latitude once per push.
+			const centerGeo = unprojectPoint(0, 0, {
+				rotMat3,
+				scale: currentScale,
+				aspect: gratMat.uniforms.u_aspect.value,
+				projectionType: currentProjection,
+				pan: mapPan,
+			});
+			const centerLat = centerGeo?.lat ?? 0;
+			kmPerPx =
+				(2 * Math.PI * EARTH_RADIUS_KM * Math.cos(centerLat)) / (currentScale * canvasWidthPx);
+		} else {
+			// Sphere: exact at the sub-cursor/sub-nadir point; an approximation
+			// toward the limb due to orthographic foreshortening, consistent
+			// with the rest of this readout being a simulated instrument.
+			kmPerPx = (2 * EARTH_RADIUS_KM) / (currentScale * canvasHeightPx);
+		}
+
+		// Faux altitude: model a pinhole camera with vertical FOV θ looking
+		// straight down at a plane of visible width `visibleWidthKm` (the
+		// geographic distance spanned by the full canvas width, from the same
+		// kmPerPx used for the scale bar above — so the two readouts can never
+		// contradict each other). Triangle half-angle gives:
+		//   altitude = (visibleWidthKm / 2) / tan(θ/2)
+		// Shared across both projections; at the equator in flat mode this
+		// reduces to (2π·EARTH_RADIUS_KM/scale)/2 / tan(θ/2), matching
+		// circumference/scale to within the 2π·R_e vs 40,075km rounding gap.
+		const visibleWidthKm = canvasWidthPx * kmPerPx;
+		const altitudeKm =
+			visibleWidthKm / 2 / Math.tan((ALTITUDE_FOV_DEG * Math.PI) / 180 / 2);
+
+		const { km, label } = pickNiceScale(kmPerPx, MAX_SCALE_BAR_PX, MIN_SCALE_BAR_PX);
+		const barWidthPx = km / kmPerPx;
+
+		// Only touch $state if something actually changed, so an idle view
+		// (scale unchanged) doesn't dirty reactivity 15x/sec.
+		if (
+			Math.abs(viewStatus.altitudeKm - altitudeKm) > 0.5 ||
+			viewStatus.scaleBarLabel !== label ||
+			Math.abs(viewStatus.scaleBarWidthPx - barWidthPx) > 0.5
+		) {
+			viewStatus.altitudeKm = Math.max(0, altitudeKm);
+			viewStatus.scaleBarLabel = label;
+			viewStatus.scaleBarWidthPx = barWidthPx;
+		}
 	}
 
 	// =========================================================================
@@ -652,6 +865,10 @@
 	class="globe-canvas"
 	aria-label="Interactive world map projection. Drag to rotate"
 ></canvas>
+
+<HeadingControl bind:this={headingControl} onDrag={onHeadingDrag} onResetNorth={onResetNorth} />
+
+<TileDebugOverlay bind:this={tileDebugOverlay} />
 
 <style>
 	.globe-canvas {

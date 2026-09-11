@@ -1,0 +1,141 @@
+name: Task
+description: A planned unit of implementation work, broken out from the project plan.
+title: "[Task]: "
+labels:
+  - task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for planned work. For something broken, use the Bug report template instead.
+        Keep one task to one deliverable — if it needs two different people, it is two tasks.
+
+  - type: input
+    id: outcome
+    attributes:
+      label: Outcome
+      description: One sentence. What is true after this is merged that is not true now?
+      placeholder: The globe renders a scalar temperature field from a Float32 grid with a colormap applied.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - infra (CI, docker, tooling)
+        - contracts (API/schema/types)
+        - rendering (WebGL, shaders, tiles)
+        - frontend (UI, components, state)
+        - backend (FastAPI, endpoints)
+        - data (pipelines, ingestion, NetCDF)
+        - ai (chat, agent, tool-calling)
+        - design (UX, visual, assets)
+        - docs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: milestone_phase
+    attributes:
+      label: Milestone
+      options:
+        - M0 — Foundation
+        - M1 — Internals demo
+        - M2 — Data & rendering core
+        - M3 — AI & research workflow
+        - M4 — Research output
+        - M5 — Hardening & delivery
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this exists. Link the spec section, the contract, or the parent task.
+      placeholder: |
+        Spec: 01-contracts.md §5.2 (ScalarFieldRenderer)
+        Blocks the colorbar, depth selector, and time scrubber tasks.
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation_notes
+    attributes:
+      label: Implementation notes
+      description: Files to touch, approach, known traps. Not a full design — enough that someone else could pick this up.
+      placeholder: |
+        - New: apps/web/src/lib/render/scalar-field.ts
+        - Touch: GlobeCanvas.svelte (mount the renderer)
+        - Trap: R32F needs OES_texture_float_linear for bilinear; do the tap manually.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checkboxes. Each one objectively true or false. This is what closes the issue.
+      placeholder: |
+        - [ ] A .f32 grid loads and renders on the globe in under 500 ms
+        - [ ] NaN cells render transparent, not black
+        - [ ] setValueRange() updates the display without a network request
+        - [ ] Works in both Globe and Equirectangular projections
+      value: |
+        - [ ] 
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+
+  - type: input
+    id: dependencies
+    attributes:
+      label: Depends on
+      description: Issue numbers that must land first. Write "none" if it can start immediately.
+      placeholder: "#12, #14"
+    validations:
+      required: true
+
+  - type: input
+    id: blocks
+    attributes:
+      label: Blocks
+      description: Issue numbers waiting on this one. Leave blank if unknown.
+      placeholder: "#31, #32, #33"
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      description: Anything over 2 days must be split before work starts.
+      options:
+        - XS (< 2 hours)
+        - S (half a day)
+        - M (1 day)
+        - L (2 days)
+        - "TOO BIG — needs splitting"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: demo_critical
+    attributes:
+      label: On the demo path?
+      description: Is this touched by the internals demo storyboard?
+      options:
+        - "Yes — demo breaks without it"
+        - "No"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of done
+      options:
+        - label: CI passes (lint, typecheck, tests)
+        - label: Contracts in docs/planning/01-contracts.md updated if the interface changed
+        - label: New behaviour is reachable from the UI or documented in the app README

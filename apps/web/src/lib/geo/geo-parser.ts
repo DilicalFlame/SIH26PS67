@@ -5,7 +5,7 @@
  * quantized to the same Int16/[-1,1] attribute layout the tile pipeline
  * uses (see tile.worker.ts) so it shares the shader path unchanged. The
  * graticule is cheap and resolution-independent, so unlike coastlines it is
- * not streamed as PMTiles — it's generated client-side, once.
+ * not streamed as PMTiles - it's generated client-side, once.
  *
  * Attribute layout per vertex (Int16, GPU-normalized to [-1,1]):
  *   a_quantCoord     : this vertex, relative to the whole-world bbox
@@ -27,7 +27,7 @@ const LAT_LIMIT = 80;
 const DEG2RAD = Math.PI / 180;
 const QUANT = 32767;
 
-/** Whole-world bbox half-extent, radians — matches u_tileHalfExtent's convention. */
+/** Whole-world bbox half-extent, radians - matches u_tileHalfExtent's convention. */
 export const WORLD_HALF_EXTENT = { lon: Math.PI, lat: Math.PI / 2 };
 
 function quantizeWorld(lonRad: number, latRad: number): [number, number] {
