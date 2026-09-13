@@ -2,9 +2,12 @@
 	import GlobeCanvas from '$lib/components/GlobeCanvas.svelte';
 	import StatusBar from '$lib/components/StatusBar.svelte';
 	import { ProjectionType, PROJECTIONS } from '$lib/types/projection';
+	import GlobeDataTable from '$lib/components/GlobeDataTable.svelte';
+	
 
 	let activeProjection = $state<ProjectionType>(ProjectionType.Sphere);
 	let statusBarRef = $state<StatusBar | undefined>(undefined);
+	let showDataTable = $state(false);
 </script>
 
 <svelte:head>
@@ -38,6 +41,7 @@
 	</nav>
 
 	<StatusBar bind:this={statusBarRef} />
+	<GlobeDataTable visible={showDataTable} />
 </main>
 
 <style>
@@ -148,4 +152,14 @@
 			padding: 0.5rem 0.65rem;
 		}
 	}
+	/* Focus indicators — WCAG AA */
+:global(:focus-visible) {
+    outline: 2px solid rgba(99, 179, 237, 0.9);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+:global(:focus:not(:focus-visible)) {
+    outline: none;
+}
 </style>

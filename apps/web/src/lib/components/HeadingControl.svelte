@@ -6,18 +6,11 @@
 	}
 	const { onDrag, onResetNorth }: Props = $props();
 
-	// Shown only while the sphere projection is active — GlobeCanvas calls
-	// setVisible() directly (imperative, same reasoning as StatusBar: the
-	// caller's projection state is a plain `let`, not `$state`, so it can't
-	// drive a reactive prop).
 	let visible = $state(true);
 	export function setVisible(v: boolean): void {
 		visible = v;
 	}
 
-	// Direct DOM write, not $state — the needle can be updated every frame
-	// while dragging or easing back to north, and a CSS transform on a
-	// single element is cheap to keep off Svelte's reactivity graph.
 	let needleEl: HTMLDivElement | undefined = $state();
 	export function setHeadingDeg(deg: number): void {
 		if (needleEl) needleEl.style.transform = `rotate(${-deg}deg)`;
@@ -35,7 +28,7 @@
 	}
 
 	function onPointerDown(e: PointerEvent): void {
-		if (!knobEl || e.button !== 0) return; // right-click opens the context menu instead
+		if (!knobEl || e.button !== 0) return;
 		dragging = true;
 		lastAngle = angleAt(e.clientX, e.clientY);
 		knobEl.setPointerCapture(e.pointerId);
@@ -45,14 +38,9 @@
 		if (!dragging) return;
 		const angle = angleAt(e.clientX, e.clientY);
 		let delta = angle - lastAngle;
-		// Normalize across the atan2 branch cut so a fast drag through ±180°
-		// doesn't register as a near-full-turn jump.
 		if (delta > Math.PI) delta -= 2 * Math.PI;
 		if (delta < -Math.PI) delta += 2 * Math.PI;
 		lastAngle = angle;
-		// Negated: a clockwise drag around the knob should rotate the globe
-		// clockwise on screen too (direct manipulation), which is the opposite
-		// sign of the knob's own raw atan2 angle change.
 		onDrag(-delta);
 	}
 
@@ -71,9 +59,22 @@
 		menuY = e.clientY;
 		menuOpen = true;
 	}
+
+	function onKeyDown(e: KeyboardEvent): void {
+		const step = Math.PI / 36;
+		if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+			e.preventDefault();
+			onDrag(-step);
+		} else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+			e.preventDefault();
+			onDrag(step);
+		}
+	}
+
 	function closeMenu(): void {
 		menuOpen = false;
 	}
+
 	function resetNorth(): void {
 		onResetNorth();
 		closeMenu();
@@ -98,6 +99,7 @@
 		onpointerup={onPointerUp}
 		onpointercancel={onPointerUp}
 		oncontextmenu={onContextMenu}
+		onkeydown={onKeyDown}
 	>
 		<div class="needle" bind:this={needleEl}>
 			<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
