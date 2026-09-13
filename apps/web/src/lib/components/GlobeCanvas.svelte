@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import * as THREE from 'three';
-	import { buildGraticule } from '$lib/geo/geo-parser';
+	import { buildGraticule, pickGraticuleStep, DEFAULT_GRID_STEP } from '$lib/geo/geo-parser';
 	import { buildSouthPolarCap } from '$lib/geo/polar-cap';
 	import { ProjectionType } from '$lib/types/projection';
 	import { TileManager } from '$lib/tiles/tile-manager';
@@ -29,9 +29,10 @@
 	// Props
 	interface Props {
 		activeProjection?: ProjectionType;
+		showGraticule?: boolean;
 		statusBar?: StatusBar;
 	}
-	const { activeProjection = ProjectionType.Sphere, statusBar }: Props = $props();
+	const { activeProjection = ProjectionType.Sphere, showGraticule = true, statusBar }: Props = $props();
 
 	// Canvas ref
 	let canvasEl: HTMLCanvasElement;
@@ -56,6 +57,7 @@
 	let tileManager: TileManager;
 	/** Whole-world meshes, drawn once per visible east-west copy of the map. */
 	let worldCopies: { graticule: THREE.LineSegments; cap: THREE.Mesh; shift: number }[] = [];
+	let currentGridStep = DEFAULT_GRID_STEP;
 	let capMat: THREE.ShaderMaterial;
 
 	// Graticule sits just above the ocean and below the land fills.
@@ -275,6 +277,22 @@
 		if (!ocean) return;
 		ocean.scale.set(gratMat?.uniforms.u_aspect.value ?? 1, 1, 1);
 	}
+	/** Disposes and rebuilds every world copy's graticule at a new spacing,
+ *  reusing each copy's existing material so uniforms stay in sync. */
+function rebuildGraticules(gridStep: number): void {
+	for (const copy of worldCopies) {
+		const oldGraticule = copy.graticule;
+		scene.remove(oldGraticule);
+		oldGraticule.geometry.dispose();
+
+		const { graticule } = buildGraticule(oldGraticule.material as THREE.ShaderMaterial, gridStep);
+		graticule.renderOrder = 0;
+		graticule.visible = showGraticule;
+		scene.add(graticule);
+
+		copy.graticule = graticule;
+	}
+}
 
 	// =========================================================================
 	// Scene setup
@@ -654,7 +672,6 @@
 		if (tweenActive) {
 			const t     = Math.min((now - tweenStart) / TWEEN_MS, 1.0);
 			const blend = t * t * (3.0 - 2.0 * t);   // smoothstep
-
 			gratMat.uniforms.u_blend.value = blend;
 
 			if (t >= 1.0) {
@@ -663,9 +680,18 @@
 
 				gratMat.uniforms.u_projectionTypeA.value = currentProjection;
 				gratMat.uniforms.u_projectionTypeB.value = currentProjection;
+				
 				gratMat.uniforms.u_blend.value           = 0.0;
 			}
 		}
+		// Rebuild the graticule only when zoom crosses into a new spacing tier —
+// rebuilding every frame would be wasteful; the toggle below is nearly free.
+const effectiveZoom = zoomForScale(currentScale, canvasEl.clientWidth);
+const nextGridStep = pickGraticuleStep(effectiveZoom);
+if (nextGridStep !== currentGridStep) {
+	currentGridStep = nextGridStep;
+	rebuildGraticules(currentGridStep);
+}
 
 		// Ease zoom toward its target, then push the resulting scale everywhere.
 		if (Math.abs(targetScale - currentScale) > currentScale * 1e-4) {
@@ -847,6 +873,15 @@
 		}
 	});
 
+	// =========================================================================
+	// Svelte reactive: toggle graticule visibility from parent prop
+	// =========================================================================
+	$effect(() => {
+	console.log('[graticule toggle]', showGraticule, 'worldCopies count:', worldCopies.length);
+	for (const copy of worldCopies) {
+		copy.graticule.visible = showGraticule;
+	}
+});
 	// =========================================================================
 	// Lifecycle
 	// =========================================================================
