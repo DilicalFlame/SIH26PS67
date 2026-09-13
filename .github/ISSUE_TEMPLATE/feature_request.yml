@@ -3,7 +3,6 @@ description: Suggest a new capability or an improvement.
 title: "[Feature]: "
 labels:
   - enhancement
-  - needs-triage
 body:
   - type: markdown
     attributes:

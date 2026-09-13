@@ -3,7 +3,6 @@ description: Report missing, incorrect, or unclear documentation.
 title: "[Docs]: "
 labels:
   - documentation
-  - needs-triage
 body:
   - type: markdown
     attributes:

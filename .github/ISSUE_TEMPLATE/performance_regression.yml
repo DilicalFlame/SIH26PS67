@@ -3,7 +3,6 @@ description: Report slowdowns, high resource usage, or startup delays.
 title: "[Performance]: "
 labels:
   - performance
-  - needs-triage
 body:
   - type: markdown
     attributes:

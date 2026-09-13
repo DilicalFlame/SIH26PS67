@@ -1,0 +1,3378 @@
+{
+  "epics": [
+    {
+      "key": "E01",
+      "title": "Repository, CI, and developer environment",
+      "milestone": "M0",
+      "child_range": [
+        "T001",
+        "T009"
+      ]
+    },
+    {
+      "key": "E02",
+      "title": "Frozen contracts and data model",
+      "milestone": "M0",
+      "child_range": [
+        "T010",
+        "T016"
+      ]
+    },
+    {
+      "key": "E03",
+      "title": "Scalar field rendering engine",
+      "milestone": "M1",
+      "child_range": [
+        "T017",
+        "T026"
+      ]
+    },
+    {
+      "key": "E04",
+      "title": "Map controls and colorbar",
+      "milestone": "M1",
+      "child_range": [
+        "T027",
+        "T034"
+      ]
+    },
+    {
+      "key": "E05",
+      "title": "In-situ observation overlay",
+      "milestone": "M1",
+      "child_range": [
+        "T035",
+        "T041"
+      ]
+    },
+    {
+      "key": "E06",
+      "title": "Conversational AI foundation",
+      "milestone": "M1",
+      "child_range": [
+        "T042",
+        "T050"
+      ]
+    },
+    {
+      "key": "E07",
+      "title": "Application shell and layer management",
+      "milestone": "M1",
+      "child_range": [
+        "T051",
+        "T058"
+      ]
+    },
+    {
+      "key": "E08",
+      "title": "Demo readiness",
+      "milestone": "M1",
+      "child_range": [
+        "T059",
+        "T063"
+      ]
+    },
+    {
+      "key": "E09",
+      "title": "Tile serving: Martin and the Cache layer",
+      "milestone": "M2",
+      "child_range": [
+        "T064",
+        "T074"
+      ]
+    },
+    {
+      "key": "E10",
+      "title": "Reference geospatial datasets",
+      "milestone": "M2",
+      "child_range": [
+        "T075",
+        "T088"
+      ]
+    },
+    {
+      "key": "E11",
+      "title": "Bathymetry and terrain",
+      "milestone": "M2",
+      "child_range": [
+        "T089",
+        "T096"
+      ]
+    },
+    {
+      "key": "E12",
+      "title": "Volumetric and 3D visualization",
+      "milestone": "M2",
+      "child_range": [
+        "T097",
+        "T108"
+      ]
+    },
+    {
+      "key": "E13",
+      "title": "Data ingestion framework",
+      "milestone": "M2",
+      "child_range": [
+        "T109",
+        "T119"
+      ]
+    },
+    {
+      "key": "E14",
+      "title": "Projections and cartography",
+      "milestone": "M2",
+      "child_range": [
+        "T120",
+        "T125"
+      ]
+    },
+    {
+      "key": "E15",
+      "title": "Authentication and accounts",
+      "milestone": "M2",
+      "child_range": [
+        "T126",
+        "T133"
+      ]
+    },
+    {
+      "key": "E16",
+      "title": "Standards compliance (OGC / CF)",
+      "milestone": "M2",
+      "child_range": [
+        "T134",
+        "T139"
+      ]
+    },
+    {
+      "key": "E17",
+      "title": "Memory architecture and chat tree",
+      "milestone": "M3",
+      "child_range": [
+        "T140",
+        "T150"
+      ]
+    },
+    {
+      "key": "E18",
+      "title": "Agent tool surface",
+      "milestone": "M3",
+      "child_range": [
+        "T151",
+        "T160"
+      ]
+    },
+    {
+      "key": "E19",
+      "title": "Semantic search and vector index",
+      "milestone": "M3",
+      "child_range": [
+        "T161",
+        "T166"
+      ]
+    },
+    {
+      "key": "E20",
+      "title": "Projects, work, and activity model",
+      "milestone": "M3",
+      "child_range": [
+        "T167",
+        "T175"
+      ]
+    },
+    {
+      "key": "E21",
+      "title": "Knowledge graph and the \"i\" affordance",
+      "milestone": "M3",
+      "child_range": [
+        "T176",
+        "T180"
+      ]
+    },
+    {
+      "key": "E22",
+      "title": "Research paper authoring",
+      "milestone": "M4",
+      "child_range": [
+        "T181",
+        "T195"
+      ]
+    },
+    {
+      "key": "E23",
+      "title": "Citations and references",
+      "milestone": "M4",
+      "child_range": [
+        "T196",
+        "T201"
+      ]
+    },
+    {
+      "key": "E24",
+      "title": "Publishing and sharing",
+      "milestone": "M4",
+      "child_range": [
+        "T202",
+        "T206"
+      ]
+    },
+    {
+      "key": "E25",
+      "title": "Plugin architecture",
+      "milestone": "M5",
+      "child_range": [
+        "T207",
+        "T210"
+      ]
+    },
+    {
+      "key": "E26",
+      "title": "Deployment, performance, and hardening",
+      "milestone": "M5",
+      "child_range": [
+        "T211",
+        "T214"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Add the Task issue template",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The team can file structured implementation tasks.\n**Notes:** Add `.github/ISSUE_TEMPLATE/task.yml` from the provided file. Update `config.yml` to add `contact_links` pointing at Discussions while keeping `blank_issues_enabled: false`. Drop `needs-triage` from self-authored tasks \u2014 a label present on every issue carries no information.\n**AC:**\n- [ ] Task template renders when opening a new issue\n- [ ] `config.yml` has a Discussions contact link\n- [ ] An existing issue can be refiled with the new template as a smoke test\n\n---"
+    },
+    {
+      "id": "T002",
+      "title": "Create labels and milestones",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Work can be filtered by type, area, size, and demo-criticality.\n**Notes:** Full list in `02-labels-and-setup.md`. Type labels (`task`, `bug`, `enhancement`, `documentation`, `performance`, `spike`, `epic`), nine `area:*`, five status labels, four `size:*`. Six milestones with real due dates. The `demo-critical` label earns its red \u2014 in the last 48 hours before any demo it's the only filter anyone should use.\n**AC:**\n- [ ] All type, area, status, size labels created\n- [ ] Six milestones exist with due dates\n- [ ] `epic` label exists\n\n---"
+    },
+    {
+      "id": "T003",
+      "title": "Create the project board",
+      "area": "infra",
+      "size": "XS",
+      "milestone": "M0",
+      "deps": [
+        "T002"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Work status is visible without asking anyone.\n**Notes:** Five columns: Backlog \u2192 Ready \u2192 In progress \u2192 In review \u2192 Done. Two rules that matter more than the tool: \"Ready\" means genuinely unblocked (dependencies landed, design exists, contract frozen), and WIP limit of 2 per person. Five people \u00d7 three open branches is how a sprint ends with nothing mergeable.\n**AC:**\n- [ ] Board exists with five columns\n- [ ] Auto-add rule moves new issues to Backlog\n- [ ] WIP limit of 2 documented in the board description\n\n---"
+    },
+    {
+      "id": "T004",
+      "title": "CI workflow: lint, typecheck, test",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A PR that breaks the build cannot merge silently.\n**Notes:** `.github/workflows/ci.yml` on `pull_request` and push to `main`. Two jobs. **web:** pnpm with cache, `pnpm --filter web check`, `pnpm --filter web test`. **python:** `uv sync` in `apps/api`, then `ruff check`, `mypy`, `pytest`. Use path filters so a design-only PR skips the matrix. Keep it under 3 minutes or people start bypassing it.\n**AC:**\n- [ ] A TypeScript error fails CI\n- [ ] A ruff violation fails CI\n- [ ] Typical PR completes in under 3 minutes\n- [ ] Caches are warm on the second run\n\n---"
+    },
+    {
+      "id": "T005",
+      "title": "Protect `main`",
+      "area": "infra",
+      "size": "XS",
+      "milestone": "M0",
+      "deps": [
+        "T004"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** `main` is always deployable.\n**Notes:** No direct pushes. CI required. One approval required. Allow self-merge after approval \u2014 with five people on five-day cycles, a strict review queue stalls you harder than an unreviewed merge hurts. Require linear history to keep `git log` legible.\n**AC:**\n- [ ] Direct push to `main` is rejected\n- [ ] PR cannot merge with failing CI\n- [ ] Branch deletion on merge is automatic\n\n---"
+    },
+    {
+      "id": "T006",
+      "title": "CONTRIBUTING.md and repo conventions",
+      "area": "docs",
+      "size": "XS",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Nobody has to ask how to run the project or name a branch.\n**Notes:** Use the block in `02-labels-and-setup.md` \u00a75. Put the WSL/ext4 warning in the first screen \u2014 it's a documented 10\u201340\u00d7 penalty on this codebase and every new contributor will hit it. Include the `code .` from native WSL bash instruction; opening via `\\\\wsl.localhost\\` from PowerShell silently creates a Windows-side session with 9P bridge overhead.\n**AC:**\n- [ ] `CONTRIBUTING.md` covers setup, branching, PR rules, commit format\n- [ ] WSL filesystem warning is prominent\n- [ ] `README.md` links to it and to `docs/planning/`\n\n---"
+    },
+    {
+      "id": "T007",
+      "title": "Complete docker-compose: api service and consolidated env",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** `docker compose up` brings up the whole backend stack identically for everyone.\n**Notes:** `compose.yml` currently has postgres, minio, minio-init only. Add an `api` service with a dev Dockerfile and reload bind-mount. Move `admin@123` out of `compose.yml` and `scripts/upload-tiles.sh` into a root `.env`. Keep `web` on the host via `pnpm dev` \u2014 containerising the frontend for dev costs HMR speed and buys nothing. Add healthcheck-gated `depends_on` so api doesn't start before Postgres accepts connections.\n**AC:**\n- [ ] `docker compose up -d` starts postgres, minio, minio-init, api\n- [ ] API reaches Postgres and MinIO by service name\n- [ ] No credentials hardcoded in tracked files\n- [ ] Root `.env.example` documents every variable\n\n---"
+    },
+    {
+      "id": "T008",
+      "title": "Structured logging and request tracing in the API",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [
+        "T010"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A failing request can be diagnosed from logs alone.\n**Notes:** `structlog` or stdlib logging with a JSON formatter. Middleware assigns a request id, logs method, path, status, duration. Log slow queries above 500 ms. Do not log request bodies (they will contain chat content). This costs an hour now and saves hours during M2 integration.\n**AC:**\n- [ ] Every request logs id, method, path, status, duration\n- [ ] Unhandled exceptions log a stack trace with the request id\n- [ ] Log level is env-configurable\n\n---"
+    },
+    {
+      "id": "T009",
+      "title": "Frontend error boundary and dev diagnostics",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** A component crash shows a readable message instead of a blank canvas.\n**Notes:** SvelteKit `+error.svelte` plus a component-level boundary around the canvas. WebGL context loss is a real failure mode on laptops with hybrid graphics \u2014 listen for `webglcontextlost` and show a \"reload\" prompt rather than freezing. This one matters for a live demo.\n**AC:**\n- [ ] A thrown error in a panel doesn't blank the app\n- [ ] WebGL context loss shows a recovery prompt\n- [ ] Errors log to console with component context in dev\n\n---"
+    },
+    {
+      "id": "T010",
+      "title": "FastAPI app factory, settings, and CORS",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The API has a real structure instead of a `print(\"Hello from api!\")` stub.\n**Notes:** `apps/api/app/main.py` is currently empty. Create `create_app()` with a pydantic-settings object reading the env vars in contracts \u00a71, CORS allowing `WEB_ORIGIN`, and an `/api/v1` router. One router module per group: `catalog.py`, `fields.py`, `observations.py`, `auth.py`, `chat.py`.\n**AC:**\n- [ ] `uv run uvicorn app.main:app` serves `/api/v1`\n- [ ] Settings load from env with sane defaults\n- [ ] CORS allows the web dev origin, rejects others\n- [ ] `/docs` renders\n\n---"
+    },
+    {
+      "id": "T011",
+      "title": "Health endpoint with dependency checks",
+      "area": "backend",
+      "size": "XS",
+      "milestone": "M0",
+      "deps": [
+        "T010"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** One call tells you whether Postgres and MinIO are reachable.\n**Notes:** `GET /api/v1/healthz` \u2192 `{ status, db, storage }`. Used by compose healthchecks, by the deploy target in M5, and by whoever is debugging at 2am.\n**AC:**\n- [ ] Returns 200 with per-dependency booleans\n- [ ] Returns 503 when a dependency is down\n- [ ] Does not require auth\n\n---"
+    },
+    {
+      "id": "T012",
+      "title": "Freeze the API contract as stubs returning fixtures \u2b50",
+      "area": "contracts",
+      "size": "M",
+      "milestone": "M0",
+      "deps": [
+        "T010"
+      ],
+      "blocks": [
+        "T017",
+        "T027",
+        "T035",
+        "T042",
+        "T051",
+        "T140",
+        "T167"
+      ],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Every endpoint in contracts \u00a74 exists and returns valid fixture data.\n**Notes:** The single highest-leverage task in the project. Four people are blocked until it lands. Define every Pydantic response model now, matching the TypeScript interfaces exactly \u2014 if they disagree, the contract doc wins. Every route returns a fixture from `fixtures/*.json` at repo root, shared with the frontend so mock and stub cannot drift. Real implementations arrive in T013+ and M1.\n**AC:**\n- [ ] Every endpoint in contracts \u00a74 responds with a schema-valid fixture\n- [ ] `/docs` shows all routes with correct response models\n- [ ] Fixtures live in `fixtures/` and are importable by the frontend\n- [ ] A contract test asserts fixture \u2194 model agreement\n\n---"
+    },
+    {
+      "id": "T013",
+      "title": "Postgres schema v1 with Alembic",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M0",
+      "deps": [
+        "T007"
+      ],
+      "blocks": [
+        "T036",
+        "T043",
+        "T126",
+        "T167",
+        "T181"
+      ],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The full schema from contracts \u00a73 creates from zero with one command.\n**Notes:** Add `alembic`, `sqlalchemy[asyncio]`, `asyncpg`, `geoalchemy2`. One initial migration creating **every** table including the M4 ones \u2014 additive migrations later hurt far less than rewrites. `CREATE EXTENSION postgis` and `pgcrypto`. Create the GIST index on `profiles.location` and the btree on `profile_levels(profile_id, depth)` in the same migration; adding indexes to populated tables is slower.\n**AC:**\n- [ ] `alembic upgrade head` creates every table on an empty DB\n- [ ] Geometry columns are SRID 4326\n- [ ] Indexes from contracts \u00a73 exist\n- [ ] `alembic downgrade base` runs clean\n\n---"
+    },
+    {
+      "id": "T014",
+      "title": "Database reset and seed scaffolding",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [
+        "T013"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** One command restores a known-good database in under 30 seconds.\n**Notes:** `scripts/db_reset.sh`: drop, create, migrate, seed. The seed at this stage creates only the demo user and an empty catalog; real seeding lands in T063. Truncate-and-repopulate rather than upsert \u2014 idempotent and easier to reason about under pressure.\n**AC:**\n- [ ] Resets to clean state in under 30 seconds\n- [ ] Idempotent across repeated runs\n- [ ] Prints a row-count summary\n\n---"
+    },
+    {
+      "id": "T015",
+      "title": "Shared TypeScript types generated from OpenAPI",
+      "area": "contracts",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [
+        "T012"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Frontend types cannot drift from the API.\n**Notes:** `openapi-typescript` against the running API's schema, output to `apps/web/src/lib/api/types.ts`, committed. Add a CI check that regeneration produces no diff \u2014 that check is what actually prevents drift; the generation alone doesn't.\n**AC:**\n- [ ] Types generate from the live OpenAPI schema\n- [ ] Generated file is committed\n- [ ] CI fails if the committed file is stale\n\n---"
+    },
+    {
+      "id": "T016",
+      "title": "Typed API client with mock switching",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M0",
+      "deps": [
+        "T015"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Components fetch through one typed client that can serve fixtures instead of the network.\n**Notes:** `apps/web/src/lib/api/client.ts`. Reads `PUBLIC_API_BASE_URL`. When `PUBLIC_USE_MOCKS=true`, returns fixtures from `fixtures/`. **Branch on mocks exactly once, at the fetch layer** \u2014 never inside a component, or you'll be unpicking it for weeks. Central error handling maps the standard error envelope to typed exceptions.\n**AC:**\n- [ ] All endpoints callable through the client with full typing\n- [ ] Mock mode serves fixtures without network\n- [ ] Errors surface as typed exceptions carrying the error code\n- [ ] No component imports `fetch` directly\n\n---"
+    },
+    {
+      "id": "T017",
+      "title": "ScalarFieldRenderer: render a Float32 grid on the globe \u2b50 CRITICAL PATH",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M1",
+      "deps": [],
+      "blocks": [
+        "T018",
+        "T019",
+        "T020",
+        "T021",
+        "T022",
+        "T023",
+        "T024",
+        "T025",
+        "T026",
+        "T027",
+        "T028",
+        "T029",
+        "T030",
+        "T031",
+        "T032",
+        "T033",
+        "T034",
+        "T097",
+        "T098",
+        "T099",
+        "T100",
+        "T101",
+        "T102",
+        "T103",
+        "T104",
+        "T105",
+        "T106",
+        "T107",
+        "T108"
+      ],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** A `.f32` grid from MinIO renders as a colour-mapped field on the globe, in both projections.\n**Notes:** New `apps/web/src/lib/render/scalar-field.ts` implementing the frozen interface in contracts \u00a75.2. Geometry is a lat/lon grid mesh over the field bbox, subdivided finely enough that the projection blend stays smooth on the sphere limb. **Reuse the vertex projection path from `geofill.vert.glsl`** \u2014 do not write a third copy of the projection math. Texture: `THREE.DataTexture`, `RedFormat` + `FloatType`, `NearestFilter`, `ClampToEdgeWrapping`.\n**Traps:** WebGL2 core samples `R32F` with NEAREST only; linear needs `OES_texture_float_linear`, and at 0.25\u00b0 the stair-stepping is visible. Do the bilinear tap manually in GLSL. `isnan()` is unreliable across drivers \u2014 use `if (!(v == v)) discard;`.\n**AC:**\n- [ ] Grid loads and renders in under 500 ms warm\n- [ ] NaN cells transparent, not black or zero\n- [ ] Correct in Globe, Equirectangular, and mid-blend\n- [ ] Composites over coastlines without z-fighting\n- [ ] `setValueRange()` / `setColormap()` change display with zero network traffic\n- [ ] No visible 0.25\u00b0 stair-stepping at moderate zoom\n\n---"
+    },
+    {
+      "id": "T018",
+      "title": "Colormap registry and LUT textures",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Named colormaps available as cached 256\u00d71 LUT textures.\n**Notes:** `apps/web/src/lib/render/colormaps.ts` per contracts \u00a75.3. Ship `thermal`, `haline`, `viridis`, `balance`. **Use cmocean stop values** \u2014 thermal for temperature and haline for salinity is the oceanographic convention, and a domain judge will notice if you use matplotlib defaults instead. Cache each LUT; don't rebuild per bind. No dependency on T017, so it can run in parallel.\n**AC:**\n- [ ] Four colormaps by name\n- [ ] `toLUTTexture()` returns a cached DataTexture\n- [ ] Unit test asserts endpoint colours\n\n---"
+    },
+    {
+      "id": "T019",
+      "title": "Texture cache and prefetch manager",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T017"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Depth and time changes feel instant because adjacent textures are already on the GPU.\n**Notes:** LRU over `(layer, depth, time)` keys, mirroring the pattern in the existing `tile-cache.ts`. At 96 KB per grid, a 60-step time series is under 6 MB \u2014 **prefetch the entire time dimension on layer load**. Prefetch depth neighbours on hover. Explicit `dispose()` on eviction; Three.js textures leak GPU memory if you only drop the reference.\n**AC:**\n- [ ] Full time series prefetched on layer load\n- [ ] Depth/time change hits cache with no network request\n- [ ] Evicted textures are disposed, verified against `renderer.info.memory`\n- [ ] Cache size is configurable\n\n---"
+    },
+    {
+      "id": "T020",
+      "title": "Field value sampling on the CPU",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T017"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** `sampleAt(lon, lat)` returns the field value under a point.\n**Notes:** Reads the retained `Float32Array`, not the GPU texture \u2014 reading back from GPU stalls the pipeline. Bilinear interpolate, return `null` over NaN. Used by the hover readout, by area statistics in M2, and eventually by the agent.\n**AC:**\n- [ ] Returns correct interpolated values against a known grid\n- [ ] Returns null over no-data\n- [ ] Handles antimeridian and bbox edges\n- [ ] Unit tested\n\n---"
+    },
+    {
+      "id": "T021",
+      "title": "Field layer z-ordering and blending",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T017"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Multiple layers composite in a predictable, controllable order.\n**Notes:** The vector tile manager already uses painter's-algorithm ordering by style order then tile zoom. Scalar fields need to slot into the same scheme. Set `renderOrder` explicitly per layer rather than relying on insertion order. `transparent: true` with `depthWrite: false` for translucent fields, or they occlude each other wrongly.\n**AC:**\n- [ ] Field renders above coastlines, below markers\n- [ ] Two stacked fields blend by opacity in configured order\n- [ ] Reordering in the layer panel changes draw order\n- [ ] No z-fighting at any zoom\n\n---"
+    },
+    {
+      "id": "T022",
+      "title": "Field loading and error states",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T017"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** A slow or failed grid fetch is visible, not a silent blank.\n**Notes:** Skeleton or spinner while the first grid loads. A failed fetch shows a retry affordance on the layer card. Abort in-flight requests when the layer is removed \u2014 `AbortController`, or a fast demo operator will queue a dozen orphaned fetches.\n**AC:**\n- [ ] Loading state during first fetch\n- [ ] Failed fetch shows a retryable error on the layer card\n- [ ] Removing a layer aborts in-flight requests\n- [ ] Retry works without a page reload\n\n---"
+    },
+    {
+      "id": "T023",
+      "title": "Synthetic field generator for development",
+      "area": "data",
+      "size": "XS",
+      "milestone": "M1",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** T017 can be developed before real data exists.\n**Notes:** A script producing a `.f32` grid plus `meta.json` from an analytic function (a lat/lon gradient with a couple of gaussian eddies and a NaN landmask). Twenty minutes of work that decouples the two day-1 critical tasks from each other. Also becomes the fixture for renderer unit tests.\n**AC:**\n- [ ] Generates valid `.f32` + `meta.json` matching contracts \u00a72\n- [ ] Includes a NaN region for landmask testing\n- [ ] Committed under `fixtures/`\n\n---"
+    },
+    {
+      "id": "T024",
+      "title": "Renderer unit tests",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T017",
+        "T023"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Regressions in projection or normalisation are caught by CI.\n**Notes:** Vitest browser mode is already configured with Playwright. Test the value\u2192colour mapping, NaN discard, lon/lat\u2192vertex position agreement between the CPU path in `projection-math.ts` and the shader, and texture disposal. Full visual regression is overkill; targeted numeric assertions are not.\n**AC:**\n- [ ] Value normalisation tested at range endpoints and midpoint\n- [ ] CPU and GPU projection agree within tolerance\n- [ ] Disposal leaves zero retained textures\n- [ ] Runs in CI\n\n---"
+    },
+    {
+      "id": "T025",
+      "title": "Vector field rendering for currents",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M1",
+      "deps": [
+        "T017"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** U/V component grids render as direction-and-magnitude, not just two scalars.\n**Notes:** PS67 names current vectors explicitly. Two options: **static arrows** (instanced glyphs on a decimated grid, oriented by `atan2(v,u)`, scaled by magnitude) or **animated particles** (far more impressive, meaningfully more work). Do arrows first; particles are T105. Arrow density must scale with zoom or it turns into noise at world view.\n**AC:**\n- [ ] U/V pair renders as oriented arrows\n- [ ] Arrow density adapts to zoom\n- [ ] Magnitude drives colour via the active colormap\n- [ ] Works in both projections\n\n---"
+    },
+    {
+      "id": "T026",
+      "title": "Field statistics for the visible region",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T020"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Min, max, and mean for the field in the current viewport.\n**Notes:** Compute over the CPU array restricted to `computeVisibleBounds()`, debounced on camera settle. Feeds the \"reset colorbar to visible range\" button, which is the control people actually want \u2014 a global range is usually dominated by a region they aren't looking at.\n**AC:**\n- [ ] Min/max/mean for visible extent, NaN-excluded\n- [ ] Updates on camera settle, not per frame\n- [ ] \"Fit colorbar to view\" applies them\n- [ ] Under 16 ms for a full-resolution grid\n\n---"
+    },
+    {
+      "id": "T027",
+      "title": "Colorbar component bound to uniforms",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T017",
+        "T018"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** An on-screen colorbar showing palette and range, where editing min/max updates the map instantly.\n**Notes:** PS67 requires a customisable colorbar by name. Render the LUT as a CSS gradient with ticks from the value range and the layer's units. Palette dropdown from the registry. Min/max numeric inputs plus reset. **Every change calls the synchronous uniform setters** \u2014 if the map flickers or refetches, the binding is wrong.\n**AC:**\n- [ ] Shows active palette, range, units\n- [ ] Min/max edit updates within one frame, no network\n- [ ] Palette change is instant\n- [ ] Reset-to-data-range works\n\n---"
+    },
+    {
+      "id": "T028",
+      "title": "Log/linear colorbar scaling",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T027"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Colour scale can be logarithmic for variables that span orders of magnitude.\n**Notes:** Shader applies `log(v/min)/log(max/min)` guarded for non-positive values. **Disable the toggle when `valueMin <= 0`** with an explanatory tooltip rather than producing garbage \u2014 temperature in \u00b0C is the obvious case. Log is genuinely useful for chlorophyll and nutrients, which arrive in M2.\n**AC:**\n- [ ] Log toggle changes the shader mapping\n- [ ] Disabled with a tooltip when range includes non-positive values\n- [ ] Colorbar tick labels switch to log spacing\n- [ ] Round-trips back to linear cleanly\n\n---"
+    },
+    {
+      "id": "T029",
+      "title": "Depth selector control",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T017",
+        "T019"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Picking a depth level changes the rendered field.\n**Notes:** Vertical slider with discrete stops at the layer's `depths`, labelled in metres, **deepest at the bottom** \u2014 matching physical intuition, not array index order. Calls `setDepthIndex()`. Prefetch neighbours on hover. Display the active depth prominently; it's a thing a presenter points at.\n**AC:**\n- [ ] Stops exactly at available levels\n- [ ] Updates in under 300 ms\n- [ ] Active depth shown in metres\n- [ ] Keyboard arrows step levels\n\n---"
+    },
+    {
+      "id": "T030",
+      "title": "Time scrubber with playback",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T017",
+        "T019"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Scrubbing or playing through time animates the field.\n**Notes:** PS67 requires time-step animation. This is the most visually persuasive element you have \u2014 an animating ocean field is what makes a screenshot look alive. Playback on a `requestAnimationFrame` loop with a frame cap, **not** `setInterval`. Speed control. Formatted timestamp, readable from across a room.\n**AC:**\n- [ ] Scrubbing has no visible stutter\n- [ ] Play advances all steps and loops\n- [ ] Timestamp displayed prominently\n- [ ] No texture leak over repeated loops\n\n---"
+    },
+    {
+      "id": "T031",
+      "title": "Layer opacity and visibility",
+      "area": "frontend",
+      "size": "XS",
+      "milestone": "M1",
+      "deps": [
+        "T017",
+        "T021"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Per-layer opacity slider and visibility toggle.\n**Notes:** Uniform-only, both of them. Requires `transparent: true` and correct `renderOrder` from T021. Toggle must not dispose textures, or re-enabling causes a refetch.\n**AC:**\n- [ ] Opacity blends smoothly over coastlines\n- [ ] Toggle preserves textures\n- [ ] Controls appear per-layer in the Active list\n\n---"
+    },
+    {
+      "id": "T032",
+      "title": "Hover value readout in the status bar",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T020"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Hovering shows the field value under the cursor.\n**Notes:** `StatusBar.svelte` already shows coordinates \u2014 add value and units there rather than building a component. Show an em-dash over no-data.\n**AC:**\n- [ ] Status bar shows value + units under cursor\n- [ ] Em-dash over no-data\n- [ ] No measurable frame-rate cost\n\n---"
+    },
+    {
+      "id": "T033",
+      "title": "Variable selector",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T027",
+        "T051"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Switching variable on an active layer swaps the field, keeping depth and time.\n**Notes:** PS67 requires a variable selector. Switching should preserve the current depth and time indices **where the new variable has them**, and clamp gracefully where it doesn't. Colormap resets to the new variable's default (thermal \u2194 haline) unless the user overrode it.\n**AC:**\n- [ ] Switching variable swaps the field\n- [ ] Depth/time preserved where valid, clamped where not\n- [ ] Colormap follows the variable default unless overridden\n- [ ] Colorbar units update\n\n---"
+    },
+    {
+      "id": "T034",
+      "title": "Keyboard shortcuts for map controls",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T029",
+        "T030"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Depth, time, and playback are drivable from the keyboard.\n**Notes:** Space toggles playback, arrows step time, shift+arrows step depth, `P` cycles projection. Route through the UI action bus so shortcuts, chat, and clicks all share one path. A discoverable shortcuts overlay on `?`. Presenters who don't have to hunt for a slider look much more fluent.\n**AC:**\n- [ ] Shortcuts work when canvas has focus\n- [ ] Do not fire while typing in an input\n- [ ] `?` shows the overlay\n- [ ] Dispatch through the action bus\n\n---"
+    },
+    {
+      "id": "T035",
+      "title": "Argo float marker layer",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T012"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Float positions render as markers on the globe, updating with the viewport.\n**Notes:** `apps/web/src/lib/render/point-layer.ts`. `THREE.Points` with a custom shader is simpler than instanced billboards and sufficient for a few hundred floats. **Vertices go through the same `projectMap()` path as everything else** \u2014 computing screen positions on the CPU detaches them during projection blending. Fetch by `computeVisibleBounds()`, debounced on camera settle.\n**Trap:** cull far-side markers by the sign of `dot(normal, viewDir)` or they appear to float through the earth.\n**AC:**\n- [ ] Correct geographic positions in both projections\n- [ ] Far-side markers hidden on the globe\n- [ ] Updates on viewport change, debounced\n- [ ] Stay attached during projection blend\n\n---"
+    },
+    {
+      "id": "T036",
+      "title": "Argo profile ingestion into Postgres",
+      "area": "data",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T013"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Float positions and depth profiles are queryable.\n**Notes:** Source Argo for the North Indian Ocean over the demo window; the Copernicus in-situ product is an acceptable substitute if the GDAC is awkward \u2014 record provenance either way. Populate `platforms`, `profiles`, `profile_levels`. **Apply QC flags: keep 1 and 2, drop the rest** \u2014 bad data plotted on stage is worse than missing data. Fifty to two hundred floats is plenty. Bulk insert via `COPY`, not row-by-row ORM.\n**AC:**\n- [ ] Tables populated for the demo region and window\n- [ ] SRID 4326, GIST index used (verify with `EXPLAIN`)\n- [ ] QC-failed levels excluded\n- [ ] Every profile has \u226510 levels\n- [ ] Idempotent\n\n---"
+    },
+    {
+      "id": "T037",
+      "title": "Observation endpoints against Postgres",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T013",
+        "T036"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Platform and profile endpoints return real data.\n**Notes:** Bbox filter via `ST_Intersects` against the GIST index, not a Python-side filter. GeoJSON from the platforms endpoint so the frontend consumes it directly. Cap `limit` server-side at 1000 regardless of request. Order levels by depth in SQL.\n**AC:**\n- [ ] Bbox query returns only platforms inside\n- [ ] Levels ordered by ascending depth\n- [ ] Empty result is an empty FeatureCollection, not 404\n- [ ] Full demo region query under 200 ms\n\n---"
+    },
+    {
+      "id": "T038",
+      "title": "Marker picking and selection",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T035"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Clicking a marker selects that platform.\n**Notes:** Screen-space distance against projected positions \u2014 far simpler than GPU picking for a few hundred points. **Hit radius around 12 px**; clicking a 4 px dot during a live demo is a way to look bad on stage. Emit `open_profile` on the action bus so chat and clicking share one path. Hover cursor and highlight.\n**AC:**\n- [ ] Click within 12 px selects\n- [ ] Hover shows pointer cursor and highlight\n- [ ] Dispatches `open_profile`\n- [ ] Clicking empty ocean deselects\n\n---"
+    },
+    {
+      "id": "T039",
+      "title": "Depth-vs-variable profile chart",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T012",
+        "T038"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Selecting a float opens a chart of temperature and salinity against depth.\n**Notes:** PS67 requires this by name. **Depth on Y, inverted \u2014 surface at top.** This is the oceanographic convention and getting it backwards is the first thing a domain judge notices. Two stacked charts beat one dual-axis chart for readability. Header shows platform id, timestamp, position. Hand-rolled SVG is ~80 lines and avoids a bundle-size conversation.\n**AC:**\n- [ ] Temperature and salinity against depth\n- [ ] Depth axis inverted, labelled in metres\n- [ ] Header shows id, timestamp, position\n- [ ] Missing salinity doesn't crash\n- [ ] Reopens cleanly on new selection\n\n---"
+    },
+    {
+      "id": "T040",
+      "title": "Profile time series selector",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T039"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A float with many profiles lets you step through its cycles.\n**Notes:** Argo floats surface every ~10 days, so a float has a profile history. List cycles in the panel header; selecting one reloads the chart. This is what turns a single reading into evidence of change over time, which is the actual scientific value.\n**AC:**\n- [ ] Cycle list with dates\n- [ ] Selecting a cycle reloads the chart\n- [ ] Current cycle highlighted\n- [ ] Handles single-profile platforms without an empty selector\n\n---"
+    },
+    {
+      "id": "T041",
+      "title": "Model-vs-observation comparison on the profile chart",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T020",
+        "T039"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The profile chart overlays the model field's values at the float's position.\n**Notes:** This is the single most scientifically compelling thing in the demo, and it's cheap once T020 exists: sample the active scalar field at the float's lat/lon across all depth levels and draw it as a second trace. It directly addresses PS67's stated gap about correlating model predictions with observational evidence.\n**AC:**\n- [ ] Model trace overlays the observed profile\n- [ ] Rendered distinctly (dashed vs solid) with a legend\n- [ ] Only shown when a compatible field is active\n- [ ] Depth levels aligned, not merely co-plotted\n\n\n---"
+    },
+    {
+      "id": "T042",
+      "title": "Groq client wrapper with streaming",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T010"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The API can call Groq and stream tokens back.\n**Notes:** OpenAI-compatible client pointed at Groq, model from `GROQ_MODEL` (`openai/gpt-oss-120b`). Wrap it behind a small interface so swapping to a paid provider later is a config change, not a refactor \u2014 you've already said paid APIs come later, so build the seam now. **Free-tier rate limits are real**; map 429 to a typed error with a friendly message.\n**AC:**\n- [ ] Streams tokens from Groq\n- [ ] Model and key come from env\n- [ ] Provider interface allows substitution\n- [ ] 429 maps to a typed, readable error\n\n---"
+    },
+    {
+      "id": "T043",
+      "title": "Chat node persistence",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T013"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** User and assistant turns persist as tree nodes with correct parent links.\n**Notes:** Persist the user node **before** calling the model and the assistant node after, so a dropped connection loses at most the response, not the question. `parent_id` NULL for root. Store `tool_calls` as JSONB.\n**AC:**\n- [ ] User node persists before the model call\n- [ ] Assistant node persists with the right parent\n- [ ] Tool calls stored as JSONB\n- [ ] Interrupted stream leaves consistent state\n\n---"
+    },
+    {
+      "id": "T044",
+      "title": "`build_context()`: root-to-node path assembly \u2b50",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T043"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The context sent to the model is the path from root to the active node, not the whole tree.\n**Notes:** **This is the entire n-ary memory model and it is about fifteen lines.** Walk `parent_id` to root, reverse, map to messages. One function, one call site. Getting this right now is what makes M3's real memory isolation an extension rather than a rewrite. Guard against cycles and cap depth.\n**AC:**\n- [ ] Returns messages root\u2192node in order\n- [ ] Sibling branches excluded, proven by unit test\n- [ ] Depth capped with oldest-first truncation\n- [ ] Cycle-safe\n\n---"
+    },
+    {
+      "id": "T045",
+      "title": "Chat SSE endpoint",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T042",
+        "T044"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** `POST /projects/{id}/chat/nodes` streams a response over SSE.\n**Notes:** Event types exactly per contracts \u00a74.6: `node_created`, `token`, `tool_call`, `ui_action`, `done`, `error`. Flush per token or the stream buffers and arrives all at once, which defeats the point. Handle client disconnect without leaking the upstream request.\n**AC:**\n- [ ] All six event types emitted correctly\n- [ ] Tokens flush individually\n- [ ] Client disconnect cancels upstream cleanly\n- [ ] Errors emit an `error` event, not a bare 500\n\n---"
+    },
+    {
+      "id": "T046",
+      "title": "System prompt built from the catalog",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T045",
+        "T053"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The assistant knows which layers, variables, depths, and time ranges exist.\n**Notes:** **The agent cannot reason about data it hasn't been told exists.** Build the system prompt from `catalog_layers` at request time, listing layer id, variable, units, depth range, time range, bbox. Keep it compact \u2014 a table, not prose. This is why the catalog table matters architecturally rather than being plumbing.\n**AC:**\n- [ ] Prompt lists all catalog layers with metadata\n- [ ] Regenerates when the catalog changes\n- [ ] Asking \"what data do you have\" gives an accurate answer\n- [ ] Token cost logged\n\n---"
+    },
+    {
+      "id": "T047",
+      "title": "`set_map_layer` tool",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T045",
+        "T046"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The assistant can display a layer at a requested depth and time.\n**Notes:** Definition per contracts \u00a74.7. **The backend resolves everything fuzzy**: `depth_meters`\u2192nearest index, `time`\u2192nearest index, region name\u2192bbox. The model never sees indices and the frontend never does fuzzy matching. A three-entry hardcoded gazetteer (Bay of Bengal, Arabian Sea, North Indian Ocean) beats a geocoding dependency for now.\n**AC:**\n- [ ] \"Show temperature at 100 m in the Bay of Bengal\" produces a valid `ui_action`\n- [ ] Nearest-index resolution correct at boundaries\n- [ ] Unknown layer returns a useful message, not a crash\n- [ ] Gazetteer covers the three demo regions\n\n---"
+    },
+    {
+      "id": "T048",
+      "title": "Chat panel with SSE consumption",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T016",
+        "T045"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The user asks a question and sees the answer stream token by token.\n**Notes:** Opens from the AI tool-rail icon; vision \u00a76.2 specifies hover reveals the field and click focuses it. Use `fetch` with a `ReadableStream` reader, not `EventSource` \u2014 the endpoint is a POST. **Do not special-case `set_map_layer` in the chat component**; dispatch every `ui_action` to the bus. Show tool calls as a visible chip so judges see the agent acting, not just talking.\n**AC:**\n- [ ] Tokens stream visibly\n- [ ] Tool calls show as chips\n- [ ] `ui_action` events drive the map via the bus\n- [ ] Errors readable, not silent\n- [ ] Auto-scroll follows output\n\n---"
+    },
+    {
+      "id": "T049",
+      "title": "UI action bus",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [],
+      "blocks": [
+        "T034",
+        "T038",
+        "T048"
+      ],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Chat, clicks, and shortcuts drive the map through one channel.\n**Notes:** `apps/web/src/lib/state/ui-actions.svelte.ts` per contracts \u00a75.4, using Svelte 5 runes to match the existing `view-status.svelte.ts` pattern. `dispatchUiAction()` / `onUiAction()`. This is what makes plugins possible in M5 without touching the map code, so it's worth the half day now.\n**AC:**\n- [ ] All three `UiAction` variants dispatch and handle\n- [ ] Multiple subscribers all receive\n- [ ] Unsubscribe works without leaking\n- [ ] Unknown action types warn rather than throw\n\n---"
+    },
+    {
+      "id": "T050",
+      "title": "Chat tree visualisation",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T048",
+        "T060"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The conversation renders as a branching tree and clicking a node switches the active branch.\n**Notes:** Vision \u00a77.2. **Your most distinctive idea** \u2014 worth showing even roughly. Build the tree client-side from the flat `ChatNode[]`; simple top-down tidy layout, no graph library. A branch button on each node creates a child of *that* node, not the leaf. **Highlight the active root-to-node path** \u2014 that path *is* the context, and making it visible explains the whole concept in three seconds. Real per-branch memory isolation is M3; the shape is what communicates here.\n**AC:**\n- [ ] Renders as a tree with visible branch points\n- [ ] Clicking a node activates it and highlights its root path\n- [ ] Branching mid-tree creates a child of that node\n- [ ] Legible at 3 branches / 8 nodes\n\n---"
+    },
+    {
+      "id": "T051",
+      "title": "App shell: canvas, tool rail, panel system",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T059"
+      ],
+      "blocks": [
+        "T027",
+        "T029",
+        "T030",
+        "T033",
+        "T052"
+      ],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The globe sits in a real application layout with a working tool rail and dockable panels.\n**Notes:** `+page.svelte` currently renders GlobeCanvas and StatusBar with no chrome. Vertical tool rail per the wireframes: layer, shape, profile, AI. **Omit the two unlabelled placeholder icons** \u2014 the vision doc resolved them as non-features. One panel container that any tool renders into, not a bespoke panel per tool. **The WebGL renderer needs an explicit resize call** when panels open; it won't do it itself.\n**AC:**\n- [ ] Tool rail with four tools and active states\n- [ ] Panels open/close without breaking canvas aspect ratio\n- [ ] Projection switcher reachable in one click\n- [ ] Holds at 1366\u00d7768 (likely projector resolution)\n\n---"
+    },
+    {
+      "id": "T052",
+      "title": "Layer panel with Active / Library / Custom tabs",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T012",
+        "T051"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** The user browses catalog layers and adds them to the map.\n**Notes:** Vision \u00a76.3. Library lists `/catalog/layers`. Active lists added layers with T031's controls. Custom shows an honest \"uploads arrive later\" empty state \u2014 better than a hidden tab. **Plain keyword filter only**; semantic search is M3 and has no architectural home yet, so don't fake it. Cards show variable, units, depth count, time range.\n**AC:**\n- [ ] Library lists catalog layers with metadata\n- [ ] Adding a layer renders it\n- [ ] Active tab lists layers with working controls\n- [ ] Filter matches title, variable, description\n- [ ] Custom tab has a clear empty state\n\n---"
+    },
+    {
+      "id": "T053",
+      "title": "Catalog endpoints against Postgres",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T013"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** `/catalog/layers` returns real rows.\n**Notes:** Read from `catalog_layers`, converting the PostGIS bbox polygon to `[w,s,e,n]`. Support `kind` and `variable` filters. Straightforward, but it unblocks both the layer panel and the agent's world model.\n**AC:**\n- [ ] Returns seeded rows matching `LayerDescriptor`\n- [ ] `kind` and `variable` filters work\n- [ ] Unknown id returns 404 with standard envelope\n\n---"
+    },
+    {
+      "id": "T054",
+      "title": "Field metadata endpoint",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T013",
+        "T062"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** `/fields/{id}/meta` returns real grid metadata with a working `gridUrlTemplate`.\n**Notes:** Read `catalog_layers` plus the `meta.json` written by the pipeline. Build `gridUrlTemplate` from `MINIO_ENDPOINT` and `MINIO_BUCKET`. **This is the one line that changes when the Cache layer lands in M2** \u2014 keep it in one place.\n**AC:**\n- [ ] Returns valid `ScalarFieldMeta`\n- [ ] Template resolves for every valid index pair\n- [ ] Width/height/bbox match actual grid bytes\n\n---"
+    },
+    {
+      "id": "T055",
+      "title": "Layer reordering in the Active tab",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T021",
+        "T052"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Drag to reorder active layers, changing draw order.\n**Notes:** Native HTML5 drag or a lightweight sortable. Reorder updates `renderOrder`. Also worth doing now because it's the first place drag-and-drop appears, and the interaction pattern gets reused heavily in M4's paper authoring.\n**AC:**\n- [ ] Drag reorders the list\n- [ ] Draw order updates immediately\n- [ ] Keyboard reordering available\n- [ ] Order persists for the session\n\n---"
+    },
+    {
+      "id": "T056",
+      "title": "Layer metadata panel",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T052"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Each layer exposes source, units, resolution, licence, and attribution.\n**Notes:** PS67 judges from INCOIS will ask about provenance. Surfacing `catalog_layers.source/attribution/licence` in the UI answers it before it's asked. This is also the shell the M3 \"i\" button expands into, so structure it to accept additional sections.\n**AC:**\n- [ ] Shows source, units, spatial/temporal resolution, licence\n- [ ] Attribution displayed where required by licence\n- [ ] Reachable from every layer card\n- [ ] Structured to accept future sections\n\n---"
+    },
+    {
+      "id": "T057",
+      "title": "Empty and first-run states",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [
+        "T051",
+        "T052"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** A new user with no layers sees guidance, not a blank globe.\n**Notes:** A subtle prompt pointing at the layer tool. Not a modal tour \u2014 those get dismissed reflexively. Also covers: no search results, no floats in view, no chat history.\n**AC:**\n- [ ] First-run prompt points at the layer tool\n- [ ] Dismissible, doesn't return in the session\n- [ ] Empty states for search, floats, chat\n- [ ] No modal on load\n\n---"
+    },
+    {
+      "id": "T058",
+      "title": "Responsive layout down to tablet width",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T051"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The app is usable at 1024 px without horizontal scrolling.\n**Notes:** Panels collapse to overlays below a breakpoint; tool rail stays. Phone support is explicitly out of scope \u2014 a 3D ocean visualization platform on a 390 px screen isn't a real use case, and saying so is better than half-doing it.\n**AC:**\n- [ ] Usable at 1024 px, no horizontal scroll\n- [ ] Panels overlay rather than squeeze the canvas\n- [ ] Canvas resizes correctly across breakpoints\n- [ ] Below 768 px shows a \"use a larger screen\" notice\n\n---"
+    },
+    {
+      "id": "T059",
+      "title": "Design tokens as a Tailwind theme \u2b50",
+      "area": "design",
+      "size": "M",
+      "milestone": "M0",
+      "deps": [],
+      "blocks": [
+        "T051"
+      ],
+      "blocks_note": "T051, and every UI task after it",
+      "demo": true,
+      "body_md": "**Outcome:** Colour, type, spacing, and elevation tokens exist so UI work is consistent without coordination.\n**Notes:** **Day 1.** Four people are about to write UI simultaneously; without this they each invent a spacing scale and the result looks assembled by committee. Tailwind 4 `@theme` extending `layout.css`. **Dark UI** \u2014 the existing `VOID_COLOR 0x0c1420` sets the direction, and dark chrome lets data colormaps read correctly, where light chrome fights a thermal ramp. Panel chrome semi-transparent over the canvas; the globe is the product. Keep it small \u2014 a 40-token system on day 1 won't get used.\n**AC:**\n- [ ] Tokens defined and documented in one place\n- [ ] Panel, button, input, slider base styles exist\n- [ ] WCAG AA contrast for body text on panel backgrounds\n- [ ] A sample screen demonstrates the set\n\n---"
+    },
+    {
+      "id": "T060",
+      "title": "Screen designs for M1 panels",
+      "area": "design",
+      "size": "L",
+      "milestone": "M1",
+      "deps": [
+        "T059"
+      ],
+      "blocks": [
+        "T050"
+      ],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** Every panel built this sprint has a design delivered before the build starts.\n**Notes:** Priority order matching build order: tool rail and layer panel, then colorbar and depth/time, then chat, then profile chart, then chat tree. **Spend disproportionate time on the chat tree** \u2014 it's the least conventional element and the one a judge remembers. Rough is fine; consistent is mandatory. Annotate spacing and states rather than producing pixel-perfect comps.\n**AC:**\n- [ ] Designs for all seven M1 surfaces\n- [ ] Each annotates spacing, states, token usage\n- [ ] Delivered \u2265half a day before the matching build task\n\n---"
+    },
+    {
+      "id": "T061",
+      "title": "Demo storyboard",
+      "area": "design",
+      "size": "S",
+      "milestone": "M1",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** An exact written click path everyone builds toward.\n**Notes:** Needed by day 2 \u2014 it's what defines `demo-critical` for every other issue. Numbered script with literal clicks and literal spoken lines. Proposed arc: globe \u2192 add temperature \u2192 adjust colorbar \u2192 drag depth to 200 m (thermocline) \u2192 play time \u2192 switch projection mid-animation \u2192 click a float, profile opens with the model overlay \u2192 ask chat for salinity in the Arabian Sea \u2192 branch the chat, show the tree \u2192 roadmap. Mark each step with its dependent issues.\n**AC:**\n- [ ] Numbered script with exact clicks and lines\n- [ ] Each step maps to dependent issue numbers\n- [ ] Shared by end of day 2\n- [ ] Timed to fit the slot with 20% margin\n\n---"
+    },
+    {
+      "id": "T062",
+      "title": "NetCDF \u2192 Float32 grid artifacts \u2192 MinIO \u2b50",
+      "area": "data",
+      "size": "L",
+      "milestone": "M1",
+      "deps": [],
+      "blocks": [
+        "T017",
+        "T054",
+        "T063"
+      ],
+      "blocks_note": "T017 (real data), T054, T063",
+      "demo": true,
+      "body_md": "**Outcome:** On-disk temperature and salinity NetCDF become `.f32` artifacts and `meta.json` in MinIO.\n**Notes:** Contracts \u00a72. `apps/worker/` already has xarray, netcdf4, dask, zarr; `main.py` is a stub. Subset to 5\u201330\u00b0N, 45\u2013105\u00b0E, regrid to 0.25\u00b0 with `xarray.interp` \u2014 bilinear is defensible for a demo and `xesmf` is a dependency fight you don't need. Write `d{d}_t{t}.f32`: row-major, **north-west origin**, little-endian, NaN for missing. Cap time at 30\u201360 steps.\n**Trap:** **verify orientation by rendering a grid against a known coastline.** A flipped grid is the most likely bug here and it looks plausible enough to survive a casual check.\n**AC:**\n- [ ] Temperature and salinity artifacts under the contracts \u00a72 layout\n- [ ] `meta.json` valid against `ScalarFieldMeta`\n- [ ] Byte count equals `width*height*4` for every file\n- [ ] Orientation verified against a known landmass\n- [ ] Missing values are NaN, not 0 or -9999\n- [ ] Idempotent\n\n---"
+    },
+    {
+      "id": "T063",
+      "title": "Idempotent demo seed script",
+      "area": "infra",
+      "size": "M",
+      "milestone": "M1",
+      "deps": [
+        "T014",
+        "T036",
+        "T062"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": true,
+      "body_md": "**Outcome:** One command restores the exact demo state.\n**Notes:** `scripts/seed_demo.py`. Catalog rows, Argo data, field artifacts, demo user. Truncate-and-repopulate. Uploads artifacts to MinIO if absent. **Must complete in under 60 seconds** \u2014 if something breaks mid-presentation, recovery has to be fast enough to do while talking. Prints a summary and verifies every demo-path endpoint returns non-empty data afterwards.\n**AC:**\n- [ ] Running twice produces identical state\n- [ ] Completes under 60 seconds\n- [ ] Creates the demo user\n- [ ] Verifies every demo-path endpoint post-seed\n\n\n---"
+    },
+    {
+      "id": "T064",
+      "title": "Add Martin to docker-compose",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T007"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Martin runs against PostGIS and serves tiles from database tables.\n**Notes:** `ghcr.io/maplibre/martin`. Point `DATABASE_URL` at the compose Postgres. Martin auto-discovers geometry tables, which is convenient but means it will publish anything with a geometry column \u2014 configure explicitly rather than relying on discovery once you have tables you don't want public.\n**AC:**\n- [ ] Martin starts and reaches Postgres\n- [ ] `/catalog` lists discoverable sources\n- [ ] A tile request returns valid MVT\n- [ ] Source list is explicit, not auto-discovered\n\n---"
+    },
+    {
+      "id": "T065",
+      "title": "Cache layer service",
+      "area": "infra",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T064"
+      ],
+      "blocks": [
+        "T066",
+        "T067",
+        "T068"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A single service in front of both Martin and MinIO, per the resolved architecture.\n**Notes:** Vision \u00a74.3 made this a firm decision: SvelteKit is cache-agnostic and talks only to the Cache. Recommend **Nginx with `proxy_cache`** over writing one \u2014 it handles range requests, conditional GETs, and cache invalidation correctly, and PMTiles depends on range requests working properly. Route by path prefix: `/tiles/vector/*` and `/tiles/fields/*` \u2192 MinIO, `/tiles/dynamic/*` \u2192 Martin.\n**AC:**\n- [ ] Single origin serves both backends by path prefix\n- [ ] HTTP range requests pass through correctly\n- [ ] Cache hits served without touching the origin\n- [ ] `X-Cache: HIT|MISS` header for debugging\n\n---"
+    },
+    {
+      "id": "T066",
+      "title": "Point the frontend at the Cache layer",
+      "area": "frontend",
+      "size": "XS",
+      "milestone": "M2",
+      "deps": [
+        "T065"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The frontend fetches all tile-like data through one origin.\n**Notes:** This should be a **one-line change to `PUBLIC_TILES_BASE_URL`** plus updating `gridUrlTemplate` construction in T054. If it turns out to be more than that, something hardcoded `localhost:9000` somewhere and that's the real bug to fix. Verify PMTiles range requests still work through the proxy \u2014 this is the thing most likely to break.\n**AC:**\n- [ ] Frontend makes no direct MinIO or Martin requests\n- [ ] PMTiles range requests work through the cache\n- [ ] Field grids load through the cache\n- [ ] Env var change is the only frontend edit\n\n---"
+    },
+    {
+      "id": "T067",
+      "title": "Cache invalidation strategy",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T065"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Re-tiling a dataset doesn't serve stale bytes indefinitely.\n**Notes:** Content-addressed paths are the cleanest answer: include a version segment (`vector/coastlines/v2/...`) so new data gets a new URL and old cache entries age out harmlessly. Failing that, a purge endpoint the Workers call after an upload. Version-in-path is strongly preferred \u2014 purge endpoints are a source of subtle \"why is it still old\" bugs.\n**AC:**\n- [ ] Dataset version appears in the object path\n- [ ] Catalog stores the current version\n- [ ] Re-tiling produces a new path, not an overwrite\n- [ ] Documented in the pipeline README\n\n---"
+    },
+    {
+      "id": "T068",
+      "title": "Cache headers and TTL policy",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T065"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Static tiles cache aggressively; dynamic tiles cache briefly.\n**Notes:** Versioned static paths get `max-age=31536000, immutable`. Martin-served dynamic tiles get a short TTL, 60 seconds or so. Field grids are versioned and immutable. Getting this right is most of the performance win and costs almost nothing.\n**AC:**\n- [ ] Versioned static paths immutable-cached\n- [ ] Dynamic tiles short TTL\n- [ ] Browser cache verified in devtools\n- [ ] Policy documented\n\n---"
+    },
+    {
+      "id": "T069",
+      "title": "Dams table and Martin source",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T064"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Dams load into PostGIS and serve as dynamic vector tiles.\n**Notes:** The motivating case for Martin: too few features to justify tiling, but needs live attribute filtering. Load the dataset, index the geometry, expose a Martin function source that accepts filter parameters. Vision \u00a75.2 has this as the leading example, so it's worth doing properly rather than as a stub.\n**AC:**\n- [ ] Dams table with GIST index\n- [ ] Martin serves valid MVT for the table\n- [ ] Attributes present in the tiles\n- [ ] Viewport bbox query performs under 100 ms\n\n---"
+    },
+    {
+      "id": "T070",
+      "title": "Dams layer in the frontend",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T066",
+        "T069"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Dams render from Martin and can be filtered live.\n**Notes:** Reuses the existing MVT decode path in `tile.worker.ts` \u2014 the source is a different URL, not a different format, which is the whole point of putting Martin behind the same cache. Point rendering reuses T035's point layer.\n**AC:**\n- [ ] Dams render from Martin tiles\n- [ ] Filter changes update tiles without a page reload\n- [ ] Clicking a dam shows attributes\n- [ ] Uses the existing MVT decode path\n\n---"
+    },
+    {
+      "id": "T071",
+      "title": "Dynamic attribute filter UI",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T070"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users filter a dynamic layer by its attributes.\n**Notes:** Generic over the layer's attribute schema rather than hardcoded to dams \u2014 numeric attributes get range sliders, categorical ones get multi-select. Building it generic costs maybe two extra hours and covers every future Martin-served dataset.\n**AC:**\n- [ ] Filter UI generated from attribute schema\n- [ ] Range and categorical filters both work\n- [ ] Filters compose\n- [ ] Clear-all resets\n\n---"
+    },
+    {
+      "id": "T072",
+      "title": "Tile request coalescing",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T065"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Concurrent requests for the same uncached tile hit the origin once.\n**Notes:** Nginx `proxy_cache_lock`. Matters more than it sounds: a fast pan across a fresh region can request the same parent tile from several in-flight paths at once. Cheap to enable, measurable effect.\n**AC:**\n- [ ] Concurrent identical misses produce one origin request\n- [ ] Lock timeout configured\n- [ ] Verified under a concurrent load test\n\n---"
+    },
+    {
+      "id": "T073",
+      "title": "Tile serving metrics",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T065"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Cache hit rate and latency are observable.\n**Notes:** Nginx log format with cache status and upstream time, plus a small script summarising hit rate by path prefix. You need this before optimising anything, and it's the evidence base for the performance slide in a final presentation.\n**AC:**\n- [ ] Logs include cache status and upstream time\n- [ ] Summary script reports hit rate by prefix\n- [ ] p50/p95 latency computable\n\n---"
+    },
+    {
+      "id": "T074",
+      "title": "Architecture documentation update",
+      "area": "docs",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T066"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Docs reflect the implemented architecture, not the planned one.\n**Notes:** `docs/architecture/` currently holds one `.webp` of the hand-drawn diagram. Replace with a maintained diagram (Mermaid or D2 in the repo, so it diffs) showing the resolved path: SvelteKit \u2192 Cache \u2192 (Martin | MinIO) \u2192 PostGIS, with FastAPI outside the tile path. Note explicitly that Figure 2's dual-arrow ambiguity is resolved.\n**AC:**\n- [ ] Diagram is text-based and version-controlled\n- [ ] Matches the implemented system\n- [ ] Component responsibilities documented\n- [ ] Old `.webp` retained as historical reference\n\n---"
+    },
+    {
+      "id": "T075",
+      "title": "Planetiler pipeline template",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [
+        "T077",
+        "T080",
+        "T083"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A reusable, parameterised tiling pipeline so each new dataset isn't a from-scratch job.\n**Notes:** Planetiler is confirmed ~2 minutes against tippecanoe's ~10 hours on this project's data, so it's the default. **Critical, learned the hard way: the YAML schema requires an explicit `attributes:` key list per layer.** Omitting it produces tiles that render fine but carry empty attribute fields \u2014 on coastlines that was 312 MB without attributes versus 606\u2013628 MB with. Encode this as a validation step in the template, not a comment.\n**AC:**\n- [ ] Parameterised config template with documented fields\n- [ ] Wrapper script: source \u2192 PMTiles \u2192 MinIO\n- [ ] **Validation step fails the build if output attributes are empty**\n- [ ] README documents the attributes gotcha prominently\n\n---"
+    },
+    {
+      "id": "T076",
+      "title": "GeoBoundaries: acquire and inspect",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Source data on disk with a documented structure, feature count, and licence.\n**Notes:** Follow the EDA pattern already established in `scripts/dev/eda/` \u2014 those six notebooks are good practice and worth continuing. Decide which administrative levels you actually need; ADM0 and ADM1 is almost certainly enough, and ADM2 globally is a large multiplier for no visible benefit at ocean-platform zoom levels.\n**AC:**\n- [ ] Data on disk with documented provenance and licence\n- [ ] Feature count and geometry complexity recorded\n- [ ] Admin levels decided and justified\n- [ ] EDA notebook committed\n\n---"
+    },
+    {
+      "id": "T077",
+      "title": "GeoBoundaries: tile to PMTiles",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T075",
+        "T076"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Political boundaries published as PMTiles in MinIO.\n**Notes:** Much smaller than GSHHG \u2014 no multi-resolution zoom-banding trick needed, single Planetiler pass. Retain name, ISO code, and admin level as attributes; the agent will want them for region resolution, replacing T047's hardcoded gazetteer.\n**AC:**\n- [ ] PMTiles in MinIO under the versioned path convention\n- [ ] Attributes non-empty (verify with `pmtiles show`)\n- [ ] Renders at all configured zooms\n- [ ] Catalog row created\n\n---"
+    },
+    {
+      "id": "T078",
+      "title": "GeoBoundaries: render as line layer",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T077"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Boundaries render as lines, not filled polygons.\n**Notes:** The existing tile pipeline triangulates polygons with earcut for fills. **Boundaries need stroke rendering, which is a genuinely different path** \u2014 either extract ring geometry and render as `THREE.Line`, or generate stroke geometry with a width in screen space. Lines with consistent pixel width across zoom need the latter; plain `THREE.Line` ignores `linewidth` on most platforms.\n**AC:**\n- [ ] Boundaries render as lines in both projections\n- [ ] Consistent pixel width across zoom\n- [ ] Style configurable per admin level\n- [ ] No visible gaps at tile edges\n\n---"
+    },
+    {
+      "id": "T079",
+      "title": "EEZ: acquire and inspect",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Marine Regions EEZ data on disk with documented provenance.\n**Notes:** ~200\u2013300 zones, small. **Marine Regions requires attribution and has specific citation requirements** \u2014 capture them now for T056 and the provenance doc. Directly relevant to PS67's framing around India's EEZ, so this is a scoring layer, not a nice-to-have.\n**AC:**\n- [ ] Data on disk with provenance and citation text\n- [ ] Feature count and attribute schema recorded\n- [ ] Attribution string recorded for the catalog\n\n---"
+    },
+    {
+      "id": "T080",
+      "title": "EEZ: tile and publish",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T075",
+        "T079"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** EEZ boundaries published as PMTiles.\n**Notes:** Single Planetiler pass. Retain sovereign name, ISO code, and area. India's EEZ specifically should be easy to highlight \u2014 that's the shot that lands in a national-context presentation.\n**AC:**\n- [ ] PMTiles in MinIO, versioned path\n- [ ] Attributes retained and verified\n- [ ] Catalog row with attribution\n- [ ] India's EEZ individually selectable\n\n---"
+    },
+    {
+      "id": "T081",
+      "title": "EEZ layer rendering and styling",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T078",
+        "T080"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** EEZ zones render as outlined regions with optional fill.\n**Notes:** Reuses T078's line path. Semi-transparent fill on hover or selection reads better than permanent fill, which competes with the data layers underneath.\n**AC:**\n- [ ] Zones render as outlines\n- [ ] Hover/selection shows translucent fill\n- [ ] Sovereign name on hover\n- [ ] Doesn't obscure scalar fields\n\n---"
+    },
+    {
+      "id": "T082",
+      "title": "Rivers and lakes: acquire and inspect",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Source data on disk, with a decision on resolution tier.\n**Notes:** Newly added to the backlog in the vision doc revision \u2014 it appears in the data taxonomy but wasn't in the original tiling plan. Natural Earth or HydroSHEDS. HydroSHEDS is far more detailed and far larger; for an ocean platform, Natural Earth's tiers are almost certainly sufficient and cheaper.\n**AC:**\n- [ ] Data on disk with provenance\n- [ ] Resolution tier chosen and justified\n- [ ] Feature count and size recorded\n\n---"
+    },
+    {
+      "id": "T083",
+      "title": "Rivers and lakes: tile and publish",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T075",
+        "T082"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Rivers and lakes published as PMTiles.\n**Notes:** Rivers are lines, lakes are polygons \u2014 either two layers in one tileset or two tilesets. One tileset with two named source-layers matches the GSHHG pattern already in `layers.config.ts` and keeps the layer registry tidy.\n**AC:**\n- [ ] PMTiles with separate river and lake source-layers\n- [ ] Attributes retained\n- [ ] Catalog rows created\n- [ ] Zoom ranges appropriate to feature size\n\n---"
+    },
+    {
+      "id": "T084",
+      "title": "Rivers and lakes rendering",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T078",
+        "T083"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Rivers render as lines, lakes as fills, both styled coherently with coastlines.\n**Notes:** Lakes share the `lake` colour already defined in `layers.config.ts` (`0x9cc4e0`) so the basemap stays visually consistent. River width should scale with stream order if the attribute exists.\n**AC:**\n- [ ] Rivers as lines, lakes as fills\n- [ ] Colours consistent with the coastline basemap\n- [ ] River width scales with order where available\n- [ ] Toggleable independently\n\n---"
+    },
+    {
+      "id": "T085",
+      "title": "Extend `layers.config.ts` for the discriminated union",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T017"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The layer registry handles vector, scalar field, and point layers uniformly.\n**Notes:** Contracts \u00a75.1. `TileLayerConfig` stays unchanged so nothing currently working breaks. The existing file's own comment says adding a tileset should be one entry with no changes elsewhere \u2014 preserve that property for the new kinds too.\n**AC:**\n- [ ] `AnyLayerConfig` union with all three kinds\n- [ ] Existing coastline config unchanged\n- [ ] Adding a layer of any kind is one registry entry\n- [ ] Type-narrowing works at every consumer\n\n---"
+    },
+    {
+      "id": "T086",
+      "title": "Catalog-driven layer registry",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T053",
+        "T085"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Layers come from the API catalog rather than a hardcoded TypeScript array.\n**Notes:** The natural endpoint of `layers.config.ts`: the file keeps client-side **styling** defaults, the API provides the **inventory**. This is what lets a Worker publish a new dataset and have it appear without a frontend deploy, which is the extensibility PS67 asks for.\n**AC:**\n- [ ] Layer list fetched from `/catalog/layers`\n- [ ] Style defaults still resolve from local config by layer id\n- [ ] Unknown layers get sensible fallback styling\n- [ ] New catalog row appears without a frontend change\n\n---"
+    },
+    {
+      "id": "T087",
+      "title": "Dataset versioning in the catalog",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T053",
+        "T067"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The catalog records which version of each dataset is current.\n**Notes:** Pairs with T067's version-in-path. Add `version` and `published_at` to `catalog_layers`. Makes \"when was this data last updated\" answerable, which PS67's update-cadence requirement asks for and which the agent should be able to answer.\n**AC:**\n- [ ] Version and published_at on catalog rows\n- [ ] Object paths include the version\n- [ ] API exposes both\n- [ ] Displayed in the layer metadata panel\n\n---"
+    },
+    {
+      "id": "T088",
+      "title": "Retile GSHHG coastlines with Planetiler",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T075"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Coastlines are regenerated through the standard pipeline, with better low-zoom simplification.\n**Notes:** The current coastlines came from the tippecanoe run and ship as separate per-band PMTiles rather than a merged archive. The documented z3 quality problem (Africa rendering near-parallelogram at whole-continent view) is **a source-data simplification issue, not a tile-manager bug** \u2014 the fix is a better simplification pass at low zoom, which is exactly what regenerating through Planetiler gives you. Also produces a single merged archive, simplifying the config.\n**AC:**\n- [ ] Single merged PMTiles archive, z0\u201314\n- [ ] Attributes verified non-empty\n- [ ] z3 continental shapes visibly better than current\n- [ ] Frontend switches with a config change only\n\n\n---"
+    },
+    {
+      "id": "T089",
+      "title": "GEBCO acquisition and subsetting",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** GEBCO bathymetry on disk, subset to the regions you actually serve.\n**Notes:** Global GEBCO at 15 arc-second is large. Subset to the North Indian Ocean at full resolution plus a coarse global tier \u2014 two tiers covers both the detailed use case and the whole-globe view without paying for global high-resolution. Document the licence; GEBCO has specific attribution requirements.\n**AC:**\n- [ ] Regional full-resolution and global coarse tiers on disk\n- [ ] Provenance and attribution documented\n- [ ] Value range and no-data convention recorded\n\n---"
+    },
+    {
+      "id": "T090",
+      "title": "GDAL raster pipeline to Terrain-RGB",
+      "area": "data",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T089"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Bathymetry encoded as Terrain-RGB tiles in MinIO.\n**Notes:** **Entirely distinct from the vector PMTiles pipeline** \u2014 GDAL, not Planetiler. `rio-rgbify` or `gdal_translate` into the Mapbox Terrain-RGB encoding, then `pmtiles convert`. Terrain-RGB packs elevation into RGB with a known formula, so the shader decodes it exactly; this is what makes 3D terrain possible later.\n**Trap:** bathymetry is negative. Confirm the encoding's base and interval handle your full negative range without clipping \u2014 clipped deep ocean will look like a flat plateau and it's easy to miss.\n**AC:**\n- [ ] Terrain-RGB PMTiles in MinIO under `raster/`\n- [ ] Decode round-trips to correct depths including the deepest values\n- [ ] Zoom range documented\n- [ ] Catalog row with attribution\n\n---"
+    },
+    {
+      "id": "T091",
+      "title": "Raster tile decoding in the tile worker",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T090"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The worker pool can decode raster tiles alongside MVT.\n**Notes:** `tile.worker.ts` currently decodes MVT only. Add a raster branch: `ImageBitmap` decode, Terrain-RGB unpack to a Float32 elevation array, transfer to the main thread. Reuse the existing pool, cache, and LOD machinery rather than building a parallel system \u2014 the tile manager's quadtree logic is format-agnostic.\n**AC:**\n- [ ] Worker decodes raster and vector tiles\n- [ ] Terrain-RGB unpacks to correct elevations\n- [ ] Reuses the existing pool and cache\n- [ ] `DecodeResult` union type extended cleanly\n\n---"
+    },
+    {
+      "id": "T092",
+      "title": "Bathymetry as a colour-mapped layer",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T018",
+        "T091"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Ocean depth renders as a colour-mapped surface.\n**Notes:** Simplest useful form of bathymetry and a lot of visual value for the effort. Add a `deep` colormap to the registry (cmocean has one). Depth is a scalar field like any other, so much of T017's machinery applies \u2014 the difference is that the source is tiled rather than a single grid.\n**AC:**\n- [ ] Bathymetry renders colour-mapped in both projections\n- [ ] Colorbar shows depth in metres\n- [ ] Composites under other layers correctly\n- [ ] LOD works across the zoom range\n\n---"
+    },
+    {
+      "id": "T093",
+      "title": "Contour line generation",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T092"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Isobath contours at configurable depth intervals.\n**Notes:** Marching squares on the decoded elevation array, in the worker so the main thread stays free. Standard oceanographic isobaths (200 m shelf break, 1000 m, 2000 m, 4000 m) as a preset. The shelf break in particular is a feature oceanographers look for and its presence signals domain awareness.\n**AC:**\n- [ ] Contours generated at configurable intervals\n- [ ] Runs in the worker, no main-thread jank\n- [ ] Preset for standard isobaths\n- [ ] Labels at least at preset depths\n\n---"
+    },
+    {
+      "id": "T094",
+      "title": "3D terrain displacement",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T091"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The globe surface displaces by bathymetry with an exaggeration factor.\n**Notes:** The payoff for Terrain-RGB. Displace grid mesh vertices along the surface normal by decoded elevation \u00d7 exaggeration, in the vertex shader. **Real bathymetry at 1:1 on a globe is invisible** \u2014 the ocean is ~4 km deep on a 6371 km radius. Exaggeration is not a gimmick here, it's a requirement, which is exactly why PS67 names the slider.\n**AC:**\n- [ ] Surface displaces by decoded elevation\n- [ ] Exaggeration factor is a uniform\n- [ ] Normals recomputed so lighting is correct\n- [ ] Works in globe projection; degrades sanely in equirectangular\n\n---"
+    },
+    {
+      "id": "T095",
+      "title": "Vertical exaggeration slider",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T094"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The user controls terrain exaggeration interactively.\n**Notes:** PS67 names this control explicitly. Range 1\u00d7\u2013200\u00d7, logarithmic, defaulting somewhere useful (~50\u00d7). Uniform-only, so it's instant. Show the factor numerically \u2014 a judge will ask what the vertical scale is, and \"50\u00d7 exaggerated\" is a much better answer than a guess.\n**AC:**\n- [ ] Slider drives the uniform with no re-upload\n- [ ] Log scale, 1\u00d7\u2013200\u00d7\n- [ ] Current factor displayed numerically\n- [ ] 1\u00d7 position is discoverable\n\n---"
+    },
+    {
+      "id": "T096",
+      "title": "Bathymetry-aware depth masking",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T017",
+        "T092"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Model fields don't render below the sea floor.\n**Notes:** A subtle correctness issue with real scientific weight: model output at 1000 m over a 200 m shelf is either fill or extrapolation, and rendering it as data is misleading. Sample bathymetry in the field shader and discard fragments where the selected depth exceeds the local sea floor. **This is the kind of detail that distinguishes a serious tool from a pretty one**, and an INCOIS reviewer will spot its absence.\n**AC:**\n- [ ] Field fragments below the sea floor are discarded\n- [ ] Masked regions visually distinct from no-data\n- [ ] Toggleable, since some users want raw model output\n- [ ] Documented in the layer metadata panel\n\n---"
+    },
+    {
+      "id": "T097",
+      "title": "Depth-slice stack view",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T017",
+        "T019"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Multiple depth levels render simultaneously as stacked translucent surfaces.\n**Notes:** PS67 asks for depth-resolved volumetric views; this is the most tractable first step and reads as genuinely 3D. Render N depth levels as offset surfaces, spacing driven by the exaggeration factor. **Back-to-front sorted, with `depthWrite: false`** or translucent surfaces composite wrongly. Limit to 5\u20138 visible slices; more is mush.\n**AC:**\n- [ ] Multiple depth levels render as stacked surfaces\n- [ ] Correct back-to-front alpha compositing\n- [ ] Slice count and spacing configurable\n- [ ] Maintains interactive frame rate at 8 slices\n\n---"
+    },
+    {
+      "id": "T098",
+      "title": "Vertical cross-section along a drawn path",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T017",
+        "T020"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The user draws a line on the map and sees a depth-vs-distance section.\n**Notes:** A standard and highly expected oceanographic view \u2014 arguably more useful day-to-day than volumetric rendering. Sample the field along the path at every depth level, render as a 2D heatmap: distance on X, depth on Y inverted, value as colour. Pairs naturally with the shape tool already in the tool rail.\n**AC:**\n- [ ] Drawing a path produces a section panel\n- [ ] Depth axis inverted, distance in km\n- [ ] Uses the active colormap and range\n- [ ] Path is editable after drawing\n\n---"
+    },
+    {
+      "id": "T099",
+      "title": "Shape tool: draw and select regions",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T051"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users draw rectangles, polygons, and lines on the map.\n**Notes:** The shape tool in the vision's tool rail, and a prerequisite for cross-sections, area statistics, and region-scoped agent queries. Area selection is a first-class feature per vision \u00a76.1, so it needs one-click access. Store geometry in lon/lat, not screen space, or it detaches on projection change.\n**AC:**\n- [ ] Rectangle, polygon, and line drawing\n- [ ] Shapes stay attached across projection changes and rotation\n- [ ] Editable and deletable after drawing\n- [ ] Geometry available as GeoJSON to other features\n\n---"
+    },
+    {
+      "id": "T100",
+      "title": "Area statistics for a drawn region",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T020",
+        "T099"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A drawn region reports min, max, mean, and a histogram for the active field.\n**Notes:** Turns selection from a navigation aid into an analysis tool, and produces exactly the kind of artifact that gets dragged into a paper in M4 \u2014 so design the output shape with `activities.payload` in mind.\n**AC:**\n- [ ] Stats computed over the drawn region only\n- [ ] Histogram of value distribution\n- [ ] Updates on depth or time change\n- [ ] Exportable as an activity payload\n\n---"
+    },
+    {
+      "id": "T101",
+      "title": "Isosurface extraction",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T097"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A 3D surface at a constant value across the volume.\n**Notes:** PS67 names isosurface extraction explicitly. Marching cubes over the (lat, lon, depth) volume, run in a worker. The physically meaningful case is the **thermocline** \u2014 the 20\u00b0C isotherm is a standard proxy for thermocline depth in the Indian Ocean, so ship it as a preset. That framing is worth more than a generic value slider.\n**AC:**\n- [ ] Marching cubes produces a closed surface for a given value\n- [ ] Runs in a worker without blocking\n- [ ] 20\u00b0C isotherm available as a preset\n- [ ] Surface renders with correct lighting and normals\n\n---"
+    },
+    {
+      "id": "T102",
+      "title": "Isosurface value control",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T101"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The user picks the isosurface value and sees it update.\n**Notes:** Slider across the field's value range, with the value shown in units. Debounce regeneration \u2014 marching cubes on every slider pixel will lock the UI. Show a \"computing\" state rather than freezing.\n**AC:**\n- [ ] Slider across the value range\n- [ ] Regeneration debounced with a visible computing state\n- [ ] Presets selectable\n- [ ] Toggleable independently of other layers\n\n---"
+    },
+    {
+      "id": "T103",
+      "title": "Volume ray-marching renderer",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T097"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** True volumetric rendering of the water column.\n**Notes:** The most ambitious item in M2 and the most literal reading of PS67's \"3D volumetric rendering.\" Ray-march a 3D texture in the fragment shader with a transfer function mapping value to colour and opacity. **Genuinely hard on a globe**, because the ray has to be traced in a curved coordinate system. Consider scoping it to a regional box view rather than the full globe \u2014 that's a defensible simplification and dramatically easier.\n**AC:**\n- [ ] Volume renders with a configurable transfer function\n- [ ] Interactive frame rate at demo resolution\n- [ ] Scoped region documented if not full-globe\n- [ ] Degrades gracefully where unsupported\n\n---"
+    },
+    {
+      "id": "T104",
+      "title": "Transfer function editor",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T103"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users edit the value\u2192colour+opacity mapping for volume rendering.\n**Notes:** Opacity is the important axis: volume rendering only reads well when most of the range is transparent and the feature of interest is opaque. An editable opacity curve over the colorbar is the conventional and correct UI.\n**AC:**\n- [ ] Editable opacity curve over the value range\n- [ ] Colour from the active colormap\n- [ ] Presets for common cases\n- [ ] Updates the render live\n\n---"
+    },
+    {
+      "id": "T105",
+      "title": "Animated particle flow for currents",
+      "area": "rendering",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T025"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Current fields render as animated flowing particles.\n**Notes:** The single most visually striking thing you can build, and the reason \"earth.nullschool.net\" is famous. GPU particle system advected by the U/V field: positions in a texture, updated each frame by sampling velocity, with trails via a fading accumulation buffer. Respawn particles periodically to avoid convergence into sinks.\n**AC:**\n- [ ] Particles advect along the velocity field\n- [ ] Trails render with fade\n- [ ] Particle count configurable for performance\n- [ ] Respawn prevents clustering\n- [ ] Works in both projections\n\n---"
+    },
+    {
+      "id": "T106",
+      "title": "Camera controls for 3D inspection",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T094"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The camera can tilt to view terrain and volumes obliquely.\n**Notes:** The existing camera handles rotation, zoom, and heading. 3D features need pitch, and pitch interacts with tile selection \u2014 `computeVisibleBounds()` already has a documented hypothesis that heading rotation may inflate the bbox and force a lower effective zoom. **Adding pitch will make that worse if the bounds computation isn't corrected first**, so verify against the tile debug overlay while implementing.\n**AC:**\n- [ ] Pitch control with sensible limits\n- [ ] Visible bounds correct under pitch\n- [ ] Effective zoom doesn't drop spuriously (verify via `TileDebugOverlay`)\n- [ ] Reset-to-north-up control\n\n---"
+    },
+    {
+      "id": "T107",
+      "title": "Performance budget and adaptive quality",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T097",
+        "T103"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The app maintains interactive frame rate by reducing quality under load.\n**Notes:** Volume rendering, particles, and terrain together will exceed integrated-GPU budgets. Measure frame time and degrade automatically: fewer ray-march steps, fewer particles, fewer slices. **On a demo laptop this is the difference between impressive and embarrassing**, and it must be automatic, not a settings panel nobody opens.\n**AC:**\n- [ ] Frame time measured continuously\n- [ ] Quality reduces automatically below a threshold\n- [ ] Recovers when load drops\n- [ ] Manual override available\n\n---"
+    },
+    {
+      "id": "T108",
+      "title": "WebGL capability detection and fallbacks",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T107"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Missing extensions produce reduced functionality, not a broken app.\n**Notes:** Check for WebGL2, float texture support, and `OES_texture_float_linear` at startup. Disable volume rendering rather than rendering black. PS67 requires platform independence, so a machine that can't do everything should still do the basics.\n**AC:**\n- [ ] Capabilities detected at startup\n- [ ] Unsupported features disabled with an explanation\n- [ ] Core 2D field rendering works everywhere WebGL2 does\n- [ ] Capability report available for debugging\n\n---"
+    },
+    {
+      "id": "T109",
+      "title": "Pluggable ingestion interface",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T062"
+      ],
+      "blocks": [
+        "T110",
+        "T111",
+        "T112",
+        "T113",
+        "T114",
+        "T115"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A defined interface for adding a new data source without touching the pipeline core.\n**Notes:** PS67 explicitly requires that new variables or sources be addable \"with minimal code change,\" and calls out modular architecture as a key gap in existing tools. Define a reader protocol: `discover() \u2192 variables`, `read(variable, time, depth) \u2192 ndarray`, `metadata() \u2192 dict`. Register readers by format. **This requirement is graded, so build it as an actual abstraction rather than claiming one exists.**\n**AC:**\n- [ ] Reader protocol defined and documented\n- [ ] Registry maps format to reader\n- [ ] Existing NetCDF path refactored to use it\n- [ ] Adding a reader requires no core changes, demonstrated by T112\n\n---"
+    },
+    {
+      "id": "T110",
+      "title": "Generic NetCDF/CF reader",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T109"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Any CF-conventions NetCDF can be read without per-file code.\n**Notes:** Use CF metadata to discover coordinate variables rather than hardcoding names \u2014 `standard_name`, `units`, and `axis` attributes exist precisely so tools don't have to guess. Handle the common irregularities: descending latitude, 0\u2013360 versus -180\u2013180 longitude, non-standard time units, scale/offset packing.\n**AC:**\n- [ ] Discovers variables and coordinates from CF attributes\n- [ ] Handles descending lat and 0\u2013360 lon\n- [ ] Decodes time units correctly\n- [ ] Applies scale_factor and add_offset\n- [ ] Tested against at least two differently-structured files\n\n---"
+    },
+    {
+      "id": "T111",
+      "title": "Delimited-text reader",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T109"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** ASCII/CSV observational data ingests through the same framework.\n**Notes:** PS67 names ASCII/text formats alongside NetCDF, since INCOIS archives use both. Configurable column mapping to the platform/profile/level schema. Handles the usual mess: varying delimiters, header rows, missing-value sentinels.\n**AC:**\n- [ ] CSV/TSV with configurable column mapping\n- [ ] Common missing-value sentinels handled\n- [ ] Validation errors report line numbers\n- [ ] Ingests into the observation schema\n\n---"
+    },
+    {
+      "id": "T112",
+      "title": "Zarr reader",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T109",
+        "T110"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Zarr stores read through the same interface, proving the abstraction works.\n**Notes:** `zarr` is already a worker dependency. This issue exists as much to **validate T109's claim of extensibility** as for the capability itself \u2014 if adding Zarr requires touching pipeline core, the abstraction is wrong and better to find out now than in a review.\n**AC:**\n- [ ] Zarr stores read via the registry\n- [ ] No changes to pipeline core required\n- [ ] Chunked reads work for large arrays\n- [ ] Documented as the worked example for adding readers\n\n---"
+    },
+    {
+      "id": "T113",
+      "title": "Ingestion job runner with progress",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T109"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Ingestion runs as a tracked job rather than a script somebody remembers to execute.\n**Notes:** `apps/worker/main.py` is still a stub. A job table in Postgres with status, progress, and error; a CLI to enqueue and a loop to execute. A full queue (Celery, RQ) is overkill \u2014 a polling loop over a Postgres table is sufficient at this scale and far less to operate.\n**AC:**\n- [ ] Jobs queued, executed, and recorded with status\n- [ ] Progress observable during long runs\n- [ ] Failures record the error and allow retry\n- [ ] CLI to enqueue, list, and inspect\n\n---"
+    },
+    {
+      "id": "T114",
+      "title": "Copernicus Marine live proxy",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T010"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Model variables are fetched live from Copernicus instead of mirrored.\n**Notes:** Vision \u00a75.1.1 makes this binding: only small static reference data is self-hosted, everything large or continuously updated is proxied. `copernicusmarine` is already a worker dependency. Cache responses aggressively \u2014 the API is slow and rate-limited. **Credentials go in env, never in the repo.**\n**AC:**\n- [ ] Subset requests proxied to Copernicus\n- [ ] Responses cached with a sensible TTL\n- [ ] Credentials from env\n- [ ] Upstream failure returns a clear error, not a timeout\n\n---"
+    },
+    {
+      "id": "T115",
+      "title": "Argo GDAC incremental sync",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T036",
+        "T113"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** New Argo profiles ingest automatically on a schedule.\n**Notes:** PS67 asks for real-time and delayed-mode observation support. Track the last-synced index, fetch only new profiles. Delayed-mode data **supersedes** real-time for the same cycle, so upsert on `(platform, cycle)` rather than insert, or you'll accumulate duplicate profiles with conflicting values.\n**AC:**\n- [ ] Incremental sync fetches only new profiles\n- [ ] Delayed-mode supersedes real-time on the same cycle\n- [ ] Runs as a scheduled job\n- [ ] Sync state survives restart\n\n---"
+    },
+    {
+      "id": "T116",
+      "title": "Glider data support",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T111",
+        "T115"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Glider tracks and profiles ingest and display.\n**Notes:** PS67 names gliders alongside Argo. The schema already supports them via `platform_type`. Gliders differ in that they produce a **continuous track**, so rendering should show the path, not just discrete points \u2014 that's the main frontend difference.\n**AC:**\n- [ ] Glider data ingests into the observation schema\n- [ ] Tracks render as paths, not scattered points\n- [ ] Profiles along the track are selectable\n- [ ] Distinguished visually from Argo floats\n\n---"
+    },
+    {
+      "id": "T117",
+      "title": "CTD and mooring support",
+      "area": "data",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T111"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** CTD casts and mooring time series ingest and display.\n**Notes:** CTD fits the existing profile schema directly. Moorings are different in kind \u2014 fixed position, long time series at fixed depths \u2014 so they need a time-series view rather than a depth-profile view. Worth noting that difference explicitly rather than forcing them into the profile chart.\n**AC:**\n- [ ] CTD casts ingest as profiles\n- [ ] Moorings ingest as fixed-position time series\n- [ ] Mooring view shows value-vs-time, not value-vs-depth\n- [ ] Platform types visually distinct on the map\n\n---"
+    },
+    {
+      "id": "T118",
+      "title": "Data validation and QC pipeline",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T109"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Ingested data is validated before it reaches the catalog.\n**Notes:** Range checks per variable (salinity of 200 PSU is an error, not data), monotonic depth, plausible positions, time within expected bounds. Reject with a clear reason rather than ingesting silently. **Bad data displayed confidently is worse than no data**, particularly for an operational audience.\n**AC:**\n- [ ] Per-variable range checks with configurable bounds\n- [ ] Structural checks: monotonic depth, valid coordinates\n- [ ] Rejections logged with reasons\n- [ ] Validation report per ingestion job\n\n---"
+    },
+    {
+      "id": "T119",
+      "title": "Ingestion documentation",
+      "area": "docs",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T109",
+        "T112"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A third party can add a new data source by following the docs.\n**Notes:** This is the artifact that demonstrates PS67's extensibility requirement to a reviewer. Include a complete worked example \u2014 Zarr from T112 \u2014 not just an interface reference.\n**AC:**\n- [ ] Reader protocol documented with signatures\n- [ ] Complete worked example end to end\n- [ ] Catalog registration documented\n- [ ] Common pitfalls section\n\n\n---"
+    },
+    {
+      "id": "T120",
+      "title": "Mollweide projection",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Mollweide available as a third projection.\n**Notes:** The vision names it specifically. `projection.glsl` already parameterises projections by a type uniform with A/B blending, so adding one means a new branch in the shader plus the CPU-side inverse in `projection-math.ts`. **Both must be added or tile selection breaks** \u2014 the CPU inverse is what decides which tiles to fetch. Mollweide is equal-area, which matters for honest area comparison, so it's worth mentioning in the UI.\n**AC:**\n- [ ] Renders correctly with blending to and from other projections\n- [ ] CPU inverse implemented and agreeing with the shader\n- [ ] Tile selection correct\n- [ ] Listed in the projection switcher\n\n---"
+    },
+    {
+      "id": "T121",
+      "title": "Mercator projection",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T120"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Web Mercator available, matching the tile grid natively.\n**Notes:** Worth having because it's what tiles are cut in, so it's the distortion-free case for tile rendering. Clamp latitude at \u00b185.0511 or the poles go to infinity. **Pair it with a note about area distortion** \u2014 an ocean platform showing Mercator without comment invites a fair criticism.\n**AC:**\n- [ ] Renders with correct latitude clamping\n- [ ] CPU inverse implemented\n- [ ] Polar regions handled gracefully\n- [ ] UI notes area distortion\n\n---"
+    },
+    {
+      "id": "T122",
+      "title": "Projection transition polish",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T120",
+        "T121"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Switching projections animates smoothly between any pair.\n**Notes:** The A/B blend uniform already exists and is a genuinely distinctive piece of the engine \u2014 most viewers snap between projections. Ensure every pair blends, not just the two currently wired. Ease the blend rather than using linear interpolation; linear looks mechanical.\n**AC:**\n- [ ] Any projection pair blends smoothly\n- [ ] Eased timing\n- [ ] Tiles stay correct mid-transition\n- [ ] Interruptible mid-blend\n\n---"
+    },
+    {
+      "id": "T123",
+      "title": "Graticule rendering",
+      "area": "rendering",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Lat/lon grid lines with adaptive spacing.\n**Notes:** Expected in any serious geospatial tool. Spacing adapts to zoom (30\u00b0 \u2192 10\u00b0 \u2192 5\u00b0 \u2192 1\u00b0). Label at the edges. `geo/dms.ts` already exists for coordinate formatting, so reuse it rather than duplicating the formatting logic.\n**AC:**\n- [ ] Graticule with zoom-adaptive spacing\n- [ ] Labelled using the existing DMS formatter\n- [ ] Toggleable\n- [ ] Correct in every projection\n\n---"
+    },
+    {
+      "id": "T124",
+      "title": "Map skin framework",
+      "area": "rendering",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T086"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Alternative visual styles for the base map, selectable at runtime.\n**Notes:** Vision \u00a76.6, and the foundation for the M5 skin plugins. A skin is a named set of colour and style overrides applied over the layer registry defaults. Ship two: the current pastel basemap and a high-contrast dark one. The historical-cartography example from the vision is a plugin, not core.\n**AC:**\n- [ ] Skins defined as declarative style overrides\n- [ ] Runtime switching without reload\n- [ ] Two built-in skins\n- [ ] Structure documented for plugin authors\n\n---"
+    },
+    {
+      "id": "T125",
+      "title": "Scale bar and projection-aware measurement",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T120",
+        "T121"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The scale bar is accurate in every projection.\n**Notes:** `geo/scale-bar.ts` exists but was written against the current two projections. Mercator's scale varies with latitude and Mollweide's varies across the map, so a single scale bar is a **lie in both** unless it's computed at the viewport centre and labelled as such. Say so in a tooltip rather than quietly showing a wrong number.\n**AC:**\n- [ ] Scale computed at viewport centre per projection\n- [ ] Tooltip notes where scale is valid\n- [ ] Updates on projection change\n- [ ] Metric and nautical units\n\n---"
+    },
+    {
+      "id": "T126",
+      "title": "Password hashing and user creation",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T013"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Real users with securely hashed passwords.\n**Notes:** Argon2id via `passlib`, or bcrypt if Argon2 causes install friction. Replaces the T031-era stub. **The route shapes from contracts \u00a74.5 do not change**, which is the point of having frozen them \u2014 this is a backend-only change and the frontend is untouched.\n**AC:**\n- [ ] Passwords hashed with a modern KDF, never stored plain\n- [ ] Registration validates email format and password strength\n- [ ] Duplicate email returns a conflict, not a 500\n- [ ] Existing auth routes unchanged\n\n---"
+    },
+    {
+      "id": "T127",
+      "title": "Session management hardening",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T126"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Sessions are secure, expiring, and revocable.\n**Notes:** `HttpOnly`, `Secure` in production, `SameSite=Lax`. Expiry with sliding renewal. Server-side session records so logout genuinely revokes rather than only clearing a cookie. Sessions table already exists in the schema.\n**AC:**\n- [ ] Cookies carry correct security flags\n- [ ] Expired sessions rejected\n- [ ] Logout revokes server-side\n- [ ] Concurrent sessions per user supported\n\n---"
+    },
+    {
+      "id": "T128",
+      "title": "Login and registration UI",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T059",
+        "T126"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users can register and sign in.\n**Notes:** Deliberately deferred from M1 in favour of auto-login. Keep it minimal: email, password, a link between the two forms. **Do not build password reset yet** unless email delivery is already solved \u2014 a reset flow that silently fails is worse than no reset flow.\n**AC:**\n- [ ] Registration and login forms with validation\n- [ ] Errors displayed inline, not as alerts\n- [ ] Redirect to the app on success\n- [ ] Session persists across reload\n\n---"
+    },
+    {
+      "id": "T129",
+      "title": "Route protection and auth state",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T128"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Unauthenticated users can't reach authenticated views.\n**Notes:** SvelteKit `hooks.server.ts` plus a load guard. **Decide explicitly what's public** \u2014 the map with public layers is arguably a good public landing experience and supports PS67's outreach framing, while projects and papers are clearly private. Write that decision down.\n**AC:**\n- [ ] Protected routes redirect when unauthenticated\n- [ ] Auth state available app-wide\n- [ ] Public/private route split documented\n- [ ] No flash of protected content before redirect\n\n---"
+    },
+    {
+      "id": "T130",
+      "title": "User profile management",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T128"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users can view and edit their display name and details.\n**Notes:** The profile icon already appears in the wireframes. Display name matters more than it sounds because it becomes the author attribution on published papers in M4.\n**AC:**\n- [ ] Profile view with editable display name\n- [ ] Changes persist and reflect immediately\n- [ ] Email shown but not editable\n- [ ] Logout reachable from here\n\n---"
+    },
+    {
+      "id": "T131",
+      "title": "Rate limiting on auth and chat endpoints",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T127"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Brute force and runaway chat usage are bounded.\n**Notes:** Per-IP limits on login, per-user limits on chat. Chat limiting matters for a practical reason beyond abuse: **Groq's free tier will rate-limit you anyway**, and hitting your own limit with a clear message is far better than surfacing an opaque upstream 429.\n**AC:**\n- [ ] Login attempts limited per IP\n- [ ] Chat requests limited per user\n- [ ] 429 includes `Retry-After`\n- [ ] Limits configurable via env\n\n---"
+    },
+    {
+      "id": "T132",
+      "title": "Authorization checks on project resources",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T127",
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users can only access their own projects, chats, and papers.\n**Notes:** Enforce ownership at the query layer \u2014 filter by owner in the query rather than fetching then checking, which is the pattern that survives refactoring. **Every resource endpoint needs this, not just the obvious ones.** Add a test that asserts cross-user access fails for each resource type.\n**AC:**\n- [ ] Ownership enforced in queries, not post-hoc\n- [ ] Cross-user access returns 404, not 403 (don't leak existence)\n- [ ] Every project-scoped endpoint covered\n- [ ] Test suite covers cross-user access per resource\n\n---"
+    },
+    {
+      "id": "T133",
+      "title": "Secrets management and environment hygiene",
+      "area": "infra",
+      "size": "S",
+      "milestone": "M2",
+      "deps": [
+        "T007"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** No secrets in the repository, and a documented path for production.\n**Notes:** Audit for committed credentials \u2014 `admin@123` currently appears in `compose.yml` and `upload-tiles.sh`. **If anything real was ever committed, rotate it; git history keeps it forever.** Document where production secrets live for the M5 deployment.\n**AC:**\n- [ ] No credentials in tracked files\n- [ ] `.env` gitignored, `.env.example` complete\n- [ ] History audited for committed secrets\n- [ ] Production secret handling documented\n\n---"
+    },
+    {
+      "id": "T134",
+      "title": "CF conventions compliance for outputs",
+      "area": "data",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T110"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Any NetCDF the platform exports is CF-compliant.\n**Notes:** PS67 names CF conventions explicitly. Correct `standard_name`, `units`, `axis`, and coordinate attributes; proper `_FillValue`. Validate with the `cfchecker` tool rather than by eye. This is the kind of requirement that's trivially verifiable by a reviewer, so it's cheap marks either way.\n**AC:**\n- [ ] Exported NetCDF passes cfchecker\n- [ ] Standard names from the CF table\n- [ ] Coordinates carry correct axis attributes\n- [ ] Validation runs in CI on a sample export\n\n---"
+    },
+    {
+      "id": "T135",
+      "title": "OGC WMS endpoint",
+      "area": "backend",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T017",
+        "T053"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Layers are consumable by external GIS clients over WMS.\n**Notes:** PS67 names WMS explicitly and frames it as enabling interoperability with national data portals \u2014 a point worth making in a presentation. Implement `GetCapabilities`, `GetMap`, `GetFeatureInfo`. Render server-side from the same field artifacts. **Test against QGIS**, which is the client an INCOIS reviewer would actually use.\n**AC:**\n- [ ] GetCapabilities returns a valid document\n- [ ] GetMap returns correct imagery for bbox/CRS/size\n- [ ] GetFeatureInfo returns values at a point\n- [ ] Verified working in QGIS\n\n---"
+    },
+    {
+      "id": "T136",
+      "title": "OGC WCS endpoint",
+      "area": "backend",
+      "size": "L",
+      "milestone": "M2",
+      "deps": [
+        "T135"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Raw coverage data is retrievable over WCS.\n**Notes:** Also named in PS67. WCS serves data rather than pictures, which is what a modeller actually wants. `DescribeCoverage` and `GetCoverage` with NetCDF and GeoTIFF output, reusing T134's CF-compliant writer.\n**AC:**\n- [ ] DescribeCoverage returns valid metadata\n- [ ] GetCoverage returns correct subsets\n- [ ] NetCDF and GeoTIFF output\n- [ ] Subsetting by bbox, time, and depth\n\n---"
+    },
+    {
+      "id": "T137",
+      "title": "OPeNDAP-style subsetting endpoint",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T136"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Programmatic subsetting by index or coordinate range.\n**Notes:** PS67's expected-solution text mentions a REST/OPeNDAP backend. A full OPeNDAP server is disproportionate; a REST endpoint accepting the same subsetting semantics gets the practical benefit at a fraction of the cost. **Document it as OPeNDAP-inspired rather than claiming compliance** \u2014 overclaiming a standard is worse than a clear, honest simpler API.\n**AC:**\n- [ ] Subset by coordinate ranges and indices\n- [ ] Returns NetCDF or JSON\n- [ ] Documented with examples\n- [ ] Positioned honestly relative to true OPeNDAP\n\n---"
+    },
+    {
+      "id": "T138",
+      "title": "STAC catalog endpoint",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T053",
+        "T087"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The dataset catalog is discoverable as a STAC catalog.\n**Notes:** STAC is the current standard for geospatial asset discovery and maps almost directly onto `catalog_layers`. Relatively little work for a real interoperability claim, and it's exactly the sort of thing that reads well against \"open standards\" in the problem statement.\n**AC:**\n- [ ] Valid STAC catalog and collection documents\n- [ ] Items for each dataset version\n- [ ] Passes stac-validator\n- [ ] Linked from the API docs\n\n---"
+    },
+    {
+      "id": "T139",
+      "title": "API documentation site",
+      "area": "docs",
+      "size": "M",
+      "milestone": "M2",
+      "deps": [
+        "T135",
+        "T138"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** External developers can use the API without reading source.\n**Notes:** FastAPI generates OpenAPI already; this is about adding the surrounding material \u2014 authentication, the tile URL conventions, the OGC endpoints, worked examples in Python and JavaScript. Ties directly to the plugin story in M5.\n**AC:**\n- [ ] All endpoints documented with examples\n- [ ] Auth flow documented\n- [ ] Tile and field URL conventions documented\n- [ ] Worked examples in two languages\n\n\n---"
+    },
+    {
+      "id": "T140",
+      "title": "Per-branch memory instances",
+      "area": "ai",
+      "size": "L",
+      "milestone": "M3",
+      "deps": [
+        "T044"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Branching creates a genuinely separate memory instance, not just a visual fork.\n**Notes:** Vision \u00a77.2 defines a memory instance as one root-to-leaf path. T044 already assembles context from that path, so the structural work is done \u2014 this adds the **isolation semantics**: an isolated branch cannot see sibling content, a shared-context chat can. Store `memory_mode` on the tree root, not per node, since it's a property of the chat.\n**AC:**\n- [ ] Isolated branches cannot access sibling content, proven by test\n- [ ] Shared-context chats see the full tree\n- [ ] Mode stored at tree root\n- [ ] Existing single-thread chats behave unchanged\n\n---"
+    },
+    {
+      "id": "T141",
+      "title": "Memory mode selection at chat creation",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T140"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users choose isolated or shared memory when starting a chat.\n**Notes:** Vision \u00a77.3 specifies this as an up-front choice. The UI has to explain the difference in a sentence, because the concept is unfamiliar. \"Branches explore independently\" versus \"branches share everything\" is about the right level.\n**AC:**\n- [ ] Mode selectable at chat creation\n- [ ] Explanation visible without a docs trip\n- [ ] Mode indicated in the tree view\n- [ ] Default is isolated\n\n---"
+    },
+    {
+      "id": "T142",
+      "title": "Retroactive memory mode change",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T140"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A resolution to the vision's open question about changing mode after creation.\n**Notes:** Vision \u00a77.3 flags this as unspecified. **Recommended resolution: isolated \u2192 shared is allowed, shared \u2192 isolated is not.** Merging isolated branches has a defined meaning (concatenate contexts); splitting a shared context is ambiguous because you can't know which prior turns belonged to which branch. Implement the allowed direction and document the refusal with its reason.\n**AC:**\n- [ ] Isolated \u2192 shared merges contexts correctly\n- [ ] Shared \u2192 isolated refused with an explanation\n- [ ] Decision recorded in the vision/SRS\n- [ ] Merge is undoable within the session\n\n---"
+    },
+    {
+      "id": "T143",
+      "title": "Context window management and summarisation",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T044"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Long branches don't exceed the model's context window.\n**Notes:** A deep branch will eventually exceed context. Summarise the oldest turns into a synthetic system message, preserving the most recent N verbatim. **Mark summarised regions visibly in the tree** \u2014 a user needs to know when the assistant is working from a summary rather than the original, especially in a research tool where precision matters.\n**AC:**\n- [ ] Context capped below the model limit\n- [ ] Oldest turns summarised, recent preserved verbatim\n- [ ] Summarised regions marked in the UI\n- [ ] Token count observable\n\n---"
+    },
+    {
+      "id": "T144",
+      "title": "Chat tree navigation and keyboard control",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T050"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Large trees are navigable without hunting.\n**Notes:** Pan and zoom on the tree, collapse subtrees, jump to a node by search, keyboard traversal. A tree with forty nodes is unusable without these, and a research session will reach forty nodes quickly.\n**AC:**\n- [ ] Pan, zoom, and fit-to-view\n- [ ] Subtrees collapsible with a child count\n- [ ] Search jumps to a node\n- [ ] Arrow-key traversal\n\n---"
+    },
+    {
+      "id": "T145",
+      "title": "Node editing and regeneration",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T050"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Editing a prompt creates a new sibling branch rather than destroying history.\n**Notes:** The natural fit for a tree model \u2014 where a linear chat overwrites on edit, a tree branches. This is a case where the tree structure is **obviously better than a thread** rather than merely different, which makes it worth demonstrating.\n**AC:**\n- [ ] Editing creates a sibling branch, original preserved\n- [ ] Regenerate creates a sibling response\n- [ ] Both visible in the tree\n- [ ] Active branch clear after either\n\n---"
+    },
+    {
+      "id": "T146",
+      "title": "Chat persistence and restore",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T043"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Trees survive reload and reconnect mid-stream.\n**Notes:** Nodes already persist. This adds reliable restore, including a stream interrupted mid-response \u2014 save partial content and mark the node incomplete rather than leaving a phantom empty node.\n**AC:**\n- [ ] Full tree restores on reload\n- [ ] Interrupted streams leave a marked incomplete node\n- [ ] Incomplete nodes are resumable or discardable\n- [ ] Active node restores with the tree\n\n---"
+    },
+    {
+      "id": "T147",
+      "title": "Streaming markdown rendering",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T048"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Assistant responses render formatted markdown as they stream.\n**Notes:** Tables, lists, and code blocks matter for a research assistant discussing data. **Partial markdown is the hard part** \u2014 an unclosed code fence mid-stream must not corrupt the layout. Parse incrementally and render optimistically with a tolerant parser. Sanitise output.\n**AC:**\n- [ ] Markdown renders during streaming\n- [ ] Partial constructs don't break layout\n- [ ] Code blocks syntax-highlighted\n- [ ] Output sanitised against injection\n\n---"
+    },
+    {
+      "id": "T148",
+      "title": "LaTeX rendering in chat",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T147"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Mathematical notation renders properly.\n**Notes:** Oceanography is full of equations, and an assistant explaining stratification or geostrophic balance will produce them. KaTeX over MathJax for speed. Flows into M4, where papers need the same rendering.\n**AC:**\n- [ ] Inline and display math render\n- [ ] Malformed LaTeX shows source, doesn't crash\n- [ ] Renders during streaming\n- [ ] Same renderer usable by the paper editor\n\n---"
+    },
+    {
+      "id": "T149",
+      "title": "Chat export",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T146"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A branch or whole tree exports to markdown or JSON.\n**Notes:** Research reproducibility, and a hedge against lock-in that's worth being able to point at. Markdown for a single branch reads naturally; JSON preserves tree structure. Include tool calls and their results \u2014 they're part of the reasoning record.\n**AC:**\n- [ ] Branch exports as readable markdown\n- [ ] Full tree exports as structured JSON\n- [ ] Tool calls and results included\n- [ ] Export reachable from the tree UI\n\n---"
+    },
+    {
+      "id": "T150",
+      "title": "Token usage and cost tracking",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T045"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Token consumption per user and project is recorded.\n**Notes:** Necessary before paid APIs replace Groq. Record prompt and completion tokens per request against user and project. Surfaces later as a quota, and right now as the evidence for choosing a provider.\n**AC:**\n- [ ] Tokens recorded per request with user and project\n- [ ] Aggregates queryable by period\n- [ ] Provider and model recorded per request\n- [ ] Cost estimate configurable per model\n\n---"
+    },
+    {
+      "id": "T151",
+      "title": "Tool registry and dispatch framework",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T047"
+      ],
+      "blocks": [
+        "T152",
+        "T153",
+        "T154",
+        "T155",
+        "T156",
+        "T157",
+        "T158",
+        "T159"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Adding an agent tool is a registration, not a change to the chat loop.\n**Notes:** T047 hardcoded one tool to get moving. Generalise now, before there are nine: a registry mapping name \u2192 schema + handler, with the loop iterating whatever is registered. Handlers declare whether they return data to the model, a `UiAction`, or both.\n**AC:**\n- [ ] Tools registered declaratively with schema and handler\n- [ ] Chat loop iterates the registry\n- [ ] Handlers can return data, a UiAction, or both\n- [ ] Adding a tool requires no chat-loop changes\n\n---"
+    },
+    {
+      "id": "T152",
+      "title": "`query_catalog` tool",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T151"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The agent can search available data rather than relying on the system prompt.\n**Notes:** As the catalog grows, listing everything in the prompt stops scaling. A search tool lets the agent look things up. This is the point at which the catalog table pays off as the agent's world model rather than just a UI convenience.\n**AC:**\n- [ ] Agent searches catalog by variable, region, and time\n- [ ] Returns structured results\n- [ ] Handles no-match with a useful message\n- [ ] System prompt shrinks to a summary plus this tool\n\n---"
+    },
+    {
+      "id": "T153",
+      "title": "`get_field_statistics` tool",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T100",
+        "T151"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The agent can compute statistics over a region and report real numbers.\n**Notes:** **The difference between an assistant that describes data and one that analyses it.** \"What's the mean SST in the Bay of Bengal in June\" should produce a computed number, not a recollection. Server-side computation over the field artifacts, returning min/max/mean/stddev.\n**AC:**\n- [ ] Statistics computed for region, depth, and time\n- [ ] Results returned to the model as structured data\n- [ ] Handles regions with no data\n- [ ] Numbers verifiable against the UI's own statistics\n\n---"
+    },
+    {
+      "id": "T154",
+      "title": "`create_plot` tool",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T151",
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The agent can produce a plot that becomes an activity.\n**Notes:** Vision \u00a710 step 3 describes asking the assistant to produce a visualization. The tool creates an `activities` row with a payload sufficient to re-render, and returns a `UiAction` to display it. **The activity is the thing that gets dragged into a paper in M4**, so the payload shape matters more than the rendering here.\n**AC:**\n- [ ] Agent creates plots as activity rows\n- [ ] Payload sufficient for standalone re-render\n- [ ] Plot appears in chat and is draggable\n- [ ] Types supported: time series, profile, map snapshot\n\n---"
+    },
+    {
+      "id": "T155",
+      "title": "`select_region` tool",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T099",
+        "T151"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The agent can select a map region on the user's behalf.\n**Notes:** Vision \u00a710 step 3 names this directly. Named regions resolve via the gazetteer, now backed by GeoBoundaries and EEZ data from T077 and T080 rather than three hardcoded entries. Creates a shape via the same path as manual drawing.\n**AC:**\n- [ ] Named regions resolve to geometry\n- [ ] Selection appears as an editable shape\n- [ ] Falls back gracefully on unknown regions\n- [ ] Uses the same code path as manual drawing\n\n---"
+    },
+    {
+      "id": "T156",
+      "title": "`search_observations` tool",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T037",
+        "T151"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The agent can find floats and profiles matching criteria.\n**Notes:** \"Find Argo floats in the Arabian Sea with profiles from last month\" is a natural request and currently unanswerable. Returns summaries, not full profiles \u2014 dumping a hundred profiles into context is wasteful and unhelpful.\n**AC:**\n- [ ] Search by region, time, platform type, variable availability\n- [ ] Returns summaries with counts\n- [ ] Results selectable on the map\n- [ ] Result count capped\n\n---"
+    },
+    {
+      "id": "T157",
+      "title": "`compare_datasets` tool",
+      "area": "ai",
+      "size": "L",
+      "milestone": "M3",
+      "deps": [
+        "T041",
+        "T153"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The agent can quantify model-versus-observation agreement.\n**Notes:** This is what an operational oceanographer actually wants, and it directly addresses PS67's stated gap about correlating model predictions with observational evidence. Compute bias, RMSE, and correlation between a model field and matching in-situ profiles. Standard skill metrics, standard names.\n**AC:**\n- [ ] Model and observations co-located correctly in space and time\n- [ ] Bias, RMSE, and correlation computed\n- [ ] Results returned as data and as a plot\n- [ ] Insufficient matches reported rather than silently computed\n\n---"
+    },
+    {
+      "id": "T158",
+      "title": "Tool call visualisation in chat",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T048",
+        "T151"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Tool calls show what was run, with what arguments, and what came back.\n**Notes:** Transparency matters for a research tool \u2014 a scientist should be able to verify the assistant's reasoning chain. Collapsed by default, expandable to show arguments and results. This also makes debugging your own agent dramatically easier.\n**AC:**\n- [ ] Calls show name and a summary, collapsed\n- [ ] Expansion reveals arguments and results\n- [ ] Failures shown with the error\n- [ ] Duration displayed\n\n---"
+    },
+    {
+      "id": "T159",
+      "title": "Tool error handling and retry",
+      "area": "ai",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T151"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A failing tool produces a useful message rather than a broken conversation.\n**Notes:** Return errors **to the model** so it can explain or try differently, rather than aborting the turn. Cap retries per turn \u2014 a model that retries a malformed call indefinitely will exhaust your rate limit in one exchange.\n**AC:**\n- [ ] Tool errors returned to the model as results\n- [ ] Retries capped per turn\n- [ ] User sees what failed and why\n- [ ] Malformed arguments handled without a crash\n\n---"
+    },
+    {
+      "id": "T160",
+      "title": "Agent evaluation suite",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T157"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A fixed set of queries with expected behaviours, runnable on demand.\n**Notes:** Prompt changes silently break things you thought worked. Twenty representative queries with assertions about which tools get called and roughly what comes back. **Not full CI** \u2014 it costs tokens and is non-deterministic \u2014 but runnable before a demo or a prompt change.\n**AC:**\n- [ ] At least 20 queries with expected tool-call patterns\n- [ ] Runner reports pass/fail per case\n- [ ] Failures show actual versus expected\n- [ ] Documented as a pre-demo check\n\n---"
+    },
+    {
+      "id": "T161",
+      "title": "Vector index infrastructure decision",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Type:** `spike`\n\n**Outcome:** A decision, recorded, on where embeddings live.\n**Notes:** Vision \u00a76.3 flags this as having **no home in the current architecture** \u2014 that open question is this issue. Options: `pgvector` on the existing Postgres, or a separate vector service. **Recommendation: pgvector.** You already run Postgres, the layer-metadata corpus is small (hundreds of rows, not millions), and a separate service is operational cost for no benefit at this scale. Record the reasoning so the SRS can cite it.\n**AC:**\n- [ ] Decision recorded with alternatives and reasoning\n- [ ] Architecture diagram updated\n- [ ] Migration path noted if scale changes\n- [ ] SRS section updated\n\n---"
+    },
+    {
+      "id": "T162",
+      "title": "pgvector setup and embedding storage",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T161"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Embeddings stored and queryable by similarity.\n**Notes:** `CREATE EXTENSION vector`, an `embeddings` table keyed by entity type and id, HNSW index. Store the model name and dimension per row \u2014 changing embedding models later is otherwise an untraceable mess.\n**AC:**\n- [ ] pgvector installed, table created with HNSW index\n- [ ] Model name and dimension stored per embedding\n- [ ] Similarity query returns ranked results\n- [ ] Migration is reversible\n\n---"
+    },
+    {
+      "id": "T163",
+      "title": "Layer metadata embedding pipeline",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T162"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Every catalog layer has an embedding of its searchable text.\n**Notes:** Embed title, description, variable, and units together. Regenerate on catalog change. **Decide the embedding provider explicitly** \u2014 Groq may not offer embeddings, so this may need a separate provider or a local sentence-transformer. A local model is entirely adequate for a few hundred short documents and removes a network dependency.\n**AC:**\n- [ ] Every catalog layer embedded\n- [ ] Regeneration on catalog change\n- [ ] Provider configurable\n- [ ] Backfill script for existing rows\n\n---"
+    },
+    {
+      "id": "T164",
+      "title": "Semantic layer search endpoint",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T163"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Layers are searchable by meaning rather than keyword.\n**Notes:** Vision \u00a76.3's \"semantic search over the entire layers library.\" **Hybrid retrieval \u2014 semantic plus keyword \u2014 beats pure vector search** for this corpus, because exact matches on variable names like \"SSS\" matter and embeddings handle short acronyms poorly. Merge and rerank.\n**AC:**\n- [ ] Semantic search returns relevant layers for paraphrased queries\n- [ ] Hybrid with keyword matching\n- [ ] Results ranked with scores\n- [ ] Under 200 ms\n\n---"
+    },
+    {
+      "id": "T165",
+      "title": "Semantic search in the layer panel",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T052",
+        "T164"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The layer panel's search bar becomes semantic.\n**Notes:** Replaces T052's keyword filter. The visible test is that \"how warm is the water\" surfaces sea surface temperature. Debounce input, show a loading state, and fall back to keyword if the endpoint fails rather than showing nothing.\n**AC:**\n- [ ] Search uses the semantic endpoint\n- [ ] Paraphrased queries find the right layers\n- [ ] Debounced with a loading state\n- [ ] Falls back to keyword on failure\n\n---"
+    },
+    {
+      "id": "T166",
+      "title": "Embedding for chat and activity search",
+      "area": "ai",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T163",
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Past conversations and activities are searchable by meaning.\n**Notes:** A research project accumulates dozens of branches, and finding \"that thing about the thermocline\" three weeks later is a real need. Embed chat nodes and activity descriptions. Scope search to the user's own projects \u2014 this is private content and the authorization rules from T132 apply.\n**AC:**\n- [ ] Chat nodes and activities embedded\n- [ ] Search scoped to the requesting user's projects\n- [ ] Results link to the node or activity\n- [ ] Incremental embedding on creation\n\n\n---"
+    },
+    {
+      "id": "T167",
+      "title": "Project CRUD",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T013",
+        "T132"
+      ],
+      "blocks": [
+        "T154",
+        "T166",
+        "T168",
+        "T181"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users create, list, rename, and delete projects.\n**Notes:** A project is the vision's \"work\" \u2014 the umbrella tying activities together under one publishable output (\u00a73). Everything downstream is project-scoped: chats, activities, papers. Soft-delete rather than hard, because deleting a project deletes a research history and an undo window is worth the column.\n**AC:**\n- [ ] Create, list, rename, delete\n- [ ] Ownership enforced per T132\n- [ ] Soft delete with a restore window\n- [ ] Project list ordered by recent activity\n\n---"
+    },
+    {
+      "id": "T168",
+      "title": "Project switcher and dashboard",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users move between projects and see recent work.\n**Notes:** Vision \u00a710 step 1: the flow starts by opening the app and beginning a new work, optionally naming it. The dashboard shows recent projects with activity counts and last-modified. **Keep the new-project path to one click** \u2014 naming can happen later, and forcing a title before any work begins is friction at exactly the wrong moment.\n**AC:**\n- [ ] Switcher lists projects with recent-first ordering\n- [ ] New project in one click, naming optional\n- [ ] Dashboard shows activity counts and last modified\n- [ ] Current project always visible\n\n---"
+    },
+    {
+      "id": "T169",
+      "title": "Activity logging framework",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T167"
+      ],
+      "blocks": [
+        "T170",
+        "T182"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Atomic actions are recorded as activities with re-renderable payloads.\n**Notes:** Vision \u00a73 defines an activity as any single atomic action: plotting, selecting, asking, gathering. **The payload must be sufficient to re-render standalone** \u2014 if a plot activity stores only an image URL, living papers become impossible in M4. Store the parameters, not the picture.\n**AC:**\n- [ ] Activities recorded for plot, selection, chat exchange, import\n- [ ] Payload sufficient for standalone re-render, verified by test\n- [ ] Linked to project and optionally chat node\n- [ ] Queryable by project and kind\n\n---"
+    },
+    {
+      "id": "T170",
+      "title": "Activity timeline view",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T169"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A chronological view of everything done in a project.\n**Notes:** Makes the work/activity model visible rather than theoretical. Grouped by day, filterable by kind. **This is the source panel for M4's drag-and-drop authoring**, so the item components should be built as draggable from the start even before there's a target.\n**AC:**\n- [ ] Chronological list grouped by day\n- [ ] Filterable by activity kind\n- [ ] Items preview their content\n- [ ] Items are draggable\n\n---"
+    },
+    {
+      "id": "T171",
+      "title": "Activity re-render and restore",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T169"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Clicking an activity restores the map state that produced it.\n**Notes:** Turns the timeline into navigation rather than a log. \"Take me back to what I was looking at\" is a genuinely useful research affordance, and it's also the strongest possible test that T169's payloads are complete \u2014 if restore fails, the payload was insufficient and M4 would have failed later and more expensively.\n**AC:**\n- [ ] Clicking restores layer, depth, time, region, projection\n- [ ] Restoration is visibly animated, not a jump cut\n- [ ] Failures report what's missing from the payload\n- [ ] Works for every activity kind\n\n---"
+    },
+    {
+      "id": "T172",
+      "title": "Project-scoped chat trees",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T146",
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Chats belong to projects and are listed within them.\n**Notes:** The schema already has `chat_nodes.project_id`. This makes it real in the UI: a project can hold several trees, each a separate line of enquiry. Switching projects switches the visible trees.\n**AC:**\n- [ ] Chats scoped to their project\n- [ ] Multiple trees per project\n- [ ] Chat list in the project view\n- [ ] Switching projects switches chats\n\n---"
+    },
+    {
+      "id": "T173",
+      "title": "Import images and files into a project",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users attach images and files as activities.\n**Notes:** Vision \u00a710 step 4 mentions importing images and embedding links. Store in MinIO under a project prefix. **Validate type and size server-side**, not only client-side. These become paper blocks in M4.\n**AC:**\n- [ ] Image and file upload with progress\n- [ ] Stored under a project-scoped path\n- [ ] Type and size validated server-side\n- [ ] Appear as activities in the timeline\n\n---"
+    },
+    {
+      "id": "T174",
+      "title": "External link embedding",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T173"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users save external links with fetched metadata.\n**Notes:** Fetch title and description server-side, not from the browser \u2014 CORS makes the client-side version unreliable. **Sanitise and time-box the fetch**; a link-preview fetcher that follows arbitrary URLs is an SSRF risk, so block private address ranges.\n**AC:**\n- [ ] Links saved with fetched title and description\n- [ ] Fetch server-side with a timeout\n- [ ] Private address ranges blocked\n- [ ] Failed fetch still saves the bare link\n\n---"
+    },
+    {
+      "id": "T175",
+      "title": "Project export",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T169",
+        "T173"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A whole project exports as a portable archive.\n**Notes:** Research data outliving the platform is a fair expectation and a good answer to a \"what if this project ends\" question. A zip with activities as JSON, chats as markdown, uploaded files, and a manifest. Not necessarily re-importable yet; the guarantee is that the content is recoverable.\n**AC:**\n- [ ] Zip contains activities, chats, files, manifest\n- [ ] Manifest documents the structure\n- [ ] Large projects stream rather than buffering\n- [ ] Export reachable from project settings\n\n---"
+    },
+    {
+      "id": "T176",
+      "title": "Paper-to-layer reference tracking",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T053",
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The system records which layers each paper used.\n**Notes:** Vision \u00a76.5's foundation: published research accumulates references, which over time forms a graph connecting layers to the work that used them. Record the link when an activity referencing a layer enters a paper. **Build this in M3 even though papers are M4** \u2014 the graph only has value once it has history, so starting to accumulate early matters.\n**AC:**\n- [ ] Layer references recorded per paper\n- [ ] Derived automatically from activity payloads\n- [ ] Queryable in both directions\n- [ ] Backfillable for existing papers\n\n---"
+    },
+    {
+      "id": "T177",
+      "title": "Knowledge graph query endpoint",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T176"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** \"What work has used this layer\" is answerable.\n**Notes:** A scoped query, not a general graph database \u2014 the relationships are simple enough for SQL joins, and adding Neo4j here would be architecture for its own sake. Respect visibility: private papers must not appear in another user's results.\n**AC:**\n- [ ] Query returns papers using a given layer\n- [ ] Visibility respected per requesting user\n- [ ] Results ranked by recency or citation count\n- [ ] Under 200 ms\n\n---"
+    },
+    {
+      "id": "T178",
+      "title": "The \"i\" button UI",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T056",
+        "T177"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Each layer exposes an information affordance surfacing related work.\n**Notes:** Vision \u00a76.5. Extends T056's metadata panel with a related-work section: papers, case studies, and other Thalassa work using this dataset. **This is explicitly a second-class feature** per vision \u00a76.1, so it may sit behind an extra click \u2014 don't spend first-class real estate on it.\n**AC:**\n- [ ] \"i\" affordance on every layer card\n- [ ] Panel shows metadata plus related work\n- [ ] Related items link to the published paper\n- [ ] Honest empty state when nothing references the layer\n\n---"
+    },
+    {
+      "id": "T179",
+      "title": "Layer usage statistics",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M3",
+      "deps": [
+        "T176"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Aggregate counts of how often each layer is used.\n**Notes:** Feeds ranking in the \"i\" panel and in search, and gives you a real answer to \"which datasets matter\" for prioritising M2 work. Count additions to projects and inclusions in papers separately; they mean different things.\n**AC:**\n- [ ] Usage counted per layer for both event kinds\n- [ ] Aggregates queryable by period\n- [ ] Exposed in layer metadata\n- [ ] No personally identifying information in aggregates\n\n---"
+    },
+    {
+      "id": "T180",
+      "title": "Onboarding path for newcomers",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M3",
+      "deps": [
+        "T178"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A newcomer can find a starting point grounded in one concrete dataset.\n**Notes:** Vision \u00a76.5's stated purpose \u2014 giving someone new a foothold in a specific piece of data rather than the field as a whole. Also serves PS67's explicit public-outreach and science-communication framing, which is a section of the problem statement that's easy to ignore and cheap to address.\n**AC:**\n- [ ] Entry point from a layer to related explanatory work\n- [ ] Suggested starting layers for newcomers\n- [ ] Plain-language descriptions available per layer\n- [ ] Discoverable without prior knowledge of the UI\n\n---"
+    },
+    {
+      "id": "T181",
+      "title": "Paper CRUD and block model",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T013",
+        "T167"
+      ],
+      "blocks": [
+        "T182",
+        "T183",
+        "T184",
+        "T185",
+        "T186",
+        "T187",
+        "T188",
+        "T189",
+        "T190",
+        "T191",
+        "T192",
+        "T193",
+        "T194",
+        "T195"
+      ],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Papers exist as ordered block sequences.\n**Notes:** Schema already defined in contracts \u00a73. Blocks are ordered by an integer `position`. **Use fractional or gapped positions** (100, 200, 300) so inserting between blocks doesn't require renumbering the whole document on every drag \u2014 this is the difference between smooth reordering and a visible stutter.\n**AC:**\n- [ ] Create, read, update, delete papers\n- [ ] Blocks ordered and reorderable\n- [ ] Insert between blocks without full renumbering\n- [ ] Ownership enforced\n\n---"
+    },
+    {
+      "id": "T182",
+      "title": "Paper editor shell with split view",
+      "area": "frontend",
+      "size": "L",
+      "milestone": "M4",
+      "deps": [
+        "T170",
+        "T181"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The split-screen authoring view: work on the left, paper on the right.\n**Notes:** Vision \u00a78.2 and Figure 8. Left is chat and canvas, right is the document. Resizable divider, collapsible either way. **The split is the whole authoring concept** \u2014 it's what makes dragging from exploration into document feel natural rather than like a separate export step.\n**AC:**\n- [ ] Split view with resizable divider\n- [ ] Either side collapsible\n- [ ] State persists per project\n- [ ] Usable at 1366 px\n\n---"
+    },
+    {
+      "id": "T183",
+      "title": "Text block editing",
+      "area": "frontend",
+      "size": "L",
+      "milestone": "M4",
+      "deps": [
+        "T182"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Rich text blocks with academic formatting.\n**Notes:** Headings, emphasis, lists, and LaTeX via T148's renderer. **Do not build a text editor from scratch** \u2014 use TipTap or ProseMirror. Rich text editing is a deceptively enormous problem and a hand-rolled one will consume the milestone.\n**AC:**\n- [ ] Headings, emphasis, lists, links\n- [ ] Inline and display LaTeX\n- [ ] Keyboard shortcuts for common formatting\n- [ ] Paste from Word and Google Docs sanitised\n\n---"
+    },
+    {
+      "id": "T184",
+      "title": "Drag-and-drop activity into paper",
+      "area": "frontend",
+      "size": "L",
+      "milestone": "M4",
+      "deps": [
+        "T170",
+        "T182"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Dragging an activity from the timeline or chat inserts it as a paper block.\n**Notes:** Vision \u00a78.2 is specific that authorship stays deliberate \u2014 the document contains **only what the researcher chose**, not an automatic transcript. Drag source is the timeline or a chat node; drop target is the paper. Show an insertion indicator. Reuses T055's drag pattern.\n**AC:**\n- [ ] Activities drag from timeline and chat\n- [ ] Insertion point indicated during drag\n- [ ] Block created at the drop position\n- [ ] Dragging out removes the block\n- [ ] Keyboard-accessible alternative exists\n\n---"
+    },
+    {
+      "id": "T185",
+      "title": "Live activity blocks",
+      "area": "frontend",
+      "size": "L",
+      "milestone": "M4",
+      "deps": [
+        "T171",
+        "T184"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Embedded activities stay interactive inside the document.\n**Notes:** Vision \u00a78.1's central claim, and the reason the output isn't a PDF: a reader can pan a time series, rotate an embedded globe, or re-query a plot's data on the published page. **Renders from `activities.payload`, which is why T169's payload completeness mattered.** Lazy-render on scroll \u2014 twenty live globes mounting at once will not perform.\n**AC:**\n- [ ] Embedded plots remain interactive\n- [ ] Embedded map views pan and rotate\n- [ ] Lazy-rendered on scroll into view\n- [ ] Degrades to a static preview if data is unavailable\n\n---"
+    },
+    {
+      "id": "T186",
+      "title": "Model-derived layers as paper content",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T185"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Layers produced by ML models embed in papers with provenance.\n**Notes:** **The single integration point with PS66.** If Anirudh's reconstruction is exposed through the standard catalog and field contracts, it becomes a layer like any other and needs no special handling \u2014 which is the argument for those contracts existing. What it does need is **visible provenance**: model-derived values must be labelled as such wherever they appear, especially in a published paper.\n**AC:**\n- [ ] Model-derived layers embed like any other\n- [ ] Provenance badge distinguishes derived from observed\n- [ ] Model name and version in the metadata\n- [ ] Labelling persists into published output\n\n---"
+    },
+    {
+      "id": "T187",
+      "title": "Paper outline and navigation",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T183"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A navigable outline generated from headings.\n**Notes:** Papers get long. Auto-generated from heading blocks, with click-to-jump and reorder-by-dragging-outline-entries, which is far easier than dragging blocks in a long document.\n**AC:**\n- [ ] Outline generated from headings\n- [ ] Click jumps to section\n- [ ] Dragging outline entries reorders sections\n- [ ] Current position highlighted while scrolling\n\n---"
+    },
+    {
+      "id": "T188",
+      "title": "Paper templates",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M4",
+      "deps": [
+        "T181"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** New papers can start from an academic structure.\n**Notes:** Vision \u00a78.1 specifies the structural conventions of an academic paper: title, abstract, sections, citations. A default template with those sections costs almost nothing and makes the output look like research rather than a blog post from the first keystroke.\n**AC:**\n- [ ] Default academic template with standard sections\n- [ ] Blank option available\n- [ ] Template chosen at creation\n- [ ] Sections deletable\n\n---"
+    },
+    {
+      "id": "T189",
+      "title": "Autosave and revision history",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T181"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Work is never lost and previous versions are recoverable.\n**Notes:** Debounced autosave with a visible saved indicator. Periodic snapshots rather than every-keystroke versions \u2014 full operational history is a collaborative-editing feature and disproportionate here. **Losing a researcher's writing is unforgivable**, so err toward saving too often.\n**AC:**\n- [ ] Autosave with a visible status indicator\n- [ ] Periodic snapshots retained\n- [ ] Previous versions viewable and restorable\n- [ ] Conflict handling if two tabs edit\n\n---"
+    },
+    {
+      "id": "T190",
+      "title": "Paper preview mode",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T185"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Authors see exactly what a reader sees.\n**Notes:** Editing chrome hidden, embedded content live. Should match the published view precisely \u2014 a preview that differs from publication is worse than none, because it produces confident mistakes.\n**AC:**\n- [ ] Preview hides all editing affordances\n- [ ] Embedded content interactive in preview\n- [ ] Identical rendering to published view\n- [ ] Toggle from the editor\n\n---"
+    },
+    {
+      "id": "T191",
+      "title": "Figure captions and numbering",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T185"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Embedded activities carry captions and automatic figure numbers.\n**Notes:** Academic convention, and expected by the audience. Numbers renumber automatically on reorder. Cross-references in text (\"see Figure 3\") should update with them, which is the part that's easy to skip and immediately noticeable when missing.\n**AC:**\n- [ ] Captions editable per figure\n- [ ] Automatic sequential numbering\n- [ ] Renumbering on reorder\n- [ ] In-text cross-references update\n\n---"
+    },
+    {
+      "id": "T192",
+      "title": "Data availability statement generation",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T176",
+        "T191"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Papers automatically list the datasets they used with sources and licences.\n**Notes:** Journals increasingly require a data availability statement, and you can generate one **for free** from the layer references already tracked in T176. A genuinely useful feature that falls out of earlier architecture rather than needing new work \u2014 worth calling out as such.\n**AC:**\n- [ ] Statement generated from tracked layer references\n- [ ] Includes source, version, DOI, licence per dataset\n- [ ] Editable after generation\n- [ ] Regenerates when references change\n\n---"
+    },
+    {
+      "id": "T193",
+      "title": "Paper search within a project",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M4",
+      "deps": [
+        "T166",
+        "T181"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Users find text within and across their papers.\n**Notes:** Full-text search over block content. Postgres full-text search is entirely sufficient here \u2014 reaching for the vector index for literal text search would be the wrong tool.\n**AC:**\n- [ ] Full-text search across the user's papers\n- [ ] Results show matching context\n- [ ] Click jumps to the block\n- [ ] Scoped to the requesting user\n\n---"
+    },
+    {
+      "id": "T194",
+      "title": "Export paper to PDF",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T190"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Papers export as a conventional PDF.\n**Notes:** Vision \u00a78.1 is emphatic that the *primary* output is web-native, not a PDF \u2014 but institutional reality means people need a PDF to submit or circulate. **Live figures become static images with a link back to the interactive version**, which is the honest compromise and worth stating in the export itself.\n**AC:**\n- [ ] PDF export with academic layout\n- [ ] Live figures rendered as static images\n- [ ] Each figure links back to the interactive version\n- [ ] Citations and references formatted correctly\n\n---"
+    },
+    {
+      "id": "T195",
+      "title": "Export paper to LaTeX",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M4",
+      "deps": [
+        "T194"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Papers export as LaTeX source.\n**Notes:** The actual submission format for most oceanography journals. Blocks map to LaTeX structure, figures to `\\includegraphics` plus files, citations to a `.bib`. Doesn't need to be perfect \u2014 it needs to save someone the retyping.\n**AC:**\n- [ ] LaTeX source with standard article structure\n- [ ] Figures exported alongside and referenced\n- [ ] Bibliography as a `.bib` file\n- [ ] Compiles without manual fixes on a simple paper\n\n\n---"
+    },
+    {
+      "id": "T196",
+      "title": "Citation storage and BibTeX parsing",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T181"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** References stored in a structured, BibTeX-compatible form.\n**Notes:** Vision \u00a78.3 makes citation management a **first-class requirement, not a nice-to-have**. Store as CSL-JSON internally (richer and better specified than BibTeX) and convert on import and export. Schema already has the `citations` table with a `csl_json` column.\n**AC:**\n- [ ] BibTeX import parses to CSL-JSON\n- [ ] Export round-trips without loss for common entry types\n- [ ] Duplicate keys detected on import\n- [ ] Malformed entries report the line\n\n---"
+    },
+    {
+      "id": "T197",
+      "title": "DOI resolution",
+      "area": "backend",
+      "size": "S",
+      "milestone": "M4",
+      "deps": [
+        "T196"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Pasting a DOI fetches complete metadata.\n**Notes:** Vision \u00a78.3 specifies DOI-based lookups. Crossref's API is free and needs no key. Cache resolutions \u2014 the same DOI will be requested repeatedly across papers. Handle the unresolvable case by storing the bare DOI rather than rejecting it.\n**AC:**\n- [ ] DOI resolves to full metadata via Crossref\n- [ ] Resolutions cached\n- [ ] Unresolvable DOIs stored bare with a warning\n- [ ] Rate limits respected\n\n---"
+    },
+    {
+      "id": "T198",
+      "title": "Inline citation insertion",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T183",
+        "T196"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Authors insert citations into text, rendering as markers.\n**Notes:** Vision \u00a78.3's open question about mechanics inside an interactive web document \u2014 this issue resolves it. **Citations are inline nodes in the text model, not text**, so they survive editing around them and renumber automatically. Insert via a searchable picker over the reference library.\n**AC:**\n- [ ] Picker searches the reference library\n- [ ] Citations render as inline markers\n- [ ] Survive surrounding text edits\n- [ ] Hovering shows full reference\n\n---"
+    },
+    {
+      "id": "T199",
+      "title": "Reference list generation",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T198"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A formatted reference list generated from cited works.\n**Notes:** Only cited works appear, ordered per the style. Use `citeproc-js` with CSL styles rather than hand-formatting \u2014 there are thousands of journal styles and hand-rolling one is both wrong and pointless. Ship APA and a common oceanography style.\n**AC:**\n- [ ] List generated from citations actually used\n- [ ] At least two CSL styles selectable\n- [ ] Updates on citation change\n- [ ] Correct ordering per style\n\n---"
+    },
+    {
+      "id": "T200",
+      "title": "Citing other Thalassa papers",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T176",
+        "T196"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A Thalassa paper can cite another and be cited in return.\n**Notes:** Vision \u00a76.5 describes this accumulation as what forms the knowledge graph. Internal citations need stable identifiers \u2014 **assign each published paper a permanent id at publication and never reuse it**, even if the paper is later unpublished. Feeds T177's graph queries.\n**AC:**\n- [ ] Internal papers citable by permanent id\n- [ ] Citation recorded bidirectionally\n- [ ] Cited-by visible on the published paper\n- [ ] Identifiers stable across edits and unpublishing\n\n---"
+    },
+    {
+      "id": "T201",
+      "title": "Reference library management",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T196",
+        "T197"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A per-project library of references, independent of any one paper.\n**Notes:** References get reused across papers in a project, and re-adding the same DOI repeatedly is exactly the friction that makes people abandon a tool's citation features. Bulk `.bib` import, search, deduplication.\n**AC:**\n- [ ] Project-scoped library, searchable\n- [ ] Bulk BibTeX import\n- [ ] Duplicates detected and merged\n- [ ] Usage shown per reference\n\n---"
+    },
+    {
+      "id": "T202",
+      "title": "Publish with visibility control",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T132",
+        "T181"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Papers publish as public, unlisted, or private.\n**Notes:** Vision \u00a78.4. Unlisted means reachable by link but not indexed or listed. **Enforce visibility server-side on every read path**, and add `noindex` headers for unlisted \u2014 relying on obscurity alone is how unlisted content ends up in search results.\n**AC:**\n- [ ] Three visibility levels enforced server-side\n- [ ] Unlisted reachable by link, excluded from listings\n- [ ] `noindex` on unlisted responses\n- [ ] Visibility changeable after publication\n\n---"
+    },
+    {
+      "id": "T203",
+      "title": "Public paper view",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T190",
+        "T202"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Published papers render at a stable public URL.\n**Notes:** No auth required for public papers. **Server-side rendered for the text**, so it's shareable, previewable, and indexable, with interactive figures hydrating after load. A research paper that doesn't render without JavaScript is a poor citation target.\n**AC:**\n- [ ] Public URL renders without auth\n- [ ] Text server-side rendered\n- [ ] Figures hydrate to interactive after load\n- [ ] Open Graph metadata for link previews\n\n---"
+    },
+    {
+      "id": "T204",
+      "title": "Paper versioning and DOI-style permalinks",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T202"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Published papers have stable, versioned permalinks.\n**Notes:** A citation must point at what was cited. Publishing after edits creates a new version; **old versions stay reachable**. Permalinks address a specific version, with an alias for latest. This is what makes T200's internal citations trustworthy rather than a moving target.\n**AC:**\n- [ ] Each publication creates an immutable version\n- [ ] Old versions remain reachable\n- [ ] Permalinks are version-specific\n- [ ] \"Latest version\" alias exists\n\n---"
+    },
+    {
+      "id": "T205",
+      "title": "Collaborator management",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M4",
+      "deps": [
+        "T132",
+        "T167"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Project owners add collaborators with roles.\n**Notes:** Vision \u00a78.5 flags the collaboration model as an open question. **Recommended resolution: asynchronous with roles, not real-time co-editing.** Real-time collaborative editing is a large, self-contained engineering problem (CRDTs, presence, conflict resolution) and would consume the remaining time for a benefit a five-person research team barely needs. Roles: owner, editor, viewer. Record the decision and its reasoning.\n**AC:**\n- [ ] Collaborators added by email with a role\n- [ ] Roles enforced on every project resource\n- [ ] Owner can transfer ownership\n- [ ] Decision against real-time editing documented\n\n---"
+    },
+    {
+      "id": "T206",
+      "title": "Collaborator attribution on published papers",
+      "area": "frontend",
+      "size": "S",
+      "milestone": "M4",
+      "deps": [
+        "T203",
+        "T205"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Published papers list authors.\n**Notes:** Vision \u00a78.5's other open question. Authors are ordered, not alphabetical \u2014 author order carries meaning in academic publishing and getting it wrong is a real problem, not a cosmetic one. Let the owner set the order explicitly.\n**AC:**\n- [ ] Authors listed in an author-defined order\n- [ ] Order editable by the owner\n- [ ] Contributors distinguishable from authors\n- [ ] Attribution persists in PDF and LaTeX export\n\n---"
+    },
+    {
+      "id": "T207",
+      "title": "Plugin manifest and registry",
+      "area": "backend",
+      "size": "L",
+      "milestone": "M5",
+      "deps": [
+        "T086",
+        "T139"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A defined plugin format with a registry.\n**Notes:** Vision \u00a79 flags manifest format, sandboxing, review, and versioning as all undefined, and warns that since plugins can introduce arbitrary data layers this has direct implications for the data-sourcing principle in \u00a75. **Start with data-layer and skin plugins only** \u2014 declarative manifests, no arbitrary code. That covers both extension points the vision names while deferring the hard sandboxing problem honestly.\n**AC:**\n- [ ] Manifest schema defined and documented\n- [ ] Registry stores plugins with version and author\n- [ ] Validation rejects malformed manifests\n- [ ] Scope limited to declarative plugins, documented\n\n---"
+    },
+    {
+      "id": "T208",
+      "title": "Data layer plugins",
+      "area": "backend",
+      "size": "M",
+      "milestone": "M5",
+      "deps": [
+        "T207"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Third parties contribute data layers via manifest.\n**Notes:** Vision \u00a79's first extension point. A manifest declares source URL, format, variables, and styling; the platform validates and registers it. **The data-sourcing principle in \u00a75.1.1 binds here** \u2014 a plugin must not cause bulk ingestion into your storage. Plugins reference external sources or must pass a size limit.\n**AC:**\n- [ ] Layers registerable by manifest\n- [ ] Validation against the catalog schema\n- [ ] Size and sourcing limits enforced\n- [ ] Plugin layers visually marked as third-party\n\n---"
+    },
+    {
+      "id": "T209",
+      "title": "Map skin plugins",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M5",
+      "deps": [
+        "T124",
+        "T207"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Third parties contribute visual styles.\n**Notes:** Vision \u00a79's second extension point and \u00a76.6's historical-cartography example. Builds on T124's skin framework. Purely declarative style overrides \u2014 no code, so no sandboxing problem, which is why this is the right second plugin type.\n**AC:**\n- [ ] Skins installable by manifest\n- [ ] Applied without reload\n- [ ] Validation prevents broken styles\n- [ ] Attribution shown for third-party skins\n\n---"
+    },
+    {
+      "id": "T210",
+      "title": "Plugin review and trust model",
+      "area": "docs",
+      "size": "M",
+      "milestone": "M5",
+      "deps": [
+        "T207"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** A documented process for accepting plugins.\n**Notes:** Vision \u00a79 flags review and trust as undefined. **This is a documentation and policy issue, not a code one**, and pretending otherwise is how supply-chain problems start. Define: who reviews, what's checked, how a plugin is revoked, how versions are pinned. Given declarative-only scope, the surface is small \u2014 say so explicitly and state what would need to change before code plugins were allowed.\n**AC:**\n- [ ] Review process documented with criteria\n- [ ] Revocation path defined\n- [ ] Version pinning documented\n- [ ] Preconditions for allowing code plugins stated\n\n---"
+    },
+    {
+      "id": "T211",
+      "title": "Production deployment",
+      "area": "infra",
+      "size": "L",
+      "milestone": "M5",
+      "deps": [
+        "T129",
+        "T133"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The full stack runs at a public URL.\n**Notes:** The final deliverable requires a working link. Needs: a host, TLS, a managed or self-hosted Postgres with PostGIS, object storage, the Cache layer, and the API. **Object storage egress is the cost risk** \u2014 tiles are large and range requests are numerous, so check pricing before choosing. Cheapest credible path is a single VPS running the existing compose stack behind Caddy for automatic TLS.\n**AC:**\n- [ ] Full stack reachable at a public URL over HTTPS\n- [ ] Database backed up on a schedule\n- [ ] Deployment documented and reproducible\n- [ ] Env-based config, no code changes between environments\n\n---"
+    },
+    {
+      "id": "T212",
+      "title": "Deployment automation",
+      "area": "infra",
+      "size": "M",
+      "milestone": "M5",
+      "deps": [
+        "T004",
+        "T211"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Merging to `main` deploys automatically.\n**Notes:** Extends the CI workflow. Build images, push, deploy, run migrations, health-check, roll back on failure. **Migrations before the new code starts**, and they must be backwards-compatible with the old code for the overlap window \u2014 this is the step people skip and then discover during a demo.\n**AC:**\n- [ ] Merge to main triggers deployment\n- [ ] Migrations run before new code starts\n- [ ] Health check gates the rollout\n- [ ] Failed deployment rolls back automatically\n\n---"
+    },
+    {
+      "id": "T213",
+      "title": "Performance audit and optimisation",
+      "area": "performance",
+      "size": "L",
+      "milestone": "M5",
+      "deps": [
+        "T107",
+        "T211"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** Documented performance characteristics and fixes for the worst offenders.\n**Notes:** Measure before optimising. Targets worth stating: time to first meaningful render under 3 s, tile fetch p95 under 200 ms, interactive frame rate above 30 fps with three layers. **The existing `TileDebugOverlay` is the right instrument for the rendering side** and should be kept behind a dev flag rather than deleted. Use the T073 tile metrics for the serving side.\n**AC:**\n- [ ] Baseline measurements recorded for each target\n- [ ] Top three bottlenecks identified and addressed\n- [ ] Targets met or the gap documented with reasoning\n- [ ] Debug instrumentation retained behind a flag\n\n---"
+    },
+    {
+      "id": "T214",
+      "title": "Accessibility audit",
+      "area": "frontend",
+      "size": "M",
+      "milestone": "M5",
+      "deps": [
+        "T211"
+      ],
+      "blocks": [],
+      "blocks_note": "",
+      "demo": false,
+      "body_md": "**Outcome:** The interface is usable by keyboard and screen reader where meaningful.\n**Notes:** Realistic scope: **panels, forms, controls, and the paper reading view must be accessible; the WebGL globe cannot meaningfully be.** The right answer for the canvas is an accessible alternative \u2014 the data available as a table, and text descriptions of active layers \u2014 not a claim that a 3D globe works with a screen reader. Say which parts are accessible and which are not.\n**AC:**\n- [ ] Keyboard navigation through all panels and forms\n- [ ] Focus indicators visible throughout\n- [ ] WCAG AA contrast verified\n- [ ] Published papers screen-reader navigable\n- [ ] Data-table alternative for the canvas\n- [ ] Accessibility statement documents known limits\n\n---"
+    }
+  ]
+}

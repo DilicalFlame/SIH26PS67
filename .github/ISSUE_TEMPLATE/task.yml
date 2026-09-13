@@ -8,7 +8,7 @@ body:
     attributes:
       value: |
         Use this for planned work. For something broken, use the Bug report template instead.
-        Keep one task to one deliverable — if it needs two different people, it is two tasks.
+        Keep one task to one deliverable - if it needs two different people, it is two tasks.
 
   - type: input
     id: outcome
@@ -41,12 +41,12 @@ body:
     attributes:
       label: Milestone
       options:
-        - M0 — Foundation
-        - M1 — Internals demo
-        - M2 — Data & rendering core
-        - M3 — AI & research workflow
-        - M4 — Research output
-        - M5 — Hardening & delivery
+        - M0 - Foundation
+        - M1 - Internals demo
+        - M2 - Data & rendering core
+        - M3 - AI & research workflow
+        - M4 - Research output
+        - M5 - Hardening & delivery
     validations:
       required: true
 
@@ -65,7 +65,7 @@ body:
     id: implementation_notes
     attributes:
       label: Implementation notes
-      description: Files to touch, approach, known traps. Not a full design — enough that someone else could pick this up.
+      description: Files to touch, approach, known traps. Not a full design - enough that someone else could pick this up.
       placeholder: |
         - New: apps/web/src/lib/render/scalar-field.ts
         - Touch: GlobeCanvas.svelte (mount the renderer)
@@ -116,7 +116,7 @@ body:
         - S (half a day)
         - M (1 day)
         - L (2 days)
-        - "TOO BIG — needs splitting"
+        - "TOO BIG - needs splitting"
     validations:
       required: true
 
@@ -126,7 +126,7 @@ body:
       label: On the demo path?
       description: Is this touched by the internals demo storyboard?
       options:
-        - "Yes — demo breaks without it"
+        - "Yes - demo breaks without it"
         - "No"
     validations:
       required: true
