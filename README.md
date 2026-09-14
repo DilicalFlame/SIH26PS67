@@ -1,5 +1,11 @@
 This is a project for a hackathon SIH 2026.
 
+## Contributing
+
+New to this repo? [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, branching,
+and PR/commit conventions. [docs/planning/](docs/planning/) has the frozen
+API/rendering contracts and the sprint backlog everything is built against.
+
 # Problem Statement 66
 
 **Title:** OceanEmbed - Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature from Surface Satellite Observations.
