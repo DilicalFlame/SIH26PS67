@@ -1,0 +1,23 @@
+{
+  "layerId": "glorys_thetao",
+  "variable": "temperature",
+  "units": "degC",
+  "width": 512,
+  "height": 256,
+  "bbox": [
+    45.0,
+    5.0,
+    105.0,
+    30.0
+  ],
+  "depths": [
+    0.0
+  ],
+  "times": [
+    "2020-01-01T00:00:00Z"
+  ],
+  "valueMin": 7.0,
+  "valueMax": 25.499534606933594,
+  "noDataValue": "NaN",
+  "gridUrlTemplate": "{tilesBase}/fields/glorys_thetao/temperature/d{d}_t{t}.f32"
+}
