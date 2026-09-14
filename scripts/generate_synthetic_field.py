@@ -5,7 +5,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -19,9 +18,27 @@ LON_MAX = 105.0
 LAT_MIN = 5.0
 LAT_MAX = 30.0
 
-OUTPUT_DIR = Path("fixtures")
+# Mirrors the one worked example in contracts §4.3
+# ("{tilesBase}/fields/glorys_thetao/temperature/d{d}_t{t}.f32"), so this
+# fixture drops straight into the layout §2 and §4.3 describe.
+PRODUCT_ID = "glorys_thetao"
+VARIABLE = "temperature"
+UNITS = "degC"
+DEPTHS = [0.0]
+TIMES = ["2020-01-01T00:00:00Z"]
 
-FIELD_FILE = OUTPUT_DIR / "synthetic_field.f32"
+# Fixtures live at the repo root per contracts §6 ("Fixtures live in
+# fixtures/ at repo root and are shared by both [frontend and backend]"),
+# resolved from this file's own location rather than the caller's cwd, so
+# `python scripts/generate_synthetic_field.py` and
+# `python generate_synthetic_field.py` (run from inside scripts/) land in
+# the same place instead of silently forking into scripts/fixtures/.
+REPO_ROOT = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = REPO_ROOT / "fixtures" / "fields" / PRODUCT_ID / VARIABLE
+
+# Positional naming per §2: d<depth_index>_t<time_index>.f32 — index into
+# DEPTHS/TIMES, not the values themselves. One depth, one time here.
+FIELD_FILE = OUTPUT_DIR / "d0_t0.f32"
 META_FILE = OUTPUT_DIR / "meta.json"
 
 
@@ -73,9 +90,13 @@ def generate_field() -> np.ndarray:
         dtype=np.float64,
     )
 
+    # Decreasing (LAT_MAX -> LAT_MIN): contracts §2 requires row-major byte
+    # order "starting at the north-west corner", i.e. row 0 is the
+    # northernmost row. linspace(LAT_MIN, LAT_MAX, ...) would put the
+    # southernmost row first instead.
     latitude = np.linspace(
-        LAT_MIN,
         LAT_MAX,
+        LAT_MIN,
         HEIGHT,
         dtype=np.float64,
     )
@@ -135,27 +156,34 @@ def generate_field() -> np.ndarray:
 
     field[landmask] = np.nan
 
-    # The fixture contract uses Float32 values.
-    return field.astype(np.float32)
+    # §2: "raw little-endian Float32 grid" — force it explicitly rather than
+    # relying on the host's native byte order (little-endian on every
+    # realistic dev/CI machine here, but not guaranteed by plain float32).
+    return field.astype("<f4")
 
 
 # ---------------------------------------------------------------------------
 # Metadata
 # ---------------------------------------------------------------------------
 
-def build_metadata() -> dict[str, object]:
+def build_metadata(field: np.ndarray) -> dict[str, object]:
     """
-    Build metadata describing the generated field.
+    Build a ScalarFieldMeta object (contracts §4.3) describing the field.
     """
 
     return {
+        "layerId": PRODUCT_ID,
+        "variable": VARIABLE,
+        "units": UNITS,
         "width": WIDTH,
         "height": HEIGHT,
-        "dtype": "float32",
-        "lon_min": LON_MIN,
-        "lon_max": LON_MAX,
-        "lat_min": LAT_MIN,
-        "lat_max": LAT_MAX,
+        "bbox": [LON_MIN, LAT_MIN, LON_MAX, LAT_MAX],
+        "depths": DEPTHS,
+        "times": TIMES,
+        "valueMin": float(np.nanmin(field)),
+        "valueMax": float(np.nanmax(field)),
+        "noDataValue": "NaN",
+        "gridUrlTemplate": f"{{tilesBase}}/fields/{PRODUCT_ID}/{VARIABLE}/d{{d}}_t{{t}}.f32",
     }
 
 
@@ -179,7 +207,7 @@ def write_fixture(field: np.ndarray) -> None:
     # Write metadata.
     META_FILE.write_text(
         json.dumps(
-            build_metadata(),
+            build_metadata(field),
             indent=2,
         ) + "\n",
         encoding="utf-8",
@@ -192,7 +220,7 @@ def write_fixture(field: np.ndarray) -> None:
 
 def validate_fixture(field: np.ndarray) -> None:
     """
-    Validate the generated fixture.
+    Validate the generated fixture against contracts §2 / §4.3.
     """
 
     expected_shape = (
@@ -206,10 +234,10 @@ def validate_fixture(field: np.ndarray) -> None:
             f"expected {expected_shape}"
         )
 
-    if field.dtype != np.float32:
+    if field.dtype != np.dtype("<f4"):
         raise ValueError(
             f"Unexpected dtype: {field.dtype}; "
-            "expected float32"
+            "expected little-endian float32"
         )
 
     nan_count = int(np.isnan(field).sum())
@@ -222,7 +250,7 @@ def validate_fixture(field: np.ndarray) -> None:
     expected_bytes = (
         WIDTH
         * HEIGHT
-        * np.dtype(np.float32).itemsize
+        * np.dtype("<f4").itemsize
     )
 
     actual_bytes = FIELD_FILE.stat().st_size
@@ -236,6 +264,27 @@ def validate_fixture(field: np.ndarray) -> None:
     if not META_FILE.exists():
         raise ValueError(
             "meta.json was not generated."
+        )
+
+    meta = json.loads(META_FILE.read_text(encoding="utf-8"))
+    required_keys = {
+        "layerId", "variable", "units", "width", "height", "bbox",
+        "depths", "times", "valueMin", "valueMax", "noDataValue",
+        "gridUrlTemplate",
+    }
+    missing = required_keys - meta.keys()
+    if missing:
+        raise ValueError(f"meta.json is missing ScalarFieldMeta keys: {sorted(missing)}")
+
+    # Row 0 must be the north-west corner (§2): at the west edge, row 0
+    # should equal the gradient's value at LAT_MAX, not LAT_MIN.
+    expected_nw = 0.5 * LAT_MAX + 0.1 * LON_MIN
+    actual_nw = float(field[0, 0])
+    if not np.isclose(actual_nw, expected_nw, atol=1e-3):
+        raise ValueError(
+            f"Row 0 does not look like the north-west corner: "
+            f"field[0,0]={actual_nw}, expected ~{expected_nw}. "
+            "Latitude axis may be reversed."
         )
 
 
