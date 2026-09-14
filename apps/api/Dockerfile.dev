@@ -1,0 +1,30 @@
+# Dev image only: reload-friendly, bind-mounted by infra/docker/compose.yml.
+# Not meant to be deployed as-is (see #33's scope — a slimmer prod build is a
+# separate concern).
+FROM python:3.13-slim
+
+# Pin uv to match the version already used locally/CI-adjacent, rather than
+# floating on whatever pip resolves that day.
+RUN pip install --no-cache-dir "uv==0.12.6"
+
+WORKDIR /app
+
+# The dev bind-mount below overlays /app with the host's apps/api directory,
+# which would shadow (and likely break, being built for a different
+# platform) a .venv created under /app during the image build. Keeping the
+# venv outside /app means the mount can't touch it.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_LINK_MODE=copy \
+    PATH="/opt/venv/bin:${PATH}"
+
+# Dependency layer cached separately from source so editing app code doesn't
+# invalidate it.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project
+
+COPY . .
+RUN uv sync --frozen
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

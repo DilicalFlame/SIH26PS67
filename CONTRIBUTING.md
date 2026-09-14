@@ -3,9 +3,14 @@
 - All work happens inside WSL on the native ext4 filesystem (`~/...`).
   Never work under /mnt/c or /mnt/p. It is a 10–40x I/O penalty on this project.
 - Open VS Code with `code .` from native WSL bash, not from a Windows path.
-- `docker compose -f infra/docker/compose.yml up -d` before starting the app.
-- `pnpm install && pnpm dev` at repo root runs web + api via turbo.
-- Python apps use `uv`: `cd apps/api && uv sync && uv run uvicorn app.main:app --reload`
+- Copy `.env.example` to `.env` at the repo root once (never commit `.env`).
+- `docker compose --env-file .env -f infra/docker/compose.yml up -d` before
+  starting the app — brings up postgres, minio, minio-init, and api (with
+  reload already on via a bind-mount, see apps/api/Dockerfile.dev).
+- `pnpm install && pnpm dev` at repo root runs web via turbo.
+- Prefer running the API directly on the host instead (e.g. for a debugger):
+  `cd apps/api && uv sync && uv run uvicorn app.main:app --reload` — stop the
+  compose `api` service first so they don't fight over port 8000.
 
 ## Branches and PRs
 
