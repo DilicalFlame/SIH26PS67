@@ -12,7 +12,6 @@
     let layerState = $state(
         TILE_LAYERS.map(layer => ({
             id: layer.id,
-            name: (layer as any).name ?? layer.id,
             visible: true,
             opacity: 1.0
         }))
@@ -51,7 +50,7 @@
                         checked={layer.visible}
                         onchange={() => handleToggle(layer.id)}
                     />
-                    <span class="layer-name">{layer.name}</span>
+                    <span class="layer-name">{layer.id}</span>
                 </label>
                 <input
                     type="range"
@@ -62,6 +61,7 @@
                     disabled={!layer.visible}
                     oninput={(e) => handleOpacity(layer.id, parseFloat(e.currentTarget.value))}
                     class="opacity-slider"
+                    aria-label={`${layer.id} opacity`}
                 />
             </div>
         {/each}
