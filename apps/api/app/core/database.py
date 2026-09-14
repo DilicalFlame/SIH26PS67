@@ -7,15 +7,23 @@ alembic/env.py) — this module is for the running application only.
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import AsyncGenerator
+from typing import Any
 
-from sqlalchemy.engine import URL, make_url
+import structlog
+from sqlalchemy import event
+from sqlalchemy.engine import URL, Connection, make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+
+logger = structlog.get_logger(__name__)
+
+SLOW_QUERY_THRESHOLD_MS = 500.0
 
 
 def get_database_url() -> URL:
@@ -48,6 +56,29 @@ def get_database_url() -> URL:
     )
 
 
+def _register_slow_query_logging(engine: AsyncEngine) -> None:
+    """Logs any query (issue #34) taking longer than SLOW_QUERY_THRESHOLD_MS.
+    Logs the statement, not bound parameters — those may carry user-entered
+    content (e.g. once chat persistence lands).
+    """
+    sync_engine = engine.sync_engine
+
+    @event.listens_for(sync_engine, "before_cursor_execute")
+    def _before_cursor_execute(
+        conn: Connection, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool
+    ) -> None:
+        conn.info.setdefault("query_start_time", []).append(time.perf_counter())
+
+    @event.listens_for(sync_engine, "after_cursor_execute")
+    def _after_cursor_execute(
+        conn: Connection, cursor: Any, statement: str, parameters: Any, context: Any, executemany: bool
+    ) -> None:
+        start = conn.info["query_start_time"].pop()
+        duration_ms = (time.perf_counter() - start) * 1000
+        if duration_ms > SLOW_QUERY_THRESHOLD_MS:
+            logger.warning("slow_query", statement=statement, duration_ms=round(duration_ms, 2))
+
+
 _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
@@ -56,6 +87,7 @@ def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
         _engine = create_async_engine(get_database_url())
+        _register_slow_query_logging(_engine)
     return _engine
 
 
