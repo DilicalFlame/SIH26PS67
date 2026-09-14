@@ -7,6 +7,7 @@ from app.api.v1 import router as api_v1_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
+from app.schemas.common import ApiError, api_error_handler
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -15,6 +16,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Thalassa API")
     app.state.settings = settings
+    app.add_exception_handler(ApiError, api_error_handler)
 
     app.add_middleware(
         CORSMiddleware,
