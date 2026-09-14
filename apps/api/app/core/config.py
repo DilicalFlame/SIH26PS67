@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-120b"
 
+    # API-local operational knob, not part of contracts §1 — no other
+    # service reads it, so it doesn't need a frozen-contract entry.
+    LOG_LEVEL: str = "INFO"
+
 
 @lru_cache
 def get_settings() -> Settings:
