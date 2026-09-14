@@ -16,6 +16,7 @@
 
 import * as THREE from 'three';
 import geoFillVertSrc from '$lib/shaders/geofill.vert.glsl';
+import { PUBLIC_TILES_BASE_URL } from '$env/static/public';
 import type { ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
 
 const DEG2RAD = Math.PI / 180;
@@ -137,6 +138,13 @@ export class ScalarFieldRenderer {
 	private bboxRad: [number, number, number, number] = [0, 0, 0, 0];
 	private gridWidth = 0;
 	private gridHeight = 0;
+
+	// #48: one in-flight grid fetch at a time. Aborting the previous controller
+	// before starting a new one covers both required cases with the same
+	// mechanism — dispose() abort-during-fetch, and setDepthIndex/setTimeIndex
+	// called again before the first fetch lands (the second call must win, not
+	// whichever response happens to arrive first).
+	private abortController: AbortController | null = null;
 
 	constructor() {
 		this.geometry = new THREE.BufferGeometry();
@@ -287,6 +295,7 @@ export class ScalarFieldRenderer {
 	}
 
 	dispose(): void {
+		this.abortController?.abort();
 		this.scene?.remove(this.mesh);
 		this.geometry.dispose();
 		this.material.dispose();
@@ -354,14 +363,35 @@ export class ScalarFieldRenderer {
 	private async loadGrid(depthIndex: number, timeIndex: number): Promise<void> {
 		if (!this.config) return;
 		const meta = this.config.meta;
-		// The client substitutes {d}/{t} with array indices, not values (§4.3).
-		const url = meta.gridUrlTemplate.replace('{d}', String(depthIndex)).replace('{t}', String(timeIndex));
+		// {tilesBase} is the only place the frontend learns where tiles live
+		// (contracts §1) — everywhere else resolves it from PUBLIC_TILES_BASE_URL,
+		// same as pmtiles-source.ts. {d}/{t} substitute array indices, not values (§4.3).
+		const url = meta.gridUrlTemplate
+			.replace('{tilesBase}', PUBLIC_TILES_BASE_URL.replace(/\/$/, ''))
+			.replace('{d}', String(depthIndex))
+			.replace('{t}', String(timeIndex));
 
-		const res = await fetch(url);
+		// #48: cancel whatever this renderer was still waiting on — a stale
+		// request left running would otherwise race this one and could bind
+		// its (older) grid last, or write into a texture/uniform this call
+		// already disposed of.
+		this.abortController?.abort();
+		const controller = new AbortController();
+		this.abortController = controller;
+
+		let res: Response;
+		try {
+			res = await fetch(url, { signal: controller.signal });
+		} catch (err) {
+			if (controller.signal.aborted) return; // superseded or disposed — not a real failure
+			throw err;
+		}
+		if (controller.signal.aborted) return;
 		if (!res.ok) {
 			throw new Error(`[ScalarFieldRenderer] grid fetch failed: ${url} (${res.status})`);
 		}
 		const data = new Float32Array(await res.arrayBuffer());
+		if (controller.signal.aborted) return;
 
 		this.rawData = data;
 		(this.uniforms.u_textureSize.value as THREE.Vector2).set(meta.width, meta.height);
