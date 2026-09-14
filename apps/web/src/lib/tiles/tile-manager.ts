@@ -89,6 +89,8 @@ export class TileManager {
 	/** Failure counts per tile key, kept outside the entry so retries can't reset them. */
 	private failures = new Map<string, number>();
 	private debugInfo = new Map<string, TileDebugInfo>();
+	/** Per-layer visibility (#57), applied to tiles as they're built and to whatever's already in the scene. */
+	private layerVisibility = new Map<string, boolean>();
 
 	async init(
 		scene: THREE.Scene,
@@ -198,6 +200,41 @@ export class TileManager {
 	 *  each updateLayer() call. */
 	getDebugInfo(): TileDebugInfo[] {
 		return [...this.debugInfo.values()];
+	}
+
+	/**
+	 * Toggles a layer's tiles on/off (#57). Hides meshes rather than disposing
+	 * or evicting their cache entries — re-showing must not refetch or
+	 * re-decode, only flip `mesh.visible` back on.
+	 */
+	setLayerVisibility(layerId: string, visible: boolean): void {
+		this.layerVisibility.set(layerId, visible);
+		const cache = this.caches.get(layerId);
+		if (!cache) return;
+		for (const [, entry] of cache.entries()) {
+			for (const mesh of entry.meshes) mesh.visible = visible;
+		}
+	}
+
+	/**
+	 * Sets opacity for every style in a layer (#57), uniform-only. The fill
+	 * material defaults to `NoBlending` (see makeFillMat() in GlobeCanvas.svelte)
+	 * because real alpha blending double-composites the sub-pixel overlap
+	 * between adjacent tiles' buffers, showing as a seam — but with blending
+	 * off, `u_opacity` never reaches the framebuffer at all. Switching to
+	 * `NormalBlending` only while a layer is actually faded keeps full-opacity
+	 * rendering seam-free (the common case) and trades a faint seam for an
+	 * opacity control that isn't a no-op while a layer is intentionally faded.
+	 */
+	setLayerOpacity(layerId: string, opacity: number): void {
+		const layer = this.layers.find((l) => l.config.id === layerId);
+		if (!layer) return;
+		for (const style of layer.config.styles) {
+			const mat = this.materials.get(this.styleKey(layer, style));
+			if (!mat) continue;
+			mat.uniforms.u_opacity.value = opacity;
+			mat.blending = opacity < 1 ? THREE.NormalBlending : THREE.NoBlending;
+		}
 	}
 
 	// -- internals ------------------------------------------------------------
@@ -399,6 +436,7 @@ export class TileManager {
 			// one material: Three.js applies onBeforeRender just before the draw.
 			const obj = new THREE.Mesh(geo, material);
 			obj.frustumCulled = false;
+			obj.visible = this.layerVisibility.get(layer.config.id) ?? true;
 			obj.renderOrder = style.order * 1000 + entry.z;
 			obj.onBeforeRender = () => {
 				material.uniforms.u_tileLon.value.copy(lon);
