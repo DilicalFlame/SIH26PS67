@@ -14,6 +14,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.LOG_LEVEL)
 
     app = FastAPI(title="Thalassa API")
+    app.state.settings = settings
 
     app.add_middleware(
         CORSMiddleware,

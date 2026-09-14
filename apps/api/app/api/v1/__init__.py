@@ -4,28 +4,32 @@ path operations land in the issues named in each module's docstring.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
-from sqlalchemy import text
+import asyncio
+
+from fastapi import APIRouter, Request, Response, status
 
 from app.api.v1 import auth, catalog, chat, fields, observations
-from app.core.database import get_engine
+from app.core.health import check_database, check_storage
 
 router = APIRouter()
 
 
 @router.get("/healthz", tags=["health"])
-async def healthz() -> dict[str, object]:
-    """Contracts §4.1. `storage` is stubbed True — no MinIO client exists in
-    this app yet, so there is nothing to check.
+async def healthz(request: Request, response: Response) -> dict[str, object]:
+    """Contracts §4.1 / issue #37. No auth dependency — used by compose
+    healthchecks and whoever is debugging with no session at 2am.
     """
-    db_ok = True
-    try:
-        async with get_engine().connect() as conn:
-            await conn.execute(text("SELECT 1"))
-    except Exception:  # noqa: BLE001 -- health check must not crash on any DB failure mode
-        db_ok = False
+    settings = request.app.state.settings
+    db_ok, storage_ok = await asyncio.gather(
+        check_database(),
+        check_storage(settings.MINIO_ENDPOINT),
+    )
 
-    return {"status": "ok", "db": db_ok, "storage": True}
+    healthy = db_ok and storage_ok
+    if not healthy:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return {"status": "ok" if healthy else "error", "db": db_ok, "storage": storage_ok}
 
 
 router.include_router(catalog.router)

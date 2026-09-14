@@ -37,13 +37,14 @@ def test_docs_renders() -> None:
 
 
 def test_healthz_under_api_v1() -> None:
+    """Mount/shape only — dependency-down behavior is issue #37's, in test_health.py."""
     client = TestClient(create_app())
     resp = client.get("/api/v1/healthz")
-    assert resp.status_code == 200
+    assert resp.status_code in (200, 503)
     body = resp.json()
-    assert body["status"] == "ok"
-    assert "db" in body
-    assert "storage" in body
+    assert body["status"] in ("ok", "error")
+    assert isinstance(body["db"], bool)
+    assert isinstance(body["storage"], bool)
 
 
 def test_cors_allows_configured_web_origin() -> None:
