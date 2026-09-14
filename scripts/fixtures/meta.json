@@ -1,9 +1,0 @@
-{
-  "width": 512,
-  "height": 256,
-  "dtype": "float32",
-  "lon_min": 45.0,
-  "lon_max": 105.0,
-  "lat_min": 5.0,
-  "lat_max": 30.0
-}
