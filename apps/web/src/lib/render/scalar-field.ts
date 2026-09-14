@@ -1,282 +1,356 @@
+/**
+ * scalar-field.ts
+ *
+ * Renders a Float32 lat/lon grid (temperature, salinity, ...) from MinIO as a
+ * colour-mapped field on the globe, in both projections. Implements the
+ * frozen `ScalarFieldRenderer` interface in contracts §5.2 verbatim — the
+ * layer-control UI is built against this exact method signature, so changing
+ * it here breaks that side independently of anything visual.
+ *
+ * Geometry reuses geofill.vert.glsl's vertex projection path — the same
+ * shader the south polar cap draws through (see polar-cap.ts) — rather than
+ * re-deriving lon/lat -> NDC a third time. That shader only carries a dummy
+ * `v_tileUV`, so it also passes through the raw `v_lonLat` this fragment
+ * shader needs to recover real texture coordinates from `u_bboxRad`.
+ */
+
 import * as THREE from 'three';
 import geoFillVertSrc from '$lib/shaders/geofill.vert.glsl';
+import type { ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
 
-export interface ScalarFieldOptions {
-    data: Float32Array;
-    width: number;
-    height: number;
-    bbox: [number, number, number, number]; // [minLon, minLat, maxLon, maxLat] in degrees
-    minValue?: number;
-    maxValue?: number;
+const DEG2RAD = Math.PI / 180;
+
+const FRAGMENT_SHADER = `
+    precision highp float;
+
+    uniform sampler2D u_fieldTexture;
+    uniform vec2  u_textureSize;
+    uniform vec4  u_bboxRad;    // minLon, minLat, maxLon, maxLat (radians)
+    uniform vec2  u_valueRange;
+    uniform float u_opacity;
+    uniform mat3  u_globeRotation;
+    uniform float u_sphereWeight;
+
+    varying vec3 v_sphere;
+    varying vec2 v_lonLat;
+
+    // Bilinear tap with NaN-aware weight renormalization: a missing corner
+    // just softens that texel instead of retreating the field a full cell
+    // (~25-50km at 0.25 deg) from every land boundary. Only discards when all
+    // four corners are invalid. isnan() is unreliable across drivers — v != v
+    // is the portable IEEE-754 NaN test (see #43's traps).
+    bool sampleField(vec2 uv, out float value) {
+        vec2 pixelCoord = uv * u_textureSize - 0.5;
+        vec2 baseCoord = floor(pixelCoord);
+        vec2 f = fract(pixelCoord);
+
+        vec2 st00 = (baseCoord + vec2(0.5, 0.5)) / u_textureSize;
+        vec2 st10 = (baseCoord + vec2(1.5, 0.5)) / u_textureSize;
+        vec2 st01 = (baseCoord + vec2(0.5, 1.5)) / u_textureSize;
+        vec2 st11 = (baseCoord + vec2(1.5, 1.5)) / u_textureSize;
+
+        float v00 = texture2D(u_fieldTexture, st00).r;
+        float v10 = texture2D(u_fieldTexture, st10).r;
+        float v01 = texture2D(u_fieldTexture, st01).r;
+        float v11 = texture2D(u_fieldTexture, st11).r;
+
+        float w00 = (v00 == v00) ? (1.0 - f.x) * (1.0 - f.y) : 0.0;
+        float w10 = (v10 == v10) ? f.x * (1.0 - f.y)         : 0.0;
+        float w01 = (v01 == v01) ? (1.0 - f.x) * f.y         : 0.0;
+        float w11 = (v11 == v11) ? f.x * f.y                 : 0.0;
+
+        float wSum = w00 + w10 + w01 + w11;
+        if (wSum < 1e-5) return false;
+
+        float s00 = (v00 == v00) ? v00 : 0.0;
+        float s10 = (v10 == v10) ? v10 : 0.0;
+        float s01 = (v01 == v01) ? v01 : 0.0;
+        float s11 = (v11 == v11) ? v11 : 0.0;
+
+        value = (w00 * s00 + w10 * s10 + w01 * s01 + w11 * s11) / wSum;
+        return true;
+    }
+
+    // Single placeholder gradient. The cmocean-accurate LUT registry
+    // (thermal / haline / viridis / balance) ships with #44
+    // (render/colormaps.ts); setColormap() will drive a texture lookup
+    // instead of this once that lands. Not oceanographically calibrated.
+    vec3 colormap(float t) {
+        t = clamp(t, 0.0, 1.0);
+        vec3 c1 = mix(vec3(0.0, 0.2, 0.6), vec3(0.0, 0.6, 1.0), smoothstep(0.0, 0.25, t));
+        vec3 c2 = mix(c1, vec3(0.1, 0.8, 0.3), smoothstep(0.25, 0.5, t));
+        vec3 c3 = mix(c2, vec3(0.9, 0.8, 0.1), smoothstep(0.5, 0.75, t));
+        return mix(c3, vec3(0.9, 0.1, 0.1), smoothstep(0.75, 1.0, t));
+    }
+
+    void main() {
+        // Far hemisphere: the same recompute-per-fragment test fill.frag.glsl
+        // uses, so the field's limb lines up exactly with the coastlines it
+        // composites over instead of drifting across a triangle's chord.
+        if (u_sphereWeight > 0.5 && (u_globeRotation * normalize(v_sphere)).x < 0.0) discard;
+
+        vec2 uv = vec2(
+            (v_lonLat.x - u_bboxRad.x) / (u_bboxRad.z - u_bboxRad.x),
+            (v_lonLat.y - u_bboxRad.y) / (u_bboxRad.w - u_bboxRad.y)
+        );
+        uv.y = 1.0 - uv.y; // grid row 0 is the northernmost row
+
+        float val;
+        if (!sampleField(uv, val)) discard;
+
+        float norm = clamp((val - u_valueRange.x) / max(1e-5, u_valueRange.y - u_valueRange.x), 0.0, 1.0);
+        gl_FragColor = vec4(colormap(norm), u_opacity);
+    }
+`;
+
+/** 1x1 NaN texture so the material is valid (and invisible) before the first setLayer(). */
+function makePlaceholderTexture(): THREE.DataTexture {
+	const tex = new THREE.DataTexture(new Float32Array([NaN]), 1, 1, THREE.RedFormat, THREE.FloatType);
+	tex.needsUpdate = true;
+	return tex;
 }
 
 export class ScalarFieldRenderer {
-    public mesh: THREE.Mesh;
-    private material: THREE.ShaderMaterial;
-    private geometry: THREE.BufferGeometry;
-    private texture: THREE.DataTexture;
-    private uniforms: Record<string, { value: any }>;
+	public readonly mesh: THREE.Mesh;
 
-    constructor(options: ScalarFieldOptions) {
-        const { width, height, data, bbox, minValue, maxValue } = options;
+	private readonly material: THREE.ShaderMaterial;
+	private readonly uniforms: Record<string, THREE.IUniform>;
+	private geometry: THREE.BufferGeometry;
+	private texture: THREE.DataTexture;
 
-        // 1. Compute min/max if not provided, ignoring NaNs
-        let min = minValue !== undefined ? minValue : Infinity;
-        let max = maxValue !== undefined ? maxValue : -Infinity;
-        if (minValue === undefined || maxValue === undefined) {
-            for (let i = 0; i < data.length; i++) {
-                const v = data[i];
-                if (v === v) { // not NaN
-                    if (v < min) min = v;
-                    if (v > max) max = v;
-                }
-            }
-            if (min === Infinity) min = 0;
-            if (max === -Infinity) max = 1;
-            if (min === max) max = min + 1;
-        }
+	private scene: THREE.Scene | null = null;
+	private config: ScalarFieldLayerConfig | null = null;
 
-        // 2. Setup DataTexture (RedFormat + FloatType + NearestFilter as required by WebGL2 R32F)
-        this.texture = new THREE.DataTexture(data, width, height, THREE.RedFormat, THREE.FloatType);
-        this.texture.minFilter = THREE.NearestFilter;
-        this.texture.magFilter = THREE.NearestFilter;
-        this.texture.wrapS = THREE.ClampToEdgeWrapping;
-        this.texture.wrapT = THREE.ClampToEdgeWrapping;
-        this.texture.needsUpdate = true;
+	// Kept for sampleAt()'s CPU-side hover readout, mirroring what the GPU has bound.
+	private rawData: Float32Array | null = null;
+	private bboxRad: [number, number, number, number] = [0, 0, 0, 0];
+	private gridWidth = 0;
+	private gridHeight = 0;
 
-        // 3. Build Grid Geometry over bbox, subdivided finely enough for smooth limb projection
-        const [minLonDeg, minLatDeg, maxLonDeg, maxLatDeg] = bbox;
-        const lonSegments = Math.max(20, Math.floor(width / 2));
-        const latSegments = Math.max(20, Math.floor(height / 2));
+	constructor() {
+		this.geometry = new THREE.BufferGeometry();
+		this.texture = makePlaceholderTexture();
 
-        this.geometry = new THREE.PlaneGeometry(1, 1, lonSegments, latSegments);
-        
-        // Remap plane attributes to a_lonLat (radians)
-        const posAttr = this.geometry.attributes.position;
-        const lonLatArray = new Float32Array(posAttr.count * 2);
+		this.uniforms = {
+			u_globeRotation: { value: new THREE.Matrix3() },
+			u_projectionTypeA: { value: 0 },
+			u_projectionTypeB: { value: 0 },
+			u_blend: { value: 0.0 },
+			u_scale: { value: 1.0 },
+			u_aspect: { value: 1.0 },
+			u_pan: { value: new THREE.Vector2(0, 0) },
+			u_worldShift: { value: 0 },
+			u_sphereWeight: { value: 1.0 },
 
-        const minLon = (minLonDeg * Math.PI) / 180;
-        const maxLon = (maxLonDeg * Math.PI) / 180;
-        const minLat = (minLatDeg * Math.PI) / 180;
-        const maxLat = (maxLatDeg * Math.PI) / 180;
+			u_fieldTexture: { value: this.texture },
+			u_textureSize: { value: new THREE.Vector2(1, 1) },
+			u_bboxRad: { value: new THREE.Vector4(0, 0, 0, 0) },
+			u_valueRange: { value: new THREE.Vector2(0, 1) },
+			u_opacity: { value: 1.0 },
+		};
 
-        for (let i = 0; i < posAttr.count; i++) {
-            // PlaneGeometry ranges from x: [-0.5, 0.5], y: [-0.5, 0.5]
-            const u = posAttr.getX(i) + 0.5;
-            const v = posAttr.getY(i) + 0.5;
+		this.material = new THREE.ShaderMaterial({
+			vertexShader: geoFillVertSrc,
+			fragmentShader: FRAGMENT_SHADER,
+			uniforms: this.uniforms,
+			transparent: true,
+			depthTest: false,
+			depthWrite: false,
+			side: THREE.DoubleSide,
+		});
 
-            const lon = minLon + u * (maxLon - minLon);
-            const lat = minLat + v * (maxLat - minLat);
+		this.mesh = new THREE.Mesh(this.geometry, this.material);
+		// The shader derives position entirely from a_lonLat / the projection
+		// uniforms, so Three's frustum culling (built on `position`/bounding
+		// sphere) can't be trusted — see buildSouthPolarCap() for the same call.
+		this.mesh.frustumCulled = false;
+		this.mesh.visible = false;
+		this.mesh.name = 'scalar-field';
+	}
 
-            lonLatArray[i * 2] = lon;
-            lonLatArray[i * 2 + 1] = lat;
-        }
+	mount(scene: THREE.Scene): void {
+		this.scene = scene;
+		scene.add(this.mesh);
+	}
 
-        this.geometry.setAttribute('a_lonLat', new THREE.BufferAttribute(lonLatArray, 2));
-        this.geometry.deleteAttribute('position');
-        this.geometry.deleteAttribute('normal');
-        this.geometry.deleteAttribute('uv');
+	async setLayer(config: ScalarFieldLayerConfig): Promise<void> {
+		this.config = { ...config };
+		this.rebuildGeometry(config.meta.bbox, config.meta.width, config.meta.height);
 
-        // 4. Custom Shader Material reusing geofill.vert.glsl and manual bilinear filtering in GLSL
-        this.uniforms = {
-            u_globeRotation:   { value: new THREE.Matrix3() },
-            u_projectionTypeA: { value: 0 },
-            u_projectionTypeB: { value: 0 },
-            u_blend:           { value: 0.0 },
-            u_scale:           { value: 1.0 },
-            u_aspect:          { value: 1.0 },
-            u_pan:             { value: new THREE.Vector2(0, 0) },
-            u_worldShift:      { value: 0 },
-            u_sphereWeight:    { value: 1.0 },
-            
-            u_fieldTexture:    { value: this.texture },
-            u_textureSize:     { value: new THREE.Vector2(width, height) },
-            u_valueRange:      { value: new THREE.Vector2(min, max) },
-        };
+		this.setValueRange(config.valueRange[0], config.valueRange[1]);
+		this.setOpacity(config.opacity);
+		this.setColormap(config.colormap);
+		this.setVisible(config.visible);
 
-        const fragmentShader = `
-            precision highp float;
+		await this.loadGrid(config.depthIndex, config.timeIndex);
+	}
 
-            uniform sampler2D u_fieldTexture;
-            uniform vec2 u_textureSize;
-            uniform vec2 u_valueRange;
+	async setDepthIndex(i: number): Promise<void> {
+		if (!this.config) throw new Error('[ScalarFieldRenderer] setDepthIndex() called before setLayer()');
+		this.config.depthIndex = i;
+		await this.loadGrid(i, this.config.timeIndex);
+	}
 
-            varying vec2 v_tileUV;
-            varying vec3 v_sphere;
+	async setTimeIndex(i: number): Promise<void> {
+		if (!this.config) throw new Error('[ScalarFieldRenderer] setTimeIndex() called before setLayer()');
+		this.config.timeIndex = i;
+		await this.loadGrid(this.config.depthIndex, i);
+	}
 
-            // Manual bilinear filtering and NaN handling in GLSL for WebGL2 R32F
-            float sampleField(vec2 uv) {
-                vec2 pixelCoord = uv * u_textureSize - 0.5;
-                vec2 baseCoord = floor(pixelCoord);
-                vec2 f = fract(pixelCoord);
+	/** Uniform only, synchronous — must not trigger a fetch or a re-upload. */
+	setValueRange(min: number, max: number): void {
+		(this.uniforms.u_valueRange.value as THREE.Vector2).set(min, max);
+	}
 
-                vec2 st00 = (baseCoord + vec2(0.5, 0.5)) / u_textureSize;
-                vec2 st10 = (baseCoord + vec2(1.5, 0.5)) / u_textureSize;
-                vec2 st01 = (baseCoord + vec2(0.5, 1.5)) / u_textureSize;
-                vec2 st11 = (baseCoord + vec2(1.5, 1.5)) / u_textureSize;
+	/**
+	 * Uniform only, synchronous — must not trigger a fetch or a re-upload.
+	 * Every name currently renders through the one placeholder gradient in
+	 * FRAGMENT_SHADER; real per-name LUT selection lands with #44.
+	 */
+	setColormap(name: string): void {
+		if (this.config) this.config.colormap = name;
+	}
 
-                float v00 = texture2D(u_fieldTexture, st00).r;
-                float v10 = texture2D(u_fieldTexture, st10).r;
-                float v01 = texture2D(u_fieldTexture, st01).r;
-                float v11 = texture2D(u_fieldTexture, st11).r;
+	/** Uniform only, synchronous — must not trigger a fetch or a re-upload. */
+	setOpacity(v: number): void {
+		this.uniforms.u_opacity.value = v;
+	}
 
-                // Check NaNs using v != v check as required
-                bool n00 = (v00 != v00);
-                bool n10 = (v10 != v10);
-                bool n01 = (v01 != v01);
-                bool n11 = (v11 != v11);
+	setVisible(v: boolean): void {
+		this.mesh.visible = v;
+	}
 
-                if (n00 || n10 || n01 || n11) {
-                    return 0.0 / 0.0; // Propagate NaN
-                }
+	/** CPU-side bilinear sample of the currently bound grid, for hover readouts. */
+	sampleAt(lon: number, lat: number): number | null {
+		if (!this.rawData || this.gridWidth === 0 || this.gridHeight === 0) return null;
 
-                float fx = mix(v00, v10, f.x);
-                float fy = mix(v01, v11, f.x);
-                return mix(fx, fy, f.y);
-            }
+		const [minLonR, minLatR, maxLonR, maxLatR] = this.bboxRad;
+		const lonR = lon * DEG2RAD;
+		const latR = lat * DEG2RAD;
+		if (lonR < minLonR || lonR > maxLonR || latR < minLatR || latR > maxLatR) return null;
 
-            // Simple viridis/jet-like colormap approximation
-            vec3 colormap(float t) {
-                t = clamp(t, 0.0, 1.0);
-                // Cool to warm gradient (Blue -> Cyan -> Green -> Yellow -> Red)
-                vec3 c1 = mix(vec3(0.0, 0.0, 0.5), vec3(0.0, 0.5, 1.0), smoothstep(0.0, 0.25, t));
-                vec3 c2 = mix(c1, vec3(0.0, 0.8, 0.2), smoothstep(0.25, 0.5, t));
-                vec3 c3 = mix(c2, vec3(1.0, 0.9, 0.0), smoothstep(0.5, 0.75, t));
-                return mix(c3, vec3(0.8, 0.0, 0.0), smoothstep(0.75, 1.0, t));
-            }
+		const u = (lonR - minLonR) / (maxLonR - minLonR);
+		const v = 1.0 - (latR - minLatR) / (maxLatR - minLatR);
 
-            void main() {
-                // Plane geometry maps standard UV directly from [0, 1] over the bbox
-                vec2 uv = gl_FragCoord.xy; // Fallback or compute from varying if passed, 
-                // Let's use standard screen-independent mapping via a custom varying or interpolated coords:
-                // Since PlaneGeometry attributes map u/v linearly, let's pass v_uv from vertex shader:
-            }
-        `;
+		const px = u * this.gridWidth - 0.5;
+		const py = v * this.gridHeight - 0.5;
+		const x0 = Math.floor(px);
+		const y0 = Math.floor(py);
+		const fx = px - x0;
+		const fy = py - y0;
 
-        // Refined vertex and fragment shaders ensuring clean attribute pipelines
-        const refinedVertexShader = `
-            precision highp float;
-            #include ./lib/projection.glsl
-            attribute vec2 a_lonLat;
-            uniform mat3 u_globeRotation;
-            uniform int u_projectionTypeA;
-            uniform int u_projectionTypeB;
-            uniform float u_blend;
-            uniform float u_scale;
-            uniform float u_aspect;
-            uniform vec2 u_pan;
-            uniform float u_worldShift;
+		const at = (x: number, y: number): number => {
+			const cx = Math.min(Math.max(x, 0), this.gridWidth - 1);
+			const cy = Math.min(Math.max(y, 0), this.gridHeight - 1);
+			return this.rawData![cy * this.gridWidth + cx];
+		};
 
-            varying vec2 v_uv;
-            varying vec3 v_sphere;
+		const taps: [number, number][] = [
+			[at(x0, y0), (1 - fx) * (1 - fy)],
+			[at(x0 + 1, y0), fx * (1 - fy)],
+			[at(x0, y0 + 1), (1 - fx) * fy],
+			[at(x0 + 1, y0 + 1), fx * fy],
+		];
 
-            void main() {
-                float lon = a_lonLat.x;
-                float lat = a_lonLat.y;
+		let sum = 0;
+		let weight = 0;
+		for (const [val, w] of taps) {
+			if (Number.isNaN(val)) continue;
+			sum += val * w;
+			weight += w;
+		}
+		return weight > 1e-5 ? sum / weight : null;
+	}
 
-                // Recover plane normalized UV coordinates from lon/lat bounds
-                float u = (lon - ${minLon.toFixed(6)}) / (${maxLon.toFixed(6)} - ${minLon.toFixed(6)});
-                float v = (lat - ${minLat.toFixed(6)}) / (${maxLat.toFixed(6)} - ${minLat.toFixed(6)});
-                v_uv = vec2(u, 1.0 - v); // flip v for standard texture orientation
+	dispose(): void {
+		this.scene?.remove(this.mesh);
+		this.geometry.dispose();
+		this.material.dispose();
+		this.texture.dispose();
+	}
 
-                v_sphere = lonLatToSphere(lon, lat);
+	private rebuildGeometry(bboxDeg: [number, number, number, number], width: number, height: number): void {
+		const [minLonDeg, minLatDeg, maxLonDeg, maxLatDeg] = bboxDeg;
+		const minLon = minLonDeg * DEG2RAD;
+		const minLat = minLatDeg * DEG2RAD;
+		const maxLon = maxLonDeg * DEG2RAD;
+		const maxLat = maxLatDeg * DEG2RAD;
+		this.bboxRad = [minLon, minLat, maxLon, maxLat];
+		(this.uniforms.u_bboxRad.value as THREE.Vector4).set(minLon, minLat, maxLon, maxLat);
 
-                vec3 rotated;
-                vec2 ndc = projectVertex(
-                    lon, lat,
-                    u_globeRotation,
-                    u_projectionTypeA, u_projectionTypeB, u_blend,
-                    u_scale, u_aspect, u_pan, u_worldShift,
-                    rotated
-                );
+		// Subdivided finely enough that the projection blend stays smooth on
+		// the sphere limb; deliberately independent of grid resolution — the
+		// fragment shader's bilinear tap carries data detail, so this only
+		// needs to bound projection curvature, not texel count.
+		const lonSegments = Math.max(20, Math.floor(width / 2));
+		const latSegments = Math.max(20, Math.floor(height / 2));
+		const cols = lonSegments + 1;
+		const rows = latSegments + 1;
 
-                gl_Position = vec4(ndc, 0.0, 1.0);
-            }
-        `;
+		const lonLat = new Float32Array(cols * rows * 2);
+		const indices: number[] = [];
 
-        const refinedFragmentShader = `
-            precision highp float;
-            uniform sampler2D u_fieldTexture;
-            uniform vec2 u_textureSize;
-            uniform vec2 u_valueRange;
+		for (let row = 0; row < rows; row++) {
+			const v = row / latSegments;
+			const lat = minLat + v * (maxLat - minLat);
+			for (let col = 0; col < cols; col++) {
+				const u = col / lonSegments;
+				const lon = minLon + u * (maxLon - minLon);
+				const idx = row * cols + col;
+				lonLat[idx * 2] = lon;
+				lonLat[idx * 2 + 1] = lat;
 
-            varying vec2 v_uv;
-            varying vec3 v_sphere;
+				if (row < rows - 1 && col < cols - 1) {
+					const a = idx;
+					const b = idx + 1;
+					const c = idx + cols;
+					const d = idx + cols + 1;
+					indices.push(a, c, b, b, c, d);
+				}
+			}
+		}
 
-            float sampleField(vec2 uv) {
-                vec2 pixelCoord = uv * u_textureSize - 0.5;
-                vec2 baseCoord = floor(pixelCoord);
-                vec2 f = fract(pixelCoord);
+		this.geometry.dispose();
+		this.geometry = new THREE.BufferGeometry();
+		this.geometry.setAttribute('a_lonLat', new THREE.BufferAttribute(lonLat, 2));
+		// The shader derives position entirely from a_lonLat, but Three.js
+		// still needs a `position` attribute to infer the draw range — see
+		// tile-manager.ts's buildMeshes() and polar-cap.ts for the same fix.
+		this.geometry.setAttribute(
+			'position',
+			new THREE.Float32BufferAttribute(new Float32Array(cols * rows * 3), 3)
+		);
+		this.geometry.setIndex(indices);
+		this.mesh.geometry = this.geometry;
 
-                vec2 st00 = (baseCoord + vec2(0.5, 0.5)) / u_textureSize;
-                vec2 st10 = (baseCoord + vec2(1.5, 0.5)) / u_textureSize;
-                vec2 st01 = (baseCoord + vec2(0.5, 1.5)) / u_textureSize;
-                vec2 st11 = (baseCoord + vec2(1.5, 1.5)) / u_textureSize;
+		this.gridWidth = width;
+		this.gridHeight = height;
+	}
 
-                float v00 = texture2D(u_fieldTexture, st00).r;
-                float v10 = texture2D(u_fieldTexture, st10).r;
-                float v01 = texture2D(u_fieldTexture, st01).r;
-                float v11 = texture2D(u_fieldTexture, st11).r;
+	private async loadGrid(depthIndex: number, timeIndex: number): Promise<void> {
+		if (!this.config) return;
+		const meta = this.config.meta;
+		// The client substitutes {d}/{t} with array indices, not values (§4.3).
+		const url = meta.gridUrlTemplate.replace('{d}', String(depthIndex)).replace('{t}', String(timeIndex));
 
-                // NaN safety check using v != v as specified
-                if (!(v00 == v00) || !(v10 == v10) || !(v01 == v01) || !(v11 == v11)) {
-                    return 0.0 / 0.0;
-                }
+		const res = await fetch(url);
+		if (!res.ok) {
+			throw new Error(`[ScalarFieldRenderer] grid fetch failed: ${url} (${res.status})`);
+		}
+		const data = new Float32Array(await res.arrayBuffer());
 
-                float fx = mix(v00, v10, f.x);
-                float fy = mix(v01, v11, f.x);
-                return mix(fx, fy, f.y);
-            }
+		this.rawData = data;
+		(this.uniforms.u_textureSize.value as THREE.Vector2).set(meta.width, meta.height);
 
-            vec3 colormap(float t) {
-                t = clamp(t, 0.0, 1.0);
-                vec3 c1 = mix(vec3(0.0, 0.2, 0.6), vec3(0.0, 0.6, 1.0), smoothstep(0.0, 0.25, t));
-                vec3 c2 = mix(c1, vec3(0.1, 0.8, 0.3), smoothstep(0.25, 0.5, t));
-                vec3 c3 = mix(c2, vec3(0.9, 0.8, 0.1), smoothstep(0.5, 0.75, t));
-                return mix(c3, vec3(0.9, 0.1, 0.1), smoothstep(0.75, 1.0, t));
-            }
-
-            void main() {
-                float val = sampleField(v_uv);
-
-                // Handle NaN values by discarding transparently as requested
-                if (!(val == val)) {
-                    discard;
-                }
-
-                float norm = (val - u_valueRange.x) / max(1e-5, (u_valueRange.y - u_valueRange.x));
-                vec3 color = colormap(norm);
-
-                gl_FragColor = vec4(color, 0.85);
-            }
-        `;
-
-        this.material = new THREE.ShaderMaterial({
-            vertexShader: refinedVertexShader,
-            fragmentShader: refinedFragmentShader,
-            transparent: true,
-            depthTest: false,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-            uniforms: this.uniforms,
-        });
-
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.mesh.renderOrder = 2; // Renders above coastlines/caps to prevent z-fighting
-    }
-
-    public setValueRange(min: number, max: number): void {
-        this.uniforms.u_valueRange.value.set(min, max);
-    }
-
-    public updateData(data: Float32Array): void {
-        this.texture.image.data = data;
-        this.texture.needsUpdate = true;
-    }
-
-    public dispose(): void {
-        this.geometry.dispose();
-        this.material.dispose();
-        this.texture.dispose();
-    }
+		this.texture.dispose();
+		this.texture = new THREE.DataTexture(data, meta.width, meta.height, THREE.RedFormat, THREE.FloatType);
+		// WebGL2 core only samples R32F with NEAREST; linear needs
+		// OES_texture_float_linear, so the bilinear tap above is done by hand.
+		this.texture.minFilter = THREE.NearestFilter;
+		this.texture.magFilter = THREE.NearestFilter;
+		this.texture.wrapS = THREE.ClampToEdgeWrapping;
+		this.texture.wrapT = THREE.ClampToEdgeWrapping;
+		this.texture.needsUpdate = true;
+		this.uniforms.u_fieldTexture.value = this.texture;
+	}
 }
