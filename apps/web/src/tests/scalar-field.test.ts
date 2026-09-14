@@ -1,8 +1,21 @@
 // apps/web/src/tests/scalar-field.test.ts
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
+import { PUBLIC_TILES_BASE_URL } from '$env/static/public';
 import { ScalarFieldRenderer } from '$lib/render/scalar-field';
 import { MAX_TILE_ZOOM, TILE_LAYERS, type ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
+
+/** A fetch mock whose response the test resolves/rejects on its own schedule,
+ * so ordering between two overlapping loadGrid() calls is controllable. */
+function deferred<T>() {
+	let resolve!: (v: T) => void;
+	let reject!: (e: unknown) => void;
+	const promise = new Promise<T>((res, rej) => {
+		resolve = res;
+		reject = rej;
+	});
+	return { promise, resolve, reject };
+}
 
 /** Mirrors tile-manager.ts's buildMeshes(): `style.order * 1000 + zoom`. */
 function maxCoastlineRenderOrder(): number {
@@ -89,7 +102,8 @@ describe('ScalarFieldRenderer', () => {
 		await renderer.setLayer(config);
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://example.test/fields/glorys_thetao/temperature/d2_t5.f32'
+			'https://example.test/fields/glorys_thetao/temperature/d2_t5.f32',
+			expect.objectContaining({ signal: expect.any(AbortSignal) })
 		);
 		expect(renderer.mesh.visible).toBe(true);
 	});
@@ -116,7 +130,8 @@ describe('ScalarFieldRenderer', () => {
 		await renderer.setTimeIndex(3);
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://example.test/fields/glorys_thetao/temperature/d0_t3.f32'
+			'https://example.test/fields/glorys_thetao/temperature/d0_t3.f32',
+			expect.objectContaining({ signal: expect.any(AbortSignal) })
 		);
 	});
 
@@ -157,5 +172,78 @@ describe('ScalarFieldRenderer', () => {
 		renderer.dispose();
 
 		expect(scene.children).not.toContain(renderer.mesh);
+	});
+
+	it('substitutes {tilesBase} from PUBLIC_TILES_BASE_URL, ahead of {d}/{t} (#48)', async () => {
+		const renderer = new ScalarFieldRenderer();
+		await renderer.setLayer(
+			makeConfig({
+				meta: {
+					...makeConfig().meta,
+					gridUrlTemplate: '{tilesBase}/fields/glorys_thetao/temperature/d{d}_t{t}.f32',
+				},
+				depthIndex: 1,
+				timeIndex: 4,
+			})
+		);
+
+		const base = PUBLIC_TILES_BASE_URL.replace(/\/$/, '');
+		expect(fetchMock).toHaveBeenCalledWith(
+			`${base}/fields/glorys_thetao/temperature/d1_t4.f32`,
+			expect.objectContaining({ signal: expect.any(AbortSignal) })
+		);
+	});
+
+	it('dispose aborts an in-flight fetch and never binds its (now stale) response (#48)', async () => {
+		const pending = deferred<Response>();
+		fetchMock.mockImplementation(() => pending.promise);
+
+		const renderer = new ScalarFieldRenderer();
+		const scene = new THREE.Scene();
+		renderer.mount(scene);
+		const setLayerPromise = renderer.setLayer(makeConfig());
+
+		renderer.dispose();
+		pending.resolve(gridResponse([10, 20, 15, 25, 5, 30, 12, 18]));
+
+		await expect(setLayerPromise).resolves.toBeUndefined();
+		expect(scene.children).not.toContain(renderer.mesh);
+		// No grid was ever bound, so there is nothing to sample.
+		expect(renderer.sampleAt(0, 0)).toBeNull();
+	});
+
+	it('a request superseded by a newer one never binds, even if it resolves last (#48)', async () => {
+		const renderer = new ScalarFieldRenderer();
+		await renderer.setLayer(makeConfig()); // binds the default fetchMock response first
+
+		const older = deferred<Response>();
+		const newer = deferred<Response>();
+		fetchMock.mockImplementationOnce(() => older.promise).mockImplementationOnce(() => newer.promise);
+
+		const p1 = renderer.setTimeIndex(1); // superseded before it resolves
+		const p2 = renderer.setTimeIndex(2);
+
+		// The newer request settles first, then the older, stale one resolves after —
+		// the guard must key off supersession, not arrival order.
+		newer.resolve(gridResponse([222, 222, 222, 222, 222, 222, 222, 222]));
+		await p2;
+		older.resolve(gridResponse([111, 111, 111, 111, 111, 111, 111, 111]));
+		await p1;
+
+		expect(renderer.sampleAt(0, 0)).toBeCloseTo(222, 5);
+	});
+
+	it('a failed fetch rejects, and a later retry succeeds without recreating the renderer (#48)', async () => {
+		const renderer = new ScalarFieldRenderer();
+		fetchMock.mockImplementationOnce(() => Promise.reject(new Error('network down')));
+
+		await expect(renderer.setLayer(makeConfig())).rejects.toThrow('network down');
+		expect(renderer.sampleAt(0, 0)).toBeNull(); // no grid was ever bound
+
+		// Retry: caller just calls the same method again (§5.2 has no retry() of its own).
+		fetchMock.mockImplementationOnce(() => Promise.resolve(gridResponse([1, 2, 3, 4, 5, 6, 7, 8])));
+		await renderer.setLayer(makeConfig());
+
+		expect(renderer.sampleAt(0, 0)).not.toBeNull();
 	});
 });
