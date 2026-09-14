@@ -6,7 +6,6 @@ __pycache__/
 *.py[cod]
 
 .env
-.env.*
 
 .svelte-kit/
 build/
@@ -37,3 +36,6 @@ data/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Windows
+*:Zone.Identifier
