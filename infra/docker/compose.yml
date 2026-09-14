@@ -116,6 +116,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-dev-only-change-me}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
     ports:
       - "${API_PORT:-8000}:${API_PORT:-8000}"
