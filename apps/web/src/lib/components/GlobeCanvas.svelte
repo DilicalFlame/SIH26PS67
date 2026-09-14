@@ -1,37 +1,56 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
-    import { browser } from '$app/environment';
-    import * as THREE from 'three';
-    import { buildGraticule } from '$lib/geo/geo-parser';
-    import { buildSouthPolarCap } from '$lib/geo/polar-cap';
-    import { ProjectionType } from '$lib/types/projection';
-    import { TileManager } from '$lib/tiles/tile-manager';
-    import { TILE_LAYERS, MAX_CAMERA_ZOOM, OCEAN_COLOR, VOID_COLOR } from '$lib/tiles/layers.config';
-    import { unprojectPoint, viewDirection, zoomForScale, scaleForZoom } from '$lib/tiles/projection-math';
-    import { lonLatToTile } from '$lib/tiles/tile-math';
-    import { formatLatLonDMS } from '$lib/geo/dms';
-    import { pickNiceScale } from '$lib/geo/scale-bar';
-    import { viewStatus } from '$lib/state/view-status.svelte';
-    import type StatusBar from '$lib/components/StatusBar.svelte';
-    import HeadingControl from '$lib/components/HeadingControl.svelte';
-    import TileDebugOverlay from '$lib/components/TileDebugOverlay.svelte';
+    import { onMount, onDestroy } from "svelte";
+    import { browser } from "$app/environment";
+    import * as THREE from "three";
+    import {
+        buildGraticule,
+        pickGraticuleStep,
+        DEFAULT_GRID_STEP,
+    } from "$lib/geo/geo-parser";
+    import { buildSouthPolarCap } from "$lib/geo/polar-cap";
+    import { ProjectionType } from "$lib/types/projection";
+    import { TileManager } from "$lib/tiles/tile-manager";
+    import {
+        TILE_LAYERS,
+        MAX_CAMERA_ZOOM,
+        OCEAN_COLOR,
+        VOID_COLOR,
+    } from "$lib/tiles/layers.config";
+    import {
+        unprojectPoint,
+        viewDirection,
+        zoomForScale,
+        scaleForZoom,
+    } from "$lib/tiles/projection-math";
+    import { lonLatToTile } from "$lib/tiles/tile-math";
+    import { formatLatLonDMS } from "$lib/geo/dms";
+    import { pickNiceScale } from "$lib/geo/scale-bar";
+    import { viewStatus } from "$lib/state/view-status.svelte";
+    import type StatusBar from "$lib/components/StatusBar.svelte";
+    import HeadingControl from "$lib/components/HeadingControl.svelte";
+    import TileDebugOverlay from "$lib/components/TileDebugOverlay.svelte";
 
     // Imported without ?raw so vite-plugin-glsl resolves the #include of the
     // shared projection chunk.
-    import vertSrc from '$lib/shaders/globe.vert.glsl';
-    import fragSrc from '$lib/shaders/globe.frag.glsl';
-    import fillVertSrc from '$lib/shaders/fill.vert.glsl';
-    import fillFragSrc from '$lib/shaders/fill.frag.glsl';
-    import bodyVertSrc from '$lib/shaders/globeBody.vert.glsl';
-    import bodyFragSrc from '$lib/shaders/globeBody.frag.glsl';
-    import geoFillVertSrc from '$lib/shaders/geofill.vert.glsl';
+    import vertSrc from "$lib/shaders/globe.vert.glsl";
+    import fragSrc from "$lib/shaders/globe.frag.glsl";
+    import fillVertSrc from "$lib/shaders/fill.vert.glsl";
+    import fillFragSrc from "$lib/shaders/fill.frag.glsl";
+    import bodyVertSrc from "$lib/shaders/globeBody.vert.glsl";
+    import bodyFragSrc from "$lib/shaders/globeBody.frag.glsl";
+    import geoFillVertSrc from "$lib/shaders/geofill.vert.glsl";
 
     // Props
     interface Props {
         activeProjection?: ProjectionType;
+        showGraticule?: boolean;
         statusBar?: StatusBar;
     }
-    const { activeProjection = ProjectionType.Sphere, statusBar }: Props = $props();
+    const {
+        activeProjection = ProjectionType.Sphere,
+        showGraticule = true,
+        statusBar,
+    }: Props = $props();
 
     // Canvas ref
     let canvasEl: HTMLCanvasElement;
@@ -48,16 +67,21 @@
 
     // Three.js core
     let renderer: THREE.WebGLRenderer;
-    let scene:    THREE.Scene;
-    let camera:   THREE.OrthographicCamera;
-    let fillMat:  THREE.ShaderMaterial;  // prototype cloned per styled layer
-    let gratMat:  THREE.ShaderMaterial;
-    let ocean:    THREE.Mesh;            // full-screen quad, masked to the map shape
-    let bodyMat:  THREE.ShaderMaterial;
-    let rafId:     number;
+    let scene: THREE.Scene;
+    let camera: THREE.OrthographicCamera;
+    let fillMat: THREE.ShaderMaterial; // prototype cloned per styled layer
+    let gratMat: THREE.ShaderMaterial;
+    let ocean: THREE.Mesh; // full-screen quad, masked to the map shape
+    let bodyMat: THREE.ShaderMaterial;
+    let rafId: number;
     let tileManager: TileManager;
     /** Whole-world meshes, drawn once per visible east-west copy of the map. */
-    let worldCopies: { graticule: THREE.LineSegments; cap: THREE.Mesh; shift: number }[] = [];
+    let worldCopies: {
+        graticule: THREE.LineSegments;
+        cap: THREE.Mesh;
+        shift: number;
+    }[] = [];
+    let currentGridStep = DEFAULT_GRID_STEP;
     let capMat: THREE.ShaderMaterial;
 
     // Graticule sits just above the ocean and below the land fills.
@@ -67,7 +91,7 @@
 
     // Wheel-velocity prefetch state
     let lastWheelTime = 0;
-    let wheelVelocity  = 0; // EMA of signed px/ms (+ = zooming in)
+    let wheelVelocity = 0; // EMA of signed px/ms (+ = zooming in)
 
     // Cursor-anchored zoom: NDC position the zoom should keep pinned.
     let zoomAnchorX = 0;
@@ -78,7 +102,7 @@
     const BASE_SCALE = 0.82;
     // Floor chosen so the globe/map always fills a decent share of the
     // viewport — below this it shrinks into an island in a black void.
-    const MIN_SCALE  = 0.62;
+    const MIN_SCALE = 0.62;
     // Max zoom is derived from MAX_CAMERA_ZOOM (one level past the deepest tile
     // zoom the data carries), so it's a deliberate one-level overzoom rather
     // than an arbitrary cap. Recomputed on resize since it depends on canvas
@@ -128,7 +152,7 @@
     // input feels smooth rather than stepped, and so the tile LOD changes are
     // spread over several frames instead of snapping.
     let currentScale = BASE_SCALE;
-    let targetScale  = BASE_SCALE;
+    let targetScale = BASE_SCALE;
     const ZOOM_DAMPING = 0.18;
 
     // Flat projections pan (in map units) instead of rotating the globe, and
@@ -153,7 +177,8 @@
     function clampPan(): void {
         const aspect = gratMat?.uniforms.u_aspect.value ?? 1;
         const WORLD_WIDTH = 2;
-        mapPan.x = ((((mapPan.x + 1) % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH) - 1;
+        mapPan.x =
+            ((((mapPan.x + 1) % WORLD_WIDTH) + WORLD_WIDTH) % WORLD_WIDTH) - 1;
         const halfY = Math.max(0, 0.5 - 1 / (aspect * currentScale));
         mapPan.y = Math.max(-halfY, Math.min(halfY, mapPan.y));
     }
@@ -165,13 +190,13 @@
     }
 
     // Projection morph tween
-    let currentProjection = 0;  // matches shader int 0–3
+    let currentProjection = 0; // matches shader int 0–3
     let pendingProjection = 0;
     let tweenStart = 0;
     let tweenActive = false;
 
     // Pointer drag
-    let isDragging   = false;
+    let isDragging = false;
     // Sensitivity: radians per pixel
     const SENSITIVITY = 0.004;
 
@@ -180,24 +205,24 @@
     // =========================================================================
     function makeLineMat(): THREE.ShaderMaterial {
         return new THREE.ShaderMaterial({
-            vertexShader:   vertSrc,
+            vertexShader: vertSrc,
             fragmentShader: fragSrc,
-            transparent:    true,
-            depthTest:      false,
-            depthWrite:     false,
+            transparent: true,
+            depthTest: false,
+            depthWrite: false,
             uniforms: {
-                u_globeRotation:   { value: new THREE.Matrix3() },
+                u_globeRotation: { value: new THREE.Matrix3() },
                 u_projectionTypeA: { value: 0 },
                 u_projectionTypeB: { value: 0 },
-                u_blend:           { value: 0.0 },
-                u_scale:           { value: currentScale },
-                u_aspect:          { value: 1.0 },
-                u_pan:             { value: new THREE.Vector2(0, 0) },
-                u_worldShift:      { value: 0 },
-                u_lineColor:       { value: new THREE.Color(GRAT_COLOR) },
-                u_globalAlpha:     { value: 0.35 },
-                u_tileCenter:      { value: new THREE.Vector2(0, 0) },
-                u_tileHalfExtent:  { value: new THREE.Vector2(0, 0) },
+                u_blend: { value: 0.0 },
+                u_scale: { value: currentScale },
+                u_aspect: { value: 1.0 },
+                u_pan: { value: new THREE.Vector2(0, 0) },
+                u_worldShift: { value: 0 },
+                u_lineColor: { value: new THREE.Color(GRAT_COLOR) },
+                u_globalAlpha: { value: 0.35 },
+                u_tileCenter: { value: new THREE.Vector2(0, 0) },
+                u_tileHalfExtent: { value: new THREE.Vector2(0, 0) },
             },
         });
     }
@@ -207,37 +232,37 @@
     // uniform sync per frame.
     function makeFillMat(): THREE.ShaderMaterial {
         return new THREE.ShaderMaterial({
-            vertexShader:   fillVertSrc,
+            vertexShader: fillVertSrc,
             fragmentShader: fillFragSrc,
             // Opaque in appearance, but flagged transparent so it shares the
             // renderOrder-sorted pass with the ocean quad. As an opaque-pass
             // material it would draw before the ocean, which would then paint
             // straight over every landmass.
-            transparent:    true,
+            transparent: true,
             // Fills are fully opaque and clip with discard, so blending buys
             // nothing — and it costs: shared triangle edges get composited
             // twice, drawing a visible web of seams across every filled area.
-            blending:       THREE.NoBlending,
-            depthTest:      false,
-            depthWrite:     false,
+            blending: THREE.NoBlending,
+            depthTest: false,
+            depthWrite: false,
             // Winding is not meaningful here: the tile Y axis is flipped during
             // quantization, and the projection itself can reverse orientation
             // (near the limb, or between projections), so face culling would
             // drop arbitrary triangles.
-            side:           THREE.DoubleSide,
+            side: THREE.DoubleSide,
             uniforms: {
-                u_globeRotation:   { value: new THREE.Matrix3() },
+                u_globeRotation: { value: new THREE.Matrix3() },
                 u_projectionTypeA: { value: 0 },
                 u_projectionTypeB: { value: 0 },
-                u_blend:           { value: 0.0 },
-                u_scale:           { value: currentScale },
-                u_aspect:          { value: 1.0 },
-                u_pan:             { value: new THREE.Vector2(0, 0) },
-                u_sphereWeight:    { value: 1.0 },
-                u_color:           { value: new THREE.Color(0xffffff) },
-                u_opacity:         { value: 1.0 },
-                u_tileLon:         { value: new THREE.Vector2(0, 0) },
-                u_tileMercY:       { value: new THREE.Vector2(0.5, 0.5) },
+                u_blend: { value: 0.0 },
+                u_scale: { value: currentScale },
+                u_aspect: { value: 1.0 },
+                u_pan: { value: new THREE.Vector2(0, 0) },
+                u_sphereWeight: { value: 1.0 },
+                u_color: { value: new THREE.Color(0xffffff) },
+                u_opacity: { value: 1.0 },
+                u_tileLon: { value: new THREE.Vector2(0, 0) },
+                u_tileMercY: { value: new THREE.Vector2(0.5, 0.5) },
             },
         });
     }
@@ -249,7 +274,8 @@
     function syncUniforms(): void {
         const blend = gratMat.uniforms.u_blend.value as number;
         let sphereWeight = 0;
-        if (currentProjection === ProjectionType.Sphere) sphereWeight += 1 - blend;
+        if (currentProjection === ProjectionType.Sphere)
+            sphereWeight += 1 - blend;
         if (pendingProjection === ProjectionType.Sphere) sphereWeight += blend;
 
         for (const copy of worldCopies) {
@@ -265,8 +291,14 @@
                 u.u_scale.value = currentScale;
                 u.u_aspect.value = gratMat.uniforms.u_aspect.value;
                 u.u_pan.value.copy(mapPan);
-                if (u.u_globalAlpha) u.u_globalAlpha.value = gratMat.uniforms.u_globalAlpha.value;
-                if (u.u_sphereWeight) u.u_sphereWeight.value = Math.max(0, Math.min(1, sphereWeight));
+                if (u.u_globalAlpha)
+                    u.u_globalAlpha.value =
+                        gratMat.uniforms.u_globalAlpha.value;
+                if (u.u_sphereWeight)
+                    u.u_sphereWeight.value = Math.max(
+                        0,
+                        Math.min(1, sphereWeight),
+                    );
             }
         }
     }
@@ -276,6 +308,28 @@
     function syncOceanScale(): void {
         if (!ocean) return;
         ocean.scale.set(gratMat?.uniforms.u_aspect.value ?? 1, 1, 1);
+    }
+
+    /**
+     * Disposes and rebuilds every world copy's graticule at a new spacing,
+     *  reusing each copy's existing material so uniforms stay in sync.
+     */
+    function rebuildGraticules(gridStep: number): void {
+        for (const copy of worldCopies) {
+            const oldGraticule = copy.graticule;
+            scene.remove(oldGraticule);
+            oldGraticule.geometry.dispose();
+
+            const { graticule } = buildGraticule(
+                oldGraticule.material as THREE.ShaderMaterial,
+                gridStep,
+            );
+            graticule.renderOrder = 0;
+            graticule.visible = showGraticule;
+            scene.add(graticule);
+
+            copy.graticule = graticule;
+        }
     }
 
     // =========================================================================
@@ -288,9 +342,9 @@
 
         // Renderer
         renderer = new THREE.WebGLRenderer({
-            canvas:    canvasEl,
+            canvas: canvasEl,
             antialias: true,
-            alpha:     false,
+            alpha: false,
         });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(w, h, false);
@@ -306,26 +360,33 @@
         //   - world x ∈ [-a,a]  → NDC x ∈ [-1,1]   (1 world unit = 1/aspect NDC unit)
         // A sphere of world-radius r therefore appears as a circle of radius
         // r × (H/2) pixels — exactly matching the line shader's scale formula.
-        camera = new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.01, 100);
+        camera = new THREE.OrthographicCamera(
+            -aspect,
+            aspect,
+            1,
+            -1,
+            0.01,
+            100,
+        );
         camera.position.set(0, 0, 2);
 
         // Ocean. A full-screen quad whose shader masks it to whichever projection
         // shape is current (disc / rectangle / ellipse), morphing between them,
         // so every projection gets the same treatment from one draw call.
         bodyMat = new THREE.ShaderMaterial({
-            vertexShader:   bodyVertSrc,
+            vertexShader: bodyVertSrc,
             fragmentShader: bodyFragSrc,
             transparent: true,
-            depthTest:  false,
+            depthTest: false,
             depthWrite: false,
             uniforms: {
-                u_ocean:           { value: new THREE.Color(OCEAN_COLOR) },
-                u_scale:           { value: currentScale },
-                u_aspect:          { value: aspect },
+                u_ocean: { value: new THREE.Color(OCEAN_COLOR) },
+                u_scale: { value: currentScale },
+                u_aspect: { value: aspect },
                 u_projectionTypeA: { value: 0 },
                 u_projectionTypeB: { value: 0 },
-                u_blend:           { value: 0.0 },
-                u_pan:             { value: new THREE.Vector2(0, 0) },
+                u_blend: { value: 0.0 },
+                u_pan: { value: new THREE.Vector2(0, 0) },
             },
         });
         ocean = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bodyMat);
@@ -349,25 +410,25 @@
         // since a single mesh spans the whole world.
         gratMat.uniforms.u_tileHalfExtent.value.set(Math.PI, Math.PI / 2);
         capMat = new THREE.ShaderMaterial({
-            vertexShader:   geoFillVertSrc,
+            vertexShader: geoFillVertSrc,
             fragmentShader: fillFragSrc,
             transparent: true,
-            blending:    THREE.NoBlending, // see makeFillMat
-            depthTest:  false,
+            blending: THREE.NoBlending, // see makeFillMat
+            depthTest: false,
             depthWrite: false,
-            side:       THREE.DoubleSide,
+            side: THREE.DoubleSide,
             uniforms: {
-                u_globeRotation:   { value: new THREE.Matrix3() },
+                u_globeRotation: { value: new THREE.Matrix3() },
                 u_projectionTypeA: { value: 0 },
                 u_projectionTypeB: { value: 0 },
-                u_blend:           { value: 0.0 },
-                u_scale:           { value: currentScale },
-                u_aspect:          { value: aspect },
-                u_pan:             { value: new THREE.Vector2(0, 0) },
-                u_worldShift:      { value: 0 },
-                u_sphereWeight:    { value: 1.0 },
-                u_color:           { value: new THREE.Color(ANTARCTIC_ICE_COLOR) },
-                u_opacity:         { value: 1.0 },
+                u_blend: { value: 0.0 },
+                u_scale: { value: currentScale },
+                u_aspect: { value: aspect },
+                u_pan: { value: new THREE.Vector2(0, 0) },
+                u_worldShift: { value: 0 },
+                u_sphereWeight: { value: 1.0 },
+                u_color: { value: new THREE.Color(ANTARCTIC_ICE_COLOR) },
+                u_opacity: { value: 1.0 },
             },
         });
 
@@ -394,7 +455,10 @@
         try {
             await tileManager.init(scene, fillMat, TILE_LAYERS);
         } catch (err) {
-            console.error('[GlobeCanvas] Failed to initialize tile layers:', err);
+            console.error(
+                "[GlobeCanvas] Failed to initialize tile layers:",
+                err,
+            );
         }
 
         // Resize observer
@@ -402,21 +466,21 @@
         ro.observe(canvasEl);
 
         // Pointer events (trackball, always active)
-        canvasEl.addEventListener('pointerdown',  onPointerDown);
-        canvasEl.addEventListener('pointermove',  onPointerMove);
-        canvasEl.addEventListener('pointerup',    onPointerUp);
-        canvasEl.addEventListener('pointerleave', onPointerUp);
-        canvasEl.addEventListener('pointerleave', () => {
+        canvasEl.addEventListener("pointerdown", onPointerDown);
+        canvasEl.addEventListener("pointermove", onPointerMove);
+        canvasEl.addEventListener("pointerup", onPointerUp);
+        canvasEl.addEventListener("pointerleave", onPointerUp);
+        canvasEl.addEventListener("pointerleave", () => {
             statusBar?.clearCoords();
             hasHover = false;
             pushTileDebugInfo();
         });
-        canvasEl.addEventListener('wheel',        onWheel, { passive: false });
+        canvasEl.addEventListener("wheel", onWheel, { passive: false });
         // Prevent context-menu on long-press (mobile)
-        canvasEl.addEventListener('contextmenu',  (e) => e.preventDefault());
-        
+        canvasEl.addEventListener("contextmenu", (e) => e.preventDefault());
+
         // Custom WebGL Crash recovery listener
-        canvasEl.addEventListener('webglcontextlost', onContextLost);
+        canvasEl.addEventListener("webglcontextlost", onContextLost);
 
         // Start render loop
         rafId = requestAnimationFrame(animate);
@@ -434,9 +498,9 @@
         renderer.setSize(w, h, false);
 
         // Update orthographic frustum
-        camera.left   = -aspect;
-        camera.right  =  aspect;
-        camera.top    =  1;
+        camera.left = -aspect;
+        camera.right = aspect;
+        camera.top = 1;
         camera.bottom = -1;
         camera.updateProjectionMatrix();
 
@@ -460,8 +524,12 @@
         // Hover readout: runs on every move, independent of drag state. Placed
         // first because the drag branches below return early.
         const hoverRect = canvasEl.getBoundingClientRect();
-        const hoverNdcX = ((e.clientX - hoverRect.left) / hoverRect.width) * 2 - 1;
-        const hoverNdcY = -(((e.clientY - hoverRect.top) / hoverRect.height) * 2 - 1);
+        const hoverNdcX =
+            ((e.clientX - hoverRect.left) / hoverRect.width) * 2 - 1;
+        const hoverNdcY = -(
+            ((e.clientY - hoverRect.top) / hoverRect.height) * 2 -
+            1
+        );
         const hoverGeo = unprojectPoint(hoverNdcX, hoverNdcY, {
             rotMat3,
             scale: currentScale,
@@ -473,7 +541,9 @@
             lastHoverLonDeg = (hoverGeo.lon * 180) / Math.PI;
             lastHoverLatDeg = (hoverGeo.lat * 180) / Math.PI;
             hasHover = true;
-            statusBar?.setCoords(formatLatLonDMS(lastHoverLatDeg, lastHoverLonDeg));
+            statusBar?.setCoords(
+                formatLatLonDMS(lastHoverLatDeg, lastHoverLonDeg),
+            );
         } else {
             hasHover = false;
             statusBar?.clearCoords();
@@ -488,8 +558,8 @@
             const aspect = gratMat.uniforms.u_aspect.value;
             const halfW = canvasEl.clientWidth / 2;
             const halfH = canvasEl.clientHeight / 2;
-            mapPan.x -= (e.movementX / halfW) / currentScale;
-            mapPan.y += (e.movementY / halfH) / (aspect * currentScale);
+            mapPan.x -= e.movementX / halfW / currentScale;
+            mapPan.y += e.movementY / halfH / (aspect * currentScale);
             clampPan();
             return;
         }
@@ -510,10 +580,12 @@
         // Horizontal drag (dx) → rotate around Z axis (north/up on screen)
         // Vertical   drag (dy) → rotate around Y axis (east/right on screen)
         const qLon = new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 0, 1), dx
+            new THREE.Vector3(0, 0, 1),
+            dx,
         );
         const qLat = new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 1, 0), dy
+            new THREE.Vector3(0, 1, 0),
+            dy,
         );
         panQuat.premultiply(qLon).premultiply(qLat).normalize();
         updateRotMat3();
@@ -533,9 +605,14 @@
         e.preventDefault();
         // Exponential in wheel delta, so a tick feels the same at every depth.
         const zoomFactor = Math.exp(-e.deltaY * 0.0015);
-        const floor = minScaleFor(tweenActive ? pendingProjection : currentProjection,
-                                  gratMat.uniforms.u_aspect.value);
-        targetScale = Math.max(floor, Math.min(maxScale, targetScale * zoomFactor));
+        const floor = minScaleFor(
+            tweenActive ? pendingProjection : currentProjection,
+            gratMat.uniforms.u_aspect.value,
+        );
+        targetScale = Math.max(
+            floor,
+            Math.min(maxScale, targetScale * zoomFactor),
+        );
 
         const rect = canvasEl.getBoundingClientRect();
         zoomAnchorX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -544,7 +621,7 @@
         // Wheel-velocity prefetch: predict where the zoom is heading and warm
         // the tile cache under the cursor ray ahead of time.
         const now = performance.now();
-        const dt  = Math.max(1, now - lastWheelTime);
+        const dt = Math.max(1, now - lastWheelTime);
         lastWheelTime = now;
         wheelVelocity = wheelVelocity * 0.7 + (-e.deltaY / dt) * 0.3;
 
@@ -553,7 +630,9 @@
                 rotMat3,
                 scale: currentScale,
                 aspect: gratMat.uniforms.u_aspect.value,
-                projectionType: tweenActive ? pendingProjection : currentProjection,
+                projectionType: tweenActive
+                    ? pendingProjection
+                    : currentProjection,
             });
             if (geo) {
                 tileManager.onWheelVelocity({
@@ -575,22 +654,31 @@
     // =========================================================================
     function applyZoomAnchor(prevScale: number, nextScale: number): void {
         const aspect = gratMat.uniforms.u_aspect.value;
-        const projectionType = tweenActive ? pendingProjection : currentProjection;
+        const projectionType = tweenActive
+            ? pendingProjection
+            : currentProjection;
 
         if (isFlatMode()) {
             // Keep the map point under the cursor fixed: it sits at
             // pan + ndc/scale, so pan absorbs the change in 1/scale.
             mapPan.x += zoomAnchorX * (1 / prevScale - 1 / nextScale);
-            mapPan.y += (zoomAnchorY / aspect) * (1 / prevScale - 1 / nextScale);
+            mapPan.y +=
+                (zoomAnchorY / aspect) * (1 / prevScale - 1 / nextScale);
             clampPan();
             return;
         }
 
         const before = viewDirection(zoomAnchorX, zoomAnchorY, {
-            rotMat3, scale: prevScale, aspect, projectionType
+            rotMat3,
+            scale: prevScale,
+            aspect,
+            projectionType,
         });
         const after = viewDirection(zoomAnchorX, zoomAnchorY, {
-            rotMat3, scale: nextScale, aspect, projectionType
+            rotMat3,
+            scale: nextScale,
+            aspect,
+            projectionType,
         });
         if (!before || !after) return;
 
@@ -599,7 +687,11 @@
         // belongs to panQuat (zoom shouldn't touch heading) — so it's conjugated
         // through headingQuat into pan's frame before being applied there.
         const q = new THREE.Quaternion().setFromUnitVectors(before, after);
-        const qInPanFrame = tmpQuat.copy(headingQuat).invert().multiply(q).multiply(headingQuat);
+        const qInPanFrame = tmpQuat
+            .copy(headingQuat)
+            .invert()
+            .multiply(q)
+            .multiply(headingQuat);
         panQuat.premultiply(qInPanFrame).normalize();
         updateRotMat3();
     }
@@ -633,9 +725,9 @@
 
         gratMat.uniforms.u_projectionTypeA.value = currentProjection;
         gratMat.uniforms.u_projectionTypeB.value = next;
-        gratMat.uniforms.u_blend.value           = 0.0;
+        gratMat.uniforms.u_blend.value = 0.0;
 
-        tweenStart  = performance.now();
+        tweenStart = performance.now();
         tweenActive = true;
 
         // Entering a flat projection: zoom out to the fit-the-viewport scale and
@@ -645,7 +737,10 @@
             targetScale = Math.max(floor, currentScale);
             mapPan.set(0, 0);
         } else {
-            targetScale = Math.min(targetScale, Math.max(MIN_SCALE, BASE_SCALE));
+            targetScale = Math.min(
+                targetScale,
+                Math.max(MIN_SCALE, BASE_SCALE),
+            );
         }
     }
 
@@ -657,19 +752,25 @@
 
         // Drive tween
         if (tweenActive) {
-            const t     = Math.min((now - tweenStart) / TWEEN_MS, 1.0);
-            const blend = t * t * (3.0 - 2.0 * t);   // smoothstep
-
+            const t = Math.min((now - tweenStart) / TWEEN_MS, 1.0);
+            const blend = t * t * (3.0 - 2.0 * t); // smoothstep
             gratMat.uniforms.u_blend.value = blend;
 
             if (t >= 1.0) {
-                tweenActive       = false;
+                tweenActive = false;
                 currentProjection = pendingProjection;
 
                 gratMat.uniforms.u_projectionTypeA.value = currentProjection;
                 gratMat.uniforms.u_projectionTypeB.value = currentProjection;
-                gratMat.uniforms.u_blend.value           = 0.0;
+                gratMat.uniforms.u_blend.value = 0.0;
             }
+        }
+
+        const effectiveZoom = zoomForScale(currentScale, canvasEl.clientWidth);
+        const nextGridStep = pickGraticuleStep(effectiveZoom);
+        if (nextGridStep !== currentGridStep) {
+            currentGridStep = nextGridStep;
+            rebuildGraticules(currentGridStep);
         }
 
         // Ease zoom toward its target, then push the resulting scale everywhere.
@@ -681,8 +782,10 @@
             currentScale = targetScale;
         }
         // A flat map must never zoom out past covering the viewport.
-        const floor = minScaleFor(tweenActive ? pendingProjection : currentProjection,
-                                  gratMat.uniforms.u_aspect.value);
+        const floor = minScaleFor(
+            tweenActive ? pendingProjection : currentProjection,
+            gratMat.uniforms.u_aspect.value,
+        );
         if (targetScale < floor) targetScale = floor;
         if (currentScale < floor) currentScale = floor;
         clampPan();
@@ -691,7 +794,8 @@
         // North" set a new target; a live drag keeps target == current so
         // this is a no-op while the knob is actually being dragged.
         if (Math.abs(targetHeadingAngle - headingAngle) > 1e-4) {
-            headingAngle += (targetHeadingAngle - headingAngle) * HEADING_DAMPING;
+            headingAngle +=
+                (targetHeadingAngle - headingAngle) * HEADING_DAMPING;
             headingQuat.setFromAxisAngle(HEADING_AXIS, headingAngle);
             updateRotMat3();
             headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
@@ -708,14 +812,15 @@
 
         // The ocean follows the same projection/morph state as the fills so its
         // shape stays locked to the coastlines.
-        bodyMat.uniforms.u_scale.value           = currentScale;
+        bodyMat.uniforms.u_scale.value = currentScale;
         bodyMat.uniforms.u_projectionTypeA.value = currentProjection;
         bodyMat.uniforms.u_projectionTypeB.value = pendingProjection;
-        bodyMat.uniforms.u_blend.value           = gratMat.uniforms.u_blend.value;
+        bodyMat.uniforms.u_blend.value = gratMat.uniforms.u_blend.value;
 
         // Graticule is reference furniture, not data: let it recede as the view
         // zooms in, where a 15° grid is far off-screen and only adds noise.
-        const gratFade = 1 - Math.min(1, Math.max(0, (currentScale / BASE_SCALE - 2) / 10));
+        const gratFade =
+            1 - Math.min(1, Math.max(0, (currentScale / BASE_SCALE - 2) / 10));
         gratMat.uniforms.u_globalAlpha.value = 0.28 * gratFade;
 
         // Heading only makes sense while looking at a rotatable sphere. Driven
@@ -732,13 +837,13 @@
 
         tileManager?.update({
             rotMat3,
-            scale:         currentScale,
-            aspect:        gratMat.uniforms.u_aspect.value,
+            scale: currentScale,
+            aspect: gratMat.uniforms.u_aspect.value,
             canvasWidthPx: canvasEl.clientWidth,
-            projectionA:   currentProjection,
-            projectionB:   pendingProjection,
-            blend:         gratMat.uniforms.u_blend.value,
-            pan:           mapPan,
+            projectionA: currentProjection,
+            projectionB: pendingProjection,
+            blend: gratMat.uniforms.u_blend.value,
+            pan: mapPan,
         });
 
         renderer.render(scene, camera);
@@ -759,25 +864,29 @@
         if (!tileDebugOverlay) return;
         const infos = tileManager?.getDebugInfo() ?? [];
         const primary = infos[0];
-        const lines: string[] = ['[TILE DEBUG]'];
+        const lines: string[] = ["[TILE DEBUG]"];
         if (primary) {
             lines.push(`zoom (effective): ${primary.effectiveZoom}`);
             const counts = Object.entries(primary.tileCountsByZoom)
                 .sort(([a], [b]) => Number(a) - Number(b))
                 .map(([z, n]) => `z${z}:${n}`)
-                .join(' ');
-            lines.push(`in scene: ${counts || '(none)'}`);
+                .join(" ");
+            lines.push(`in scene: ${counts || "(none)"}`);
         } else {
-            lines.push('zoom (effective): —');
+            lines.push("zoom (effective): —");
         }
         if (hasHover) {
-            const z = primary?.effectiveZoom ?? Math.round(zoomForScale(currentScale, canvasEl.clientWidth));
+            const z =
+                primary?.effectiveZoom ??
+                Math.round(zoomForScale(currentScale, canvasEl.clientWidth));
             const { x, y } = lonLatToTile(lastHoverLonDeg, lastHoverLatDeg, z);
-            lines.push(`hover tile: z${z} / x${Math.floor(x)} / y${Math.floor(y)}`);
+            lines.push(
+                `hover tile: z${z} / x${Math.floor(x)} / y${Math.floor(y)}`,
+            );
         } else {
-            lines.push('hover tile: —');
+            lines.push("hover tile: —");
         }
-        tileDebugOverlay.setInfo(lines.join('\n'));
+        tileDebugOverlay.setInfo(lines.join("\n"));
     }
 
     /** Derives simulated altitude and the scale-bar label/width from the
@@ -802,7 +911,8 @@
             });
             const centerLat = centerGeo?.lat ?? 0;
             kmPerPx =
-                (2 * Math.PI * EARTH_RADIUS_KM * Math.cos(centerLat)) / (currentScale * canvasWidthPx);
+                (2 * Math.PI * EARTH_RADIUS_KM * Math.cos(centerLat)) /
+                (currentScale * canvasWidthPx);
         } else {
             // Sphere: exact at the sub-cursor/sub-nadir point; an approximation
             // toward the limb due to orthographic foreshortening, consistent
@@ -821,9 +931,15 @@
         // circumference/scale to within the 2π·R_e vs 40,075km rounding gap.
         const visibleWidthKm = canvasWidthPx * kmPerPx;
         const altitudeKm =
-            visibleWidthKm / 2 / Math.tan((ALTITUDE_FOV_DEG * Math.PI) / 180 / 2);
+            visibleWidthKm /
+            2 /
+            Math.tan((ALTITUDE_FOV_DEG * Math.PI) / 180 / 2);
 
-        const { km, label } = pickNiceScale(kmPerPx, MAX_SCALE_BAR_PX, MIN_SCALE_BAR_PX);
+        const { km, label } = pickNiceScale(
+            kmPerPx,
+            MAX_SCALE_BAR_PX,
+            MIN_SCALE_BAR_PX,
+        );
         const barWidthPx = km / kmPerPx;
 
         // Only touch $state if something actually changed, so an idle view
@@ -853,18 +969,38 @@
     });
 
     // =========================================================================
+    // Svelte reactive: toggle graticule visibility from parent prop
+    // =========================================================================
+    $effect(() => {
+        console.log(
+            "[graticule toggle]",
+            showGraticule,
+            "worldCopies count:",
+            worldCopies.length,
+        );
+        for (const copy of worldCopies) {
+            copy.graticule.visible = showGraticule;
+        }
+    });
+
+    // =========================================================================
     // Error Handling
     // =========================================================================
     function onContextLost(e: Event): void {
         e.preventDefault();
-        console.error('[GlobeCanvas] WebGL context lost. Rendering recovery prompt.', e);
+        console.error(
+            "[GlobeCanvas] WebGL context lost. Rendering recovery prompt.",
+            e,
+        );
         hasCrashed = true;
     }
 
     // =========================================================================
     // Lifecycle
     // =========================================================================
-    onMount(() => { initScene(); });
+    onMount(() => {
+        initScene();
+    });
 
     onDestroy(() => {
         if (!browser) return;
@@ -890,7 +1026,11 @@
     aria-label="Interactive world map projection. Drag to rotate"
 ></canvas>
 
-<HeadingControl bind:this={headingControl} onDrag={onHeadingDrag} onResetNorth={onResetNorth} />
+<HeadingControl
+    bind:this={headingControl}
+    onDrag={onHeadingDrag}
+    {onResetNorth}
+/>
 
 <TileDebugOverlay bind:this={tileDebugOverlay} />
 
@@ -906,7 +1046,7 @@
     .globe-canvas:active {
         cursor: grabbing;
     }
-    
+
     .crash-overlay {
         position: absolute;
         inset: 0;
