@@ -956,6 +956,17 @@
     }
 
     // =========================================================================
+    // Exported controls (#57): bridges the layer panel down to TileManager.
+    // =========================================================================
+    export function setLayerVisibility(layerId: string, visible: boolean): void {
+        tileManager?.setLayerVisibility(layerId, visible);
+    }
+
+    export function setLayerOpacity(layerId: string, opacity: number): void {
+        tileManager?.setLayerOpacity(layerId, opacity);
+    }
+
+    // =========================================================================
     // Svelte reactive: respond to parent activeProjection prop changes
     // =========================================================================
     $effect(() => {
