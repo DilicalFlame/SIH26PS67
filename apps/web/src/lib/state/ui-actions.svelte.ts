@@ -14,6 +14,14 @@ const subscribers = new Set<(action: UiAction) => void>();
 let pendingActions: UiAction[] = [];
 let flushScheduled = false;
 
+/** UiAction's `type` literals, mirrored here so dispatchUiAction can warn on
+ *  an unrecognized one instead of trusting the static type — real dispatches
+ *  can originate as JSON from the chat/agent tool boundary (contracts §4.7),
+ *  which isn't guaranteed to match at runtime the way the type system
+ *  promises. Keep in sync with ui-action.ts, whose own comment requires
+ *  updating the contracts doc before a fourth variant is added anyway. */
+const KNOWN_ACTION_TYPES = new Set<string>(['set_map_layer', 'fly_to', 'open_profile']);
+
 function flush() {
 	const actionsToRun = pendingActions;
 	pendingActions = [];
@@ -26,9 +34,15 @@ function flush() {
 }
 
 /** Called by anything that wants to trigger a map action: chat, a click
- *  handler, a keyboard shortcut. Queued, not delivered immediately —
- *  see file-level comment. */
+ *  handler, a keyboard shortcut. Queued, not delivered immediately — see
+ *  file-level comment. An action whose `type` isn't recognized warns and is
+ *  dropped here rather than reaching subscribers or throwing. */
 export function dispatchUiAction(action: UiAction): void {
+	const type = (action as { type?: unknown } | null | undefined)?.type;
+	if (typeof type !== 'string' || !KNOWN_ACTION_TYPES.has(type)) {
+		console.warn('[ui-actions] dropping action with unrecognized type:', action);
+		return;
+	}
 	pendingActions.push(action);
 	if (!flushScheduled) {
 		flushScheduled = true;
