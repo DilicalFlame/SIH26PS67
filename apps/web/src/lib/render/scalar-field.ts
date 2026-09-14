@@ -20,6 +20,17 @@ import type { ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
 
 const DEG2RAD = Math.PI / 180;
 
+/**
+ * Default painter's-algorithm slot (#47). Coastline tiles use
+ * `style.order * 1000 + zoom` (tile-manager.ts) with MAX_TILE_ZOOM = 14, so
+ * anything below ~10-15k clears every coastline style at every zoom with
+ * plenty of headroom for new tile styles. Point/marker layers (#51, #59) are
+ * unbuilt, but the AC is "above coastlines, below markers" — leaving five
+ * clear decades above this before markers would need to start justifies
+ * reserving 10000 rather than crowding just past the tiles' current max.
+ */
+const DEFAULT_RENDER_ORDER = 10000;
+
 const FRAGMENT_SHADER = `
     precision highp float;
 
@@ -166,11 +177,24 @@ export class ScalarFieldRenderer {
 		this.mesh.frustumCulled = false;
 		this.mesh.visible = false;
 		this.mesh.name = 'scalar-field';
+		this.mesh.renderOrder = DEFAULT_RENDER_ORDER;
 	}
 
 	mount(scene: THREE.Scene): void {
 		this.scene = scene;
 		scene.add(this.mesh);
+	}
+
+	/**
+	 * Explicit painter's-algorithm slot (#47) — set() rather than relying on
+	 * insertion order, so stacking multiple fields (or moving one past
+	 * coastlines/markers) doesn't depend on the order layers were mounted in.
+	 * `transparent`/`depthWrite: false` are already set on the material
+	 * (see the constructor), which is what lets two stacked, differently-
+	 * ordered fields blend by opacity instead of occluding each other.
+	 */
+	setRenderOrder(order: number): void {
+		this.mesh.renderOrder = order;
 	}
 
 	async setLayer(config: ScalarFieldLayerConfig): Promise<void> {

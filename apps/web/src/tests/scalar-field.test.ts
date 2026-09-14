@@ -2,7 +2,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { ScalarFieldRenderer } from '$lib/render/scalar-field';
-import type { ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
+import { MAX_TILE_ZOOM, TILE_LAYERS, type ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
+
+/** Mirrors tile-manager.ts's buildMeshes(): `style.order * 1000 + zoom`. */
+function maxCoastlineRenderOrder(): number {
+	const maxStyleOrder = Math.max(...TILE_LAYERS.flatMap((l) => l.styles.map((s) => s.order)));
+	return maxStyleOrder * 1000 + MAX_TILE_ZOOM;
+}
 
 function makeConfig(overrides: Partial<ScalarFieldLayerConfig> = {}): ScalarFieldLayerConfig {
 	return {
@@ -58,6 +64,22 @@ describe('ScalarFieldRenderer', () => {
 		const scene = new THREE.Scene();
 		renderer.mount(scene);
 		expect(scene.children).toContain(renderer.mesh);
+	});
+
+	it('defaults renderOrder above every coastline tile (#47)', () => {
+		const renderer = new ScalarFieldRenderer();
+		expect(renderer.mesh.renderOrder).toBeGreaterThan(maxCoastlineRenderOrder());
+	});
+
+	it('setRenderOrder lets two stacked fields draw in a configured order', () => {
+		const back = new ScalarFieldRenderer();
+		const front = new ScalarFieldRenderer();
+
+		back.setRenderOrder(10000);
+		front.setRenderOrder(10001);
+
+		expect(front.mesh.renderOrder).toBeGreaterThan(back.mesh.renderOrder);
+		expect(back.mesh.material).toMatchObject({ transparent: true, depthWrite: false });
 	});
 
 	it('fetches the grid substituting {d}/{t} with array indices, not values', async () => {
