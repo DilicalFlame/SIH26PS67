@@ -4,6 +4,7 @@
 	import { ProjectionType, PROJECTIONS } from '$lib/types/projection';
 
 	let activeProjection = $state<ProjectionType>(ProjectionType.Sphere);
+	let showGraticule = $state(true);
 	let statusBarRef = $state<StatusBar | undefined>(undefined);
 </script>
 
@@ -18,7 +19,7 @@
 <main class="viewport">
 	<!-- Full-screen Three.js canvas -->
 	<div class="canvas-wrapper">
-		<GlobeCanvas {activeProjection} statusBar={statusBarRef} />
+		<GlobeCanvas {activeProjection} {showGraticule} statusBar={statusBarRef} />
 	</div>
 
 	<!-- Floating projection picker -->
@@ -36,6 +37,16 @@
 			</button>
 		{/each}
 	</nav>
+
+	<button
+		class="grid-toggle"
+		class:active={showGraticule}
+		onclick={() => { showGraticule = !showGraticule; }}
+		aria-pressed={showGraticule}
+		title="Toggle lat/lon grid"
+	>
+		<span aria-hidden="true">⌗</span>
+	</button>
 
 	<StatusBar bind:this={statusBarRef} />
 </main>
@@ -147,5 +158,44 @@
 		.proj-btn {
 			padding: 0.5rem 0.65rem;
 		}
+	}
+
+	/* Grid toggle */
+
+.grid-toggle {
+    position: fixed;
+    bottom: 6rem; /* Changed from 3.25rem to 6rem */
+    right: 1rem;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    color: rgba(180, 68, 68, 0.85);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 200ms ease, background 200ms ease, transform;
+    z-index: 10;
+}
+
+
+	.grid-toggle:hover {
+		color: rgba(255, 255, 255, 0.75);
+		background: rgba(255, 255, 255, 0.07);
+	}
+
+	.grid-toggle.active {
+		color: #ffffff;
+		background: rgba(255, 255, 255, 0.15);
+		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+	}
+
+	.grid-toggle:active {
+		transform: scale(0.92);
 	}
 </style>
