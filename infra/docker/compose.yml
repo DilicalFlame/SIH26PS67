@@ -83,8 +83,16 @@ services:
   # Dev-only container: reload bind-mount, see apps/api/Dockerfile.dev. The
   # host-side .env's POSTGRES_HOST/MINIO_ENDPOINT default to localhost (for
   # running the API on the host instead, per CONTRIBUTING.md); inside the
-  # compose network those must be the service names instead, so this
-  # overrides just those two plus the DATABASE_URL built from them.
+  # compose network POSTGRES_HOST/MINIO_ENDPOINT must be the service names
+  # instead, so this overrides just those two. DATABASE_URL is deliberately
+  # NOT set here: composing it as a string would need
+  # "...://${POSTGRES_USER}:${POSTGRES_PASSWORD}@..." literally, and with
+  # the documented default password admin@123 that embeds a second,
+  # unescaped '@' ambiguous with the userinfo/host delimiter — confirmed to
+  # make psycopg parse "123" as the hostname. The app builds the URL itself
+  # from the POSTGRES_* parts below instead (see
+  # app/core/database.py:get_database_url()), which percent-encodes each
+  # part and so can't hit this regardless of what the password contains.
   api:
     build:
       context: ../../apps/api
@@ -98,7 +106,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-thalassa}
       POSTGRES_USER: ${POSTGRES_USER:-thalassa}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.example to .env at the repo root}
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-thalassa}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.example to .env at the repo root}@postgres:5432/${POSTGRES_DB:-thalassa}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thalassa}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required — copy .env.example to .env at the repo root}
