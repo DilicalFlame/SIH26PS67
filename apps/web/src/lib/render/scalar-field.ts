@@ -273,6 +273,9 @@ export class ScalarFieldRenderer {
         this.texture.image.data = data;
         this.texture.needsUpdate = true;
     }
+    public setRenderOrder(order: number): void {
+        this.mesh.renderOrder = order;
+    }
 
     public dispose(): void {
         this.geometry.dispose();
