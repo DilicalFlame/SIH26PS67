@@ -1,4 +1,4 @@
-// apps/web/src/lib/placeholder.test.ts
+// apps/web/src/tests/placeholder.test.ts
 import { describe, it, expect } from 'vitest';
 
 describe('placeholder', () => {
