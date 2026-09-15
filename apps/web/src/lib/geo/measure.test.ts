@@ -4,8 +4,10 @@ import {
 	geodesicDistanceMeters,
 	pathLengthMeters,
 	polygonAreaSquareMeters,
+	headingDegrees,
 	formatDistance,
-	formatArea
+	formatArea,
+	formatHeading
 } from './measure';
 
 function carto(lonDeg: number, latDeg: number): Cesium.Cartographic {
@@ -77,6 +79,30 @@ describe('polygonAreaSquareMeters', () => {
 		const flatApprox = 111_319 ** 2;
 		expect(area).toBeGreaterThan(flatApprox * 0.98);
 		expect(area).toBeLessThan(flatApprox * 1.02);
+	});
+});
+
+describe('headingDegrees', () => {
+	it('is ~90° (due east) for a step along the equator', () => {
+		expect(headingDegrees(carto(0, 0), carto(1, 0))).toBeCloseTo(90, 0);
+	});
+	it('is ~0° (due north) for a step straight up in latitude', () => {
+		expect(headingDegrees(carto(0, 0), carto(0, 1))).toBeCloseTo(0, 0);
+	});
+	it('is ~180° (due south) for a step straight down in latitude', () => {
+		expect(headingDegrees(carto(0, 1), carto(0, 0))).toBeCloseTo(180, 0);
+	});
+	it('is always in [0, 360)', () => {
+		const h = headingDegrees(carto(5, 5), carto(-5, -5));
+		expect(h).toBeGreaterThanOrEqual(0);
+		expect(h).toBeLessThan(360);
+	});
+});
+
+describe('formatHeading', () => {
+	it('shows 2 decimal places with a degree sign', () => {
+		expect(formatHeading(91.8598)).toBe('91.86°');
+		expect(formatHeading(0)).toBe('0.00°');
 	});
 });
 

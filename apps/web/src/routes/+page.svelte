@@ -9,6 +9,10 @@
 	// which is a page-level panel — Toolbar's layers button (inside
 	// CesiumCanvas) just reflects/toggles it via props.
 	let layersOpen = $state(true);
+	// While the path/polygon tool's own top-right panel is showing, hide
+	// LayerControl rather than guess a pixel offset between the two — both
+	// anchor the same top-right corner (see CesiumCanvas > Toolbar.svelte).
+	let measureActive = $state(false);
 </script>
 
 <svelte:head>
@@ -30,12 +34,13 @@
 			statusBar={statusBarRef}
 			{layersOpen}
 			onToggleLayers={() => (layersOpen = !layersOpen)}
+			onMeasureActiveChange={(active) => (measureActive = active)}
 		/>
 	</div>
 
 	<!-- Floating layer control panel — visibility toggled from the top-bar
 	     layers icon (see CesiumCanvas > Toolbar.svelte). -->
-	{#if layersOpen}
+	{#if layersOpen && !measureActive}
 		<LayerControl
 			onVisibilityChange={(id, visible) => globeCanvasRef?.setLayerVisibility(id, visible)}
 			onOpacityChange={(id, opacity) => globeCanvasRef?.setLayerOpacity(id, opacity)}
