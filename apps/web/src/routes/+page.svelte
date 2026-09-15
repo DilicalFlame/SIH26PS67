@@ -1,5 +1,5 @@
 <script lang="ts">
-	import GlobeCanvas from '$lib/components/GlobeCanvas.svelte';
+	import CesiumCanvas from '$lib/components/CesiumCanvas.svelte';
 	import StatusBar from '$lib/components/StatusBar.svelte';
 	import LayerControl from '$lib/components/LayerControl.svelte';
 	import { ProjectionType, PROJECTIONS } from '$lib/types/projection';
@@ -7,7 +7,7 @@
 	let activeProjection = $state<ProjectionType>(ProjectionType.Sphere);
 	let showGraticule = $state(true);
 	let statusBarRef = $state<StatusBar | undefined>(undefined);
-	let globeCanvasRef = $state<GlobeCanvas | undefined>(undefined);
+	let globeCanvasRef = $state<CesiumCanvas | undefined>(undefined);
 </script>
 
 <svelte:head>
@@ -19,9 +19,9 @@
 </svelte:head>
 
 <main class="viewport">
-	<!-- Full-screen Three.js canvas -->
+	<!-- Full-screen Cesium canvas -->
 	<div class="canvas-wrapper">
-		<GlobeCanvas bind:this={globeCanvasRef} {activeProjection} {showGraticule} statusBar={statusBarRef} />
+		<CesiumCanvas bind:this={globeCanvasRef} {activeProjection} {showGraticule} statusBar={statusBarRef} />
 	</div>
 
 	<!-- Floating layer control panel -->
