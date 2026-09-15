@@ -119,6 +119,16 @@
     // number". 10m matches the finest graduation the scale bar can show
     // (see NICE_KM in geo/scale-bar.ts).
     const MIN_ZOOM_METERS = 10;
+    // Farthest the camera is allowed to pull back. Past this the globe
+    // shrinks to a small dot in a lot of empty black space and it's easy to
+    // lose track of where you are — worth capping generally, but especially
+    // now that the last zoom level persists across reloads (see
+    // session-store.ts): without a cap, an accidental scroll-out-forever
+    // could get "stuck" as the restored view on every future load.
+    // Comfortably above Cesium's own default whole-globe framing (~20,200km,
+    // the altitude you see on a fresh session) so backing out to see the
+    // entire globe still works, just not endlessly further than that.
+    const MAX_ZOOM_METERS = 25_000_000;
     const MAX_SCALE_BAR_PX = 120;
     const MIN_SCALE_BAR_PX = 40;
 
@@ -185,6 +195,7 @@
         viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#8fb8d8"); // OCEAN_COLOR
         viewer.scene.backgroundColor = Cesium.Color.fromCssColorString("#0c1420"); // VOID_COLOR
         viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_ZOOM_METERS;
+        viewer.scene.screenSpaceCameraController.maximumZoomDistance = MAX_ZOOM_METERS;
         // Releasing a drag and immediately wheel-zooming at the same cursor
         // position — a very ordinary "pan, then zoom in on what I was just
         // looking at" gesture — can send Cesium's internal camera math
@@ -247,9 +258,13 @@
     function applyRestoredCamera(cam: PersistedCameraView, includeOrientation: boolean): void {
         // A stale/corrupt height (e.g. 0) fed straight into setView is
         // exactly the zero-length-normalize crash MIN_ZOOM_METERS otherwise
-        // guards against — that floor is enforced on the camera controller,
-        // not on setView, so it has to be reapplied here explicitly.
-        const height = Math.max(cam.height, MIN_ZOOM_METERS);
+        // guards against — that floor (and the MAX_ZOOM_METERS ceiling) is
+        // enforced on the camera controller, not on setView, so both have to
+        // be reapplied here explicitly. The ceiling also matters for a
+        // session saved before MAX_ZOOM_METERS existed, or one edited by
+        // hand — restoring it uncapped would put the user right back at the
+        // "lost in empty space" view this cap exists to prevent.
+        const height = Math.min(Math.max(cam.height, MIN_ZOOM_METERS), MAX_ZOOM_METERS);
         const destination = Cesium.Cartesian3.fromDegrees(cam.longitude, cam.latitude, height);
         if (includeOrientation) {
             viewer.camera.setView({
