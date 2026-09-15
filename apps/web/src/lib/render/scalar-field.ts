@@ -18,6 +18,9 @@ import * as THREE from 'three';
 import geoFillVertSrc from '$lib/shaders/geofill.vert.glsl';
 import { PUBLIC_TILES_BASE_URL } from '$env/static/public';
 import type { ScalarFieldLayerConfig } from '$lib/tiles/layers.config';
+import { buildGridUrl, fetchGridTexture } from '$lib/render/grid-texture';
+import { PrefetchManager } from '$lib/tiles/prefetch-manager';
+import { sharedTextureCache, type TextureCache } from '$lib/tiles/texture-cache';
 
 const DEG2RAD = Math.PI / 180;
 
@@ -129,6 +132,10 @@ export class ScalarFieldRenderer {
 	private readonly uniforms: Record<string, THREE.IUniform>;
 	private geometry: THREE.BufferGeometry;
 	private texture: THREE.DataTexture;
+	// Never cached, never shared — the one texture this instance disposes
+	// itself. Every texture bound after it belongs to `cache` instead (#45):
+	// see bindTexture()/dispose().
+	private readonly placeholderTexture: THREE.DataTexture;
 
 	private scene: THREE.Scene | null = null;
 	private config: ScalarFieldLayerConfig | null = null;
@@ -146,9 +153,19 @@ export class ScalarFieldRenderer {
 	// whichever response happens to arrive first).
 	private abortController: AbortController | null = null;
 
-	constructor() {
+	// #45: LRU of DataTextures keyed by resolved grid URL, shared across
+	// renderer instances by default so revisiting a depth/time — even one
+	// another layer/renderer already loaded — is a cache hit. Injectable so
+	// tests get isolation instead of leaking cached textures between them.
+	private readonly cache: TextureCache;
+	private readonly prefetchManager: PrefetchManager;
+
+	constructor(cache: TextureCache = sharedTextureCache) {
+		this.cache = cache;
+		this.prefetchManager = new PrefetchManager(cache);
 		this.geometry = new THREE.BufferGeometry();
-		this.texture = makePlaceholderTexture();
+		this.placeholderTexture = makePlaceholderTexture();
+		this.texture = this.placeholderTexture;
 
 		this.uniforms = {
 			u_globeRotation: { value: new THREE.Matrix3() },
@@ -296,10 +313,17 @@ export class ScalarFieldRenderer {
 
 	dispose(): void {
 		this.abortController?.abort();
+		this.prefetchManager.cancelAll();
+		if (this.texture !== this.placeholderTexture) this.cache.unpin(this.texture);
 		this.scene?.remove(this.mesh);
 		this.geometry.dispose();
 		this.material.dispose();
-		this.texture.dispose();
+		// #45: a bound-and-cached texture is owned by `cache` from here on —
+		// only the cache's own eviction disposes it. Disposing it here too
+		// would leave the cache holding (and later handing back to a hit) a
+		// GPU texture that's already been freed. The placeholder never
+		// entered the cache, so it's still this instance's to dispose.
+		if (this.texture === this.placeholderTexture) this.texture.dispose();
 	}
 
 	private rebuildGeometry(bboxDeg: [number, number, number, number], width: number, height: number): void {
@@ -360,51 +384,76 @@ export class ScalarFieldRenderer {
 		this.gridHeight = height;
 	}
 
+	/** {tilesBase} is the only place the frontend learns where tiles live
+	 * (contracts §1) — everywhere else resolves it from PUBLIC_TILES_BASE_URL,
+	 * same as pmtiles-source.ts. */
+	private resolvedGridUrlTemplate(): string {
+		if (!this.config) throw new Error('[ScalarFieldRenderer] resolvedGridUrlTemplate() called before setLayer()');
+		return this.config.meta.gridUrlTemplate.replace('{tilesBase}', PUBLIC_TILES_BASE_URL.replace(/\/$/, ''));
+	}
+
 	private async loadGrid(depthIndex: number, timeIndex: number): Promise<void> {
 		if (!this.config) return;
 		const meta = this.config.meta;
-		// {tilesBase} is the only place the frontend learns where tiles live
-		// (contracts §1) — everywhere else resolves it from PUBLIC_TILES_BASE_URL,
-		// same as pmtiles-source.ts. {d}/{t} substitute array indices, not values (§4.3).
-		const url = meta.gridUrlTemplate
-			.replace('{tilesBase}', PUBLIC_TILES_BASE_URL.replace(/\/$/, ''))
-			.replace('{d}', String(depthIndex))
-			.replace('{t}', String(timeIndex));
+		const url = buildGridUrl(this.resolvedGridUrlTemplate(), depthIndex, timeIndex);
 
 		// #48: cancel whatever this renderer was still waiting on — a stale
 		// request left running would otherwise race this one and could bind
 		// its (older) grid last, or write into a texture/uniform this call
-		// already disposed of.
+		// already disposed of. Unconditional even on a cache hit below: a
+		// hit must still supersede an in-flight miss from a previous call.
 		this.abortController?.abort();
+
+		const cached = this.cache.get(url);
+		if (cached) {
+			this.abortController = null;
+			this.bindTexture(cached);
+			this.prefetchTimeSeries();
+			return;
+		}
+
 		const controller = new AbortController();
 		this.abortController = controller;
 
-		let res: Response;
-		try {
-			res = await fetch(url, { signal: controller.signal });
-		} catch (err) {
-			if (controller.signal.aborted) return; // superseded or disposed — not a real failure
-			throw err;
-		}
-		if (controller.signal.aborted) return;
-		if (!res.ok) {
-			throw new Error(`[ScalarFieldRenderer] grid fetch failed: ${url} (${res.status})`);
-		}
-		const data = new Float32Array(await res.arrayBuffer());
-		if (controller.signal.aborted) return;
+		const texture = await fetchGridTexture(url, meta.width, meta.height, controller.signal);
+		if (texture === null) return; // superseded or disposed — not a real failure
 
-		this.rawData = data;
-		(this.uniforms.u_textureSize.value as THREE.Vector2).set(meta.width, meta.height);
+		this.cache.set(url, texture);
+		this.bindTexture(texture);
+		this.prefetchTimeSeries();
+	}
 
-		this.texture.dispose();
-		this.texture = new THREE.DataTexture(data, meta.width, meta.height, THREE.RedFormat, THREE.FloatType);
-		// WebGL2 core only samples R32F with NEAREST; linear needs
-		// OES_texture_float_linear, so the bilinear tap above is done by hand.
-		this.texture.minFilter = THREE.NearestFilter;
-		this.texture.magFilter = THREE.NearestFilter;
-		this.texture.wrapS = THREE.ClampToEdgeWrapping;
-		this.texture.wrapT = THREE.ClampToEdgeWrapping;
-		this.texture.needsUpdate = true;
-		this.uniforms.u_fieldTexture.value = this.texture;
+	/** Binds a texture this call owns (freshly fetched or a cache hit) as the
+	 * live one, pinning it so a background prefetch burst can't evict what's
+	 * actually on screen (#45). */
+	private bindTexture(texture: THREE.DataTexture): void {
+		if (this.texture !== this.placeholderTexture) this.cache.unpin(this.texture);
+		this.cache.pin(texture);
+
+		// texture.image.{width,height,data} round-trip exactly what was passed
+		// to the THREE.DataTexture constructor — no separate bookkeeping needed
+		// for a cache hit that skipped fetchGridTexture this time.
+		this.rawData = texture.image.data as Float32Array;
+		this.gridWidth = texture.image.width;
+		this.gridHeight = texture.image.height;
+		(this.uniforms.u_textureSize.value as THREE.Vector2).set(this.gridWidth, this.gridHeight);
+
+		this.texture = texture;
+		this.uniforms.u_fieldTexture.value = texture;
+	}
+
+	/** Fire-and-forget (#45's AC: "full time series prefetched on layer
+	 * load") — must not be awaited, or every depth/time change would block
+	 * on fetching every other time step first. */
+	private prefetchTimeSeries(): void {
+		if (!this.config) return;
+		const { meta } = this.config;
+		this.prefetchManager.prefetchTimeSeries({
+			resolvedGridUrlTemplate: this.resolvedGridUrlTemplate(),
+			depthIndex: this.config.depthIndex,
+			totalTimeSteps: meta.times.length,
+			width: meta.width,
+			height: meta.height,
+		});
 	}
 }

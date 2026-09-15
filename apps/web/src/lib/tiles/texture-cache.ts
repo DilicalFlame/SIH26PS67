@@ -1,86 +1,71 @@
-import * as THREE from 'three';
+/**
+ * texture-cache.ts
+ *
+ * LRU cache of scalar-field `THREE.DataTexture`s (#45), keyed by the exact
+ * resolved grid URL (which already encodes layer, variable, depth, and time
+ * — see contracts §4.3) rather than a hand-assembled `layerId:depth:time`
+ * triple. Keying on layerId/depth/time alone collides whenever two configs
+ * share a layerId but differ in grid shape or URL template, silently
+ * serving one layer's texture for another's request.
+ *
+ * Reuses TileLRUCache (tile-cache.ts) rather than reimplementing LRU
+ * bookkeeping — mirroring that pattern is what the issue asks for, and it
+ * comes with `isPinned` for free: the texture actually bound to a live
+ * renderer is never evicted mid prefetch-burst.
+ */
 
-export interface TextureCacheKey {
-  layerId: string;
-  depth: number;
-  time: number;
-}
+import type * as THREE from 'three';
+import { TileLRUCache } from './tile-cache';
+
+const DEFAULT_MAX_SIZE = 150;
 
 export class TextureCache {
-  private cache = new Map<string, THREE.DataTexture>();
-  private accessOrder: string[] = [];
-  private maxSize: number;
+	private readonly lru: TileLRUCache<THREE.DataTexture>;
+	private readonly pinned = new Set<THREE.DataTexture>();
 
-  constructor(maxSize: number = 100) {
-    this.maxSize = maxSize;
-  }
+	constructor(maxSize: number = DEFAULT_MAX_SIZE) {
+		this.lru = new TileLRUCache<THREE.DataTexture>(
+			maxSize,
+			(_key, texture) => texture.dispose(), // #45: GPU memory leaks if you only drop the reference
+			(texture) => this.pinned.has(texture)
+		);
+	}
 
-  private getKeyString(key: TextureCacheKey): string {
-    return `${key.layerId}:${key.depth}:${key.time}`;
-  }
+	get(url: string): THREE.DataTexture | undefined {
+		return this.lru.get(url);
+	}
 
-  public get(key: TextureCacheKey): THREE.DataTexture | undefined {
-    const keyStr = this.getKeyString(key);
-    if (this.cache.has(keyStr)) {
-      // Refresh access order for LRU
-      this.accessOrder = this.accessOrder.filter((k) => k !== keyStr);
-      this.accessOrder.push(keyStr);
-      return this.cache.get(keyStr);
-    }
-    return undefined;
-  }
+	set(url: string, texture: THREE.DataTexture): void {
+		this.lru.set(url, texture);
+	}
 
-  public set(key: TextureCacheKey, texture: THREE.DataTexture): void {
-    const keyStr = this.getKeyString(key);
+	/** Protects a texture actively bound to a renderer from eviction. */
+	pin(texture: THREE.DataTexture): void {
+		this.pinned.add(texture);
+	}
 
-    if (this.cache.has(keyStr)) {
-      this.cache.set(keyStr, texture);
-      this.accessOrder = this.accessOrder.filter((k) => k !== keyStr);
-      this.accessOrder.push(keyStr);
-      return;
-    }
+	unpin(texture: THREE.DataTexture): void {
+		this.pinned.delete(texture);
+	}
 
-    // Evict oldest if max size reached
-    if (this.cache.size >= this.maxSize) {
-      const oldestKey = this.accessOrder.shift();
-      if (oldestKey) {
-        const oldTexture = this.cache.get(oldestKey);
-        if (oldTexture) {
-          oldTexture.dispose(); // Prevent GPU memory leaks
-        }
-        this.cache.delete(oldestKey);
-      }
-    }
+	setMaxSize(size: number): void {
+		this.lru.setMaxSize(size);
+	}
 
-    this.cache.set(keyStr, texture);
-    this.accessOrder.push(keyStr);
-  }
+	get size(): number {
+		return this.lru.size;
+	}
 
-  public clear(): void {
-    for (const texture of this.cache.values()) {
-      texture.dispose();
-    }
-    this.cache.clear();
-    this.accessOrder = [];
-  }
-
-  public setMaxSize(size: number): void {
-    this.maxSize = size;
-    while (this.cache.size > this.maxSize) {
-      const oldestKey = this.accessOrder.shift();
-      if (oldestKey) {
-        const oldTexture = this.cache.get(oldestKey);
-        if (oldTexture) {
-          oldTexture.dispose();
-        }
-        this.cache.delete(oldestKey);
-      }
-    }
-  }
-
-  public size(): number {
-    return this.cache.size;
-  }
+	/** Disposes every cached texture, pinned or not — full teardown only. */
+	clear(): void {
+		for (const texture of this.lru.values()) texture.dispose();
+		this.pinned.clear();
+		this.lru.clear();
+	}
 }
 
-export const globalTextureCache = new TextureCache(150);
+/** Shared across every ScalarFieldRenderer by default so revisiting a
+ * depth/time — even from a different renderer instance — hits the cache.
+ * Tests inject their own instance instead (see scalar-field.test.ts) so
+ * cached entries from one test can't leak into the next. */
+export const sharedTextureCache = new TextureCache();
