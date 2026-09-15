@@ -44,6 +44,12 @@ const validPolygon = {
 	] as [number, number][]
 };
 
+const validLayer = {
+	id: 'copernicus_thetao',
+	visible: true,
+	opacity: 0.85
+};
+
 beforeEach(() => {
 	localStorage.clear();
 	// dispatchSessionAction merges onto a module-private in-memory cache
@@ -80,7 +86,9 @@ describe('loadSession', () => {
 			basemapId: 'osm',
 			graticuleOn: false,
 			layersOpen: true,
-			measurements: [validPath, validPolygon]
+			measurements: [validPath, validPolygon],
+			layers: [validLayer],
+			activeLayersPanelCollapsed: true
 		};
 		localStorage.setItem(KEY, JSON.stringify(session));
 		expect(loadSession()).toEqual(session);
@@ -130,6 +138,19 @@ describe('loadSession', () => {
 		);
 		expect(loadSession().measurements).toEqual([]);
 	});
+
+	it('filters out an individually malformed active layer without dropping the rest', () => {
+		localStorage.setItem(
+			KEY,
+			JSON.stringify({ layers: [validLayer, { id: 'bad' }, { ...validLayer, id: 'other' }] })
+		);
+		expect(loadSession().layers).toEqual([validLayer, { ...validLayer, id: 'other' }]);
+	});
+
+	it('rejects an active layer with a non-finite opacity', () => {
+		localStorage.setItem(KEY, JSON.stringify({ layers: [{ ...validLayer, opacity: NaN }] }));
+		expect(loadSession().layers).toEqual([]);
+	});
 });
 
 describe('dispatchSessionAction: immediate (non-debounced) actions', () => {
@@ -165,6 +186,23 @@ describe('dispatchSessionAction: immediate (non-debounced) actions', () => {
 
 		const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
 		expect(stored.measurements).toEqual([]);
+	});
+
+	it('LayersChanged replaces the whole active-layer list with each dispatch', () => {
+		dispatchSessionAction({ type: SessionActionType.LayersChanged, payload: [validLayer] });
+		let stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+		expect(stored.layers).toEqual([validLayer]);
+
+		const updated = { ...validLayer, opacity: 0.4 };
+		dispatchSessionAction({ type: SessionActionType.LayersChanged, payload: [updated] });
+		stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+		expect(stored.layers).toEqual([updated]);
+	});
+
+	it('ActiveLayersPanelCollapsed writes immediately', () => {
+		dispatchSessionAction({ type: SessionActionType.ActiveLayersPanelCollapsed, payload: true });
+		const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+		expect(stored.activeLayersPanelCollapsed).toBe(true);
 	});
 
 	it('an immediate action flushes a still-pending debounced action from a different type', () => {
