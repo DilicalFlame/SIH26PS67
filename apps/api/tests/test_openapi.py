@@ -43,6 +43,6 @@ def test_openapi_lists_every_contract_route_with_a_response_schema() -> None:
         # declare a JSON response schema.
         if path.endswith(("grid.bin", "/chat/nodes", "/auth/logout")):
             continue
-assert any("schema" in media_type for media_type in success_response["content"].values()), (
-    f"{method.upper()} {path} has no response schema"
-)
+        assert any("schema" in media_type for media_type in success_response["content"].values()), (
+            f"{method.upper()} {path} has no response schema"
+        )
