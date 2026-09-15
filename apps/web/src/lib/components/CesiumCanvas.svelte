@@ -9,6 +9,12 @@
     import { viewStatus } from "$lib/state/view-status.svelte";
     import { BASEMAPS, DEFAULT_BASEMAP_ID } from "$lib/tiles/basemaps";
     import { PathMeasureTool, type MeasureState } from "$lib/measure/path-measure-tool";
+    import {
+        loadSession,
+        patchSession,
+        patchSessionDebounced,
+        type PersistedCameraView,
+    } from "$lib/state/session-store";
     import type StatusBar from "$lib/components/StatusBar.svelte";
     import HeadingControl from "$lib/components/HeadingControl.svelte";
     import BasemapPicker from "$lib/components/BasemapPicker.svelte";
@@ -26,10 +32,17 @@
     }
     const {
         statusBar,
-        layersOpen = true,
+        layersOpen = false,
         onToggleLayers = () => {},
         onMeasureActiveChange = () => {},
     }: Props = $props();
+
+    // Read once at mount — everything below that falls back to a hardcoded
+    // default (basemap, projection, graticule, camera) prefers this instead,
+    // so a refresh restores the previous session rather than resetting.
+    // Deliberately NOT restored: the path/polygon tool's active/drawing
+    // state and any finished measurement geometry — see session-store.ts.
+    const initialSession = loadSession();
 
     let containerEl: HTMLDivElement;
     let hasCrashed = $state(false);
@@ -58,22 +71,35 @@
     // Reactive so BasemapPicker can highlight the active skin; picking a new
     // one is the only thing that changes it, so a plain $state (not an
     // effect-driven derivation) is enough.
-    let currentBasemapId = $state(DEFAULT_BASEMAP_ID);
+    let currentBasemapId = $state(initialSession.basemapId ?? DEFAULT_BASEMAP_ID);
 
     // Which projection the scene is currently morphed to (or morphing
     // towards). $state (not a plain let) so BasemapPicker's projection
     // toggle can highlight the active one — driven directly by
     // switchProjection() below, now that the projection control lives
     // inside this component instead of being passed down as a prop.
-    let currentProjection = $state(ProjectionType.Sphere);
+    // Only Equirectangular is worth restoring explicitly — anything else
+    // (missing, corrupt, a stale future value) falls back to Sphere, same
+    // as a first-ever visit.
+    let currentProjection = $state(
+        initialSession.projection === ProjectionType.Equirectangular
+            ? ProjectionType.Equirectangular
+            : ProjectionType.Sphere,
+    );
     // Likewise for the graticule — was a prop watched by an $effect, now a
-    // local toggle BasemapPicker calls directly.
-    let graticuleOn = $state(true);
+    // local toggle BasemapPicker calls directly. Defaults OFF (not ON) on a
+    // first-ever visit, same "inactive unless a session says otherwise"
+    // policy as every other toggle here.
+    let graticuleOn = $state(initialSession.graticuleOn ?? false);
 
     // Heading state — same eased-drag-plus-reset-to-north model as
     // GlobeCanvas, just applied to Cesium's camera instead of a shader uniform.
-    let headingAngle = 0;
-    let targetHeadingAngle = 0;
+    // Seeded from the restored camera (if any) so the first onResetNorth()
+    // eases from the actual restored heading instead of assuming 0 — see
+    // restoreSession() below, which also re-syncs these once the real
+    // Cesium camera is set.
+    let headingAngle = initialSession.camera?.heading ?? 0;
+    let targetHeadingAngle = headingAngle;
     const HEADING_DAMPING = 0.22;
 
     const EARTH_RADIUS_KM = 6371;
@@ -179,7 +205,9 @@
                     : ProjectionType.Equirectangular;
         });
 
-        await switchBasemap(DEFAULT_BASEMAP_ID);
+        restoreSession();
+
+        await switchBasemap(initialSession.basemapId ?? DEFAULT_BASEMAP_ID);
         if (graticuleOn) addGraticule();
 
         measureTool = new PathMeasureTool(viewer, (s) => {
@@ -212,6 +240,53 @@
         rafId = requestAnimationFrame(animate);
     }
 
+    // =========================================================================
+    // Session restore — camera position + projection, from session-store.ts.
+    // =========================================================================
+    function applyRestoredCamera(cam: PersistedCameraView, includeOrientation: boolean): void {
+        // A stale/corrupt height (e.g. 0) fed straight into setView is
+        // exactly the zero-length-normalize crash MIN_ZOOM_METERS otherwise
+        // guards against — that floor is enforced on the camera controller,
+        // not on setView, so it has to be reapplied here explicitly.
+        const height = Math.max(cam.height, MIN_ZOOM_METERS);
+        const destination = Cesium.Cartesian3.fromDegrees(cam.longitude, cam.latitude, height);
+        if (includeOrientation) {
+            viewer.camera.setView({
+                destination,
+                orientation: { heading: cam.heading, pitch: cam.pitch, roll: cam.roll },
+            });
+            headingAngle = cam.heading;
+            targetHeadingAngle = cam.heading;
+            headingControl?.setHeadingDeg((cam.heading * 180) / Math.PI);
+        } else {
+            // heading/pitch/roll don't round-trip meaningfully in 2D/Columbus
+            // mode the way they do in 3D — passing a 3D-derived orientation
+            // into a 2D destination is a plausible route into the same
+            // normalize crash, so only the destination is restored here.
+            viewer.camera.setView({ destination });
+        }
+    }
+
+    /** Restores the persisted camera + projection, if any. Must run after
+     *  the viewer (and its morphComplete listener above) exist, and BEFORE
+     *  switchBasemap/addGraticule — imagery doesn't depend on camera state,
+     *  so there's no reason to wait. */
+    function restoreSession(): void {
+        if (currentProjection === ProjectionType.Equirectangular) {
+            // morphTo2D completes asynchronously even with duration 0 — a
+            // setView issued synchronously right after it can still land
+            // pre-morph and get silently overwritten. Apply the camera once
+            // the morph actually finishes instead.
+            const removeListener = viewer.scene.morphComplete.addEventListener(() => {
+                removeListener();
+                if (initialSession.camera) applyRestoredCamera(initialSession.camera, false);
+            });
+            viewer.scene.morphTo2D(0);
+        } else if (initialSession.camera) {
+            applyRestoredCamera(initialSession.camera, true);
+        }
+    }
+
     function addGraticule(): void {
         if (gridLayer) return;
         gridLayer = viewer.imageryLayers.addImageryProvider(
@@ -229,6 +304,7 @@
         graticuleOn = !graticuleOn;
         if (graticuleOn) addGraticule();
         else removeGraticule();
+        patchSession({ graticuleOn });
     }
 
     /** Drives Cesium's own built-in globe <-> map morph. Called directly by
@@ -241,6 +317,7 @@
         } else {
             viewer.scene.morphTo2D(1.0);
         }
+        patchSession({ projection: next });
     }
 
     // =========================================================================
@@ -298,6 +375,7 @@
         if (previousLayer) viewer.imageryLayers.remove(previousLayer);
         baseLayer = nextLayer;
         currentBasemapId = config.id;
+        patchSession({ basemapId: config.id });
     }
 
     // =========================================================================
@@ -355,6 +433,25 @@
         }
     }
 
+    /** Debounced camera persistence, piggybacked on the same throttled tick
+     *  as pushStatusReadout — fires up to ~15x/sec while the camera is
+     *  actively moving, but patchSessionDebounced's own 500ms trailing
+     *  debounce means only one actual localStorage write happens per pause,
+     *  not per tick. */
+    function scheduleSaveCamera(): void {
+        const carto = viewer.camera.positionCartographic;
+        patchSessionDebounced({
+            camera: {
+                longitude: Cesium.Math.toDegrees(carto.longitude),
+                latitude: Cesium.Math.toDegrees(carto.latitude),
+                height: carto.height,
+                heading: viewer.camera.heading,
+                pitch: viewer.camera.pitch,
+                roll: viewer.camera.roll,
+            },
+        });
+    }
+
     function animate(now: number): void {
         rafId = requestAnimationFrame(animate);
         if (!viewer || viewer.isDestroyed()) return;
@@ -372,6 +469,7 @@
         if (now - lastStatusPushTime >= STATUS_PUSH_INTERVAL_MS) {
             lastStatusPushTime = now;
             pushStatusReadout();
+            scheduleSaveCamera();
         }
     }
 
