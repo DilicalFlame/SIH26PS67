@@ -1,2 +1,29 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme {
+	/* Reused straight from layers.config.ts / GlobeCanvas.svelte, so the UI
+	   and the globe read as one surface instead of two mismatched palettes. */
+	--color-void: #0c1420;
+	--color-ocean: #8fb8d8;
+	--color-land: #e8e3d3;
+	--color-grat: #6f9dc0;
+	--color-ice: #f4f7fa;
+
+	/* Panel surface: void color, slightly transparent, so the globe shows
+	   faintly through — per the issue's "panel chrome semi-transparent over
+	   the canvas; the globe is the product." */
+	--color-panel: color-mix(in oklab, var(--color-void) 88%, transparent);
+	--color-panel-border: color-mix(in oklab, var(--color-ocean) 25%, transparent);
+
+	/* Body text on panels. Verified: --color-land on --color-void is a
+	   ~14.4:1 contrast ratio — clears WCAG AA's 4.5:1 requirement easily. */
+	--color-body: var(--color-land);
+
+	/* Two elevation levels only, per "keep it small." */
+	--shadow-panel: 0 4px 16px rgb(0 0 0 / 0.4);
+	--shadow-popover: 0 8px 24px rgb(0 0 0 / 0.5);
+}
