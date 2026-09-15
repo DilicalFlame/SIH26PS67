@@ -49,6 +49,19 @@
 
     const GRAT_COLOR = Cesium.Color.fromCssColorString("#6f9dc0").withAlpha(0.35);
 
+    // Closest the camera is allowed to get to the surface. Below this,
+    // imagery has nothing higher-resolution left to show anyway, the
+    // altitude/scale readout stops being meaningful, and — more importantly —
+    // letting the camera distance run all the way to 0 (a big, fast wheel
+    // delta can do this in a single frame) sends Cesium's internal
+    // direction/right vectors through a zero-length normalize and crashes
+    // the whole scene with "DeveloperError: normalized result is not a
+    // number". 10m matches the finest graduation the scale bar can show
+    // (see NICE_KM in geo/scale-bar.ts).
+    const MIN_ZOOM_METERS = 10;
+    const MAX_SCALE_BAR_PX = 120;
+    const MIN_SCALE_BAR_PX = 40;
+
     /** True while the flat equirectangular map is the dominant projection —
      *  heading only makes sense while looking at a rotatable sphere. */
     function isFlatMode(): boolean {
@@ -83,17 +96,32 @@
     async function initScene(): Promise<void> {
         Cesium.Ion.defaultAccessToken = "";
 
-        // No Ion token available (see .env) — bundled offline imagery and the
-        // default ellipsoid terrain provider only. TileMapServiceImageryProvider
-        // must be constructed through its async fromUrl() factory (it fetches
-        // tilemapresource.xml to learn the tiling scheme) before it can become
-        // the Viewer's base layer.
-        const naturalEarth = await Cesium.TileMapServiceImageryProvider.fromUrl(
-            Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+        // No Ion/Mapbox/MapTiler token available (see .env), so Cesium's own
+        // paid basemaps are out. The bundled offline NaturalEarthII imagery
+        // that ships with Cesium only carries detail to level 2 (a handful of
+        // ~1024px tiles for the whole planet) — fine for the full-globe view,
+        // but it's why zooming in used to just magnify an already-blurry
+        // texture. OpenStreetMap's tile server needs no key and serves real
+        // detail up to level 19, so it's the base layer at every zoom depth
+        // this app allows (see MIN_ZOOM_METERS below). Slightly desaturated
+        // and darkened to sit closer to this app's dark/pastel palette
+        // instead of OSM's stock bright cartography.
+        const baseLayer = new Cesium.ImageryLayer(
+            new Cesium.OpenStreetMapImageryProvider({
+                url: "https://tile.openstreetmap.org/",
+                // The public tile server doesn't serve past z19; MIN_ZOOM_METERS
+                // (10m) lets the camera get close enough to ask for z20+, which
+                // 404s (surfacing in devtools as a CORS error, since an error
+                // page has no CORS headers). Capping here makes Cesium hold and
+                // magnify the last real z19 tile instead of requesting past it.
+                maximumLevel: 19,
+            }),
         );
+        baseLayer.saturation = 0.55;
+        baseLayer.brightness = 0.95;
 
         viewer = new Cesium.Viewer(containerEl, {
-            baseLayer: new Cesium.ImageryLayer(naturalEarth),
+            baseLayer,
             mapProjection: new Cesium.GeographicProjection(),
             baseLayerPicker: false,
             geocoder: false,
@@ -106,10 +134,28 @@
             infoBox: false,
             selectionIndicator: false,
             shouldAnimate: true,
+            // Cesium's own crash dialog (raw stack trace, no way back short of
+            // reloading the tab) is replaced by the same recovery overlay used
+            // for a lost WebGL context — see scene.renderError below.
+            showRenderLoopErrors: false,
         });
 
         viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#8fb8d8"); // OCEAN_COLOR
         viewer.scene.backgroundColor = Cesium.Color.fromCssColorString("#0c1420"); // VOID_COLOR
+        viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_ZOOM_METERS;
+        // Releasing a drag and immediately wheel-zooming at the same cursor
+        // position — a very ordinary "pan, then zoom in on what I was just
+        // looking at" gesture — can send Cesium's internal camera math
+        // through a zero-length Cartesian3.normalize, which by default kills
+        // the render loop outright. Disabling translate inertia closes one
+        // reproducible path into that race; scene.renderError below is the
+        // actual backstop, since Cesium's camera internals aren't ours to
+        // fully harden against every such edge case.
+        viewer.scene.screenSpaceCameraController.inertiaTranslate = 0;
+        viewer.scene.renderError.addEventListener((_scene, error) => {
+            console.error("[CesiumCanvas] Scene render error. Rendering recovery prompt.", error);
+            hasCrashed = true;
+        });
         viewer.scene.morphComplete.addEventListener(() => {
             currentProjection =
                 viewer.scene.mode === Cesium.SceneMode.SCENE3D
@@ -194,8 +240,13 @@
                 (canvas.clientWidth * Math.max(1e-6, altitudeKm / EARTH_RADIUS_KM));
         }
 
-        const { km, label } = pickNiceScale(kmPerPx, 120, 40);
-        const barWidthPx = km / kmPerPx;
+        const { km, label } = pickNiceScale(kmPerPx, MAX_SCALE_BAR_PX, MIN_SCALE_BAR_PX);
+        // pickNiceScale can't step below its finest graduation (10m — see
+        // NICE_KM), so once actual km-per-pixel gets smaller than that (right
+        // at the MIN_ZOOM_METERS floor) the "nice" bar for 10m legitimately
+        // needs more than MAX_SCALE_BAR_PX to draw — clamp the rendered width
+        // rather than let the bar run off past the status bar's edge.
+        const barWidthPx = Math.min(MAX_SCALE_BAR_PX, km / kmPerPx);
 
         if (
             Math.abs(viewStatus.altitudeKm - altitudeKm) > 0.5 ||
@@ -262,8 +313,16 @@
     });
 
     $effect(() => {
+        // Read the prop unconditionally, before the `!viewer` guard — this
+        // component mounts before initScene()'s await resolves, so the
+        // effect's first run always hits that guard. An effect only
+        // resubscribes to reactive values it actually read on its last run,
+        // so if `showGraticule` were read after the early return, that first
+        // run would register no dependency at all and this would never fire
+        // again once the button is clicked.
+        const grat = showGraticule;
         if (!viewer) return;
-        if (showGraticule) addGraticule();
+        if (grat) addGraticule();
         else removeGraticule();
     });
 
