@@ -7,7 +7,7 @@
  */
 
 import { PMTiles } from 'pmtiles';
-import { env } from '$env/dynamic/public';
+import { PUBLIC_TILES_BASE_URL } from '$env/static/public';
 import type { TileLayerConfig } from './layers.config';
 
 export interface LayerRuntime {
@@ -18,7 +18,7 @@ export interface LayerRuntime {
 }
 
 export function resolveLayerUrl(config: TileLayerConfig): string {
-	const base = (env.PUBLIC_TILES_BASE_URL ?? '').replace(/\/$/, '');
+	const base = PUBLIC_TILES_BASE_URL.replace(/\/$/, '');
 	const path = config.objectPath.replace(/^\//, '');
 	return `${base}/${path}`;
 }

@@ -40,5 +40,6 @@
 		"pbf": "^5.1.2",
 		"pmtiles": "^4.5.0",
 		"three": "^0.185.1"
-	}
+	},
+	"packageManager": "pnpm@12.3.0"
 }
