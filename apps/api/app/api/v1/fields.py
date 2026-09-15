@@ -33,7 +33,10 @@ async def get_field_meta(layer_id: str) -> ScalarFieldMeta:
     return ScalarFieldMeta.model_validate(json.loads(meta_path.read_text()))
 
 
-@router.get("/{layer_id}/grid.bin", responses=NOT_FOUND_RESPONSE)
+@router.get(
+    "/{layer_id}/grid.bin",
+    responses={200: {"content": {"application/octet-stream": {}}}, **NOT_FOUND_RESPONSE},
+)
 async def get_field_grid(layer_id: str, depth_index: int = 0, time_index: int = 0) -> Response:
     """Fallback path (contracts §4.3) — the browser normally fetches the
     .f32 object directly via gridUrlTemplate, bypassing this route."""
