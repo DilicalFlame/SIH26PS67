@@ -50,7 +50,7 @@
         heading: "",
         area: "",
         perimeter: "",
-        finishedCount: 0,
+        finished: [],
     });
     $effect(() => {
         onMeasureActiveChange(measureState.active);
@@ -259,6 +259,15 @@
     function clearMeasurements(): void {
         measureTool?.clearAll();
     }
+    function removeMeasurement(id: string): void {
+        measureTool?.removeMeasurement(id);
+    }
+    function flyToMeasurement(id: string): void {
+        measureTool?.flyToMeasurement(id);
+    }
+    function setMeasurementHighlighted(id: string, highlighted: boolean): void {
+        measureTool?.setMeasurementHighlighted(id, highlighted);
+    }
 
     // =========================================================================
     // Basemap ("skin") switching — see basemaps.ts. Builds the new provider
@@ -428,6 +437,9 @@
     onClose={togglePathTool}
     onUndo={undoMeasureVertex}
     onClearAll={clearMeasurements}
+    onRemoveMeasurement={removeMeasurement}
+    onZoomToMeasurement={flyToMeasurement}
+    onHighlightMeasurement={setMeasurementHighlighted}
     {layersOpen}
     {onToggleLayers}
 />

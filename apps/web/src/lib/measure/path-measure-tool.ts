@@ -10,7 +10,7 @@
  * same shape as switchBasemap()'s relationship to BasemapPicker.
  *
  * The shape being drawn stays "in progress" (editable, not yet added to
- * finishedShapes) through closing the loop — matching Google Earth's own
+ * `finished`) through closing the loop — matching Google Earth's own
  * panel, which keeps showing Length/Heading or Area/Perimeter and only
  * commits the shape when you press Done. That's also why closing the loop
  * and finishing are two separate steps here (setClosed() vs finishCurrent()):
@@ -39,6 +39,19 @@ import {
 	formatHeading,
 } from "$lib/geo/measure";
 
+export interface FinishedMeasurement {
+	/** Stable, opaque id for backend correlation — from a monotonic counter, never reused. */
+	id: string;
+	type: "path" | "polygon";
+	/** Display name, sequential per type — "Path 1", "Polygon 2", ... */
+	label: string;
+	/** Primary metric: formatted length (path) or area (polygon). */
+	primary: string;
+	/** Secondary metric: formatted heading (path) or perimeter (polygon). */
+	secondary: string;
+	vertexCount: number;
+}
+
 export interface MeasureState {
 	/** Tool armed — clicks on the globe are being captured for drawing. */
 	active: boolean;
@@ -57,8 +70,8 @@ export interface MeasureState {
 	area: string;
 	/** Formatted perimeter, once closed. */
 	perimeter: string;
-	/** Number of completed (finished) shapes still on the map. */
-	finishedCount: number;
+	/** Completed shapes still on the map, in the order they were created. */
+	finished: FinishedMeasurement[];
 }
 
 const CLOSE_LOOP_PIXEL_THRESHOLD = 14;
@@ -74,6 +87,10 @@ const PREVIEW_LINE_COLOR = Cesium.Color.fromCssColorString("#3a3a3a").withAlpha(
 const VERTEX_FILL_COLOR = Cesium.Color.WHITE;
 const VERTEX_OUTLINE_COLOR = LINE_COLOR;
 const VERTEX_OUTLINE_COLOR_CLOSE = Cesium.Color.fromCssColorString("#33ff77");
+
+// Hover highlight for a finished shape, toggled from the panel's list rows.
+const HIGHLIGHT_COLOR = Cesium.Color.WHITE;
+const HIGHLIGHT_FILL_COLOR = Cesium.Color.fromCssColorString("#ffcc33").withAlpha(0.45);
 
 function toCartographic(p: Cesium.Cartesian3): Cesium.Cartographic {
 	return Cesium.Cartographic.fromCartesian(p);
@@ -96,7 +113,17 @@ export class PathMeasureTool {
 	private previewEntity?: Cesium.Entity;
 	private polygonEntity?: Cesium.Entity;
 	private vertexEntities: Cesium.Entity[] = [];
-	private finishedShapes: Cesium.Entity[] = [];
+
+	// Finished shapes — keyed by id so individual rows in the panel's list
+	// can be zoomed to, highlighted, or removed independently. Map preserves
+	// insertion order, which is what the list renders in.
+	private finished = new Map<string, { meta: FinishedMeasurement; entities: Cesium.Entity[] }>();
+	// Monotonic — never reused, even after a mid-list delete (a stable id is
+	// the whole point of "identifier to recognize in backend"). Separate
+	// per-type counters drive the display label ("Path 1", "Polygon 2").
+	private nextMeasurementId = 1;
+	private nextPathNumber = 1;
+	private nextPolygonNumber = 1;
 
 	private _active = false;
 
@@ -150,12 +177,55 @@ export class PathMeasureTool {
 		else this.activate();
 	}
 
-	/** Removes every finished shape (not just the in-progress one). */
+	/** Removes every finished shape (not just the in-progress one) and resets numbering. */
 	clearAll(): void {
 		this.cancelCurrent();
 		this.dataSource.entities.removeAll();
-		this.finishedShapes = [];
+		this.finished.clear();
+		this.nextMeasurementId = 1;
+		this.nextPathNumber = 1;
+		this.nextPolygonNumber = 1;
 		this.emitState();
+	}
+
+	/** Removes a single finished measurement by id — leaves the rest and their numbering untouched. */
+	removeMeasurement(id: string): void {
+		const record = this.finished.get(id);
+		if (!record) return;
+		for (const e of record.entities) this.dataSource.entities.remove(e);
+		this.finished.delete(id);
+		this.emitState();
+	}
+
+	/** Flies the camera to frame a single finished measurement. */
+	flyToMeasurement(id: string): void {
+		const record = this.finished.get(id);
+		if (!record) return;
+		// Rejects if interrupted by another flight (e.g. rapid clicks across
+		// rows) — not an error worth surfacing.
+		void this.viewer.flyTo(record.entities).catch(() => {});
+	}
+
+	/** Toggled on hover over a list row, so the map shape lights up to match. */
+	setMeasurementHighlighted(id: string, highlighted: boolean): void {
+		const record = this.finished.get(id);
+		if (!record) return;
+		for (const e of record.entities) {
+			if (e.polyline) {
+				e.polyline.material = new Cesium.ColorMaterialProperty(
+					highlighted ? HIGHLIGHT_COLOR : LINE_COLOR,
+				);
+				e.polyline.width = new Cesium.ConstantProperty(highlighted ? 7 : 5);
+			}
+			if (e.polygon) {
+				e.polygon.outlineColor = new Cesium.ConstantProperty(
+					highlighted ? HIGHLIGHT_COLOR : LINE_COLOR,
+				);
+				e.polygon.material = new Cesium.ColorMaterialProperty(
+					highlighted ? HIGHLIGHT_FILL_COLOR : FILL_COLOR,
+				);
+			}
+		}
 	}
 
 	destroy(): void {
@@ -366,7 +436,7 @@ export class PathMeasureTool {
 		this.emitState();
 	}
 
-	/** Commits whatever exists — open path or closed polygon — into finishedShapes. */
+	/** Commits whatever exists — open path or closed polygon — into `finished`. */
 	finishCurrent(): void {
 		if (!this.closed && this.positions.length < 2) {
 			this.cancelCurrent();
@@ -376,7 +446,10 @@ export class PathMeasureTool {
 		for (const e of this.vertexEntities) this.dataSource.entities.remove(e);
 		this.vertexEntities = [];
 
+		const id = `m-${this.nextMeasurementId++}`;
+
 		if (this.closed) {
+			const label = `Polygon ${this.nextPolygonNumber++}`;
 			const cartographics = this.positions.map(toCartographic);
 			const area = polygonAreaSquareMeters(cartographics);
 			const perimeter = pathLengthMeters([...cartographics, cartographics[0]]);
@@ -392,15 +465,36 @@ export class PathMeasureTool {
 					outlineColor: LINE_COLOR,
 					height: 0,
 				},
-				label: this.labelOptions(
-					`Area: ${formatArea(area)}\nPerimeter: ${formatDistance(perimeter)}`,
-				),
+				// Just the identifier on the map — full metrics live in the
+				// panel's list now, so showing both would just duplicate text
+				// floating over the shape.
+				label: this.labelOptions(label),
 				position: this.centroid(),
 			});
-			this.finishedShapes.push(polygon);
+			this.finished.set(id, {
+				entities: [polygon],
+				meta: {
+					id,
+					type: "polygon",
+					label,
+					primary: formatArea(area),
+					secondary: formatDistance(perimeter),
+					vertexCount: this.positions.length,
+				},
+			});
 		} else {
+			const label = `Path ${this.nextPathNumber++}`;
 			const cartographics = this.positions.map(toCartographic);
 			const distance = pathLengthMeters(cartographics);
+			const heading =
+				cartographics.length >= 2
+					? formatHeading(
+							headingDegrees(
+								cartographics[cartographics.length - 2],
+								cartographics[cartographics.length - 1],
+							),
+						)
+					: "—";
 
 			this.removeCommittedEntities();
 
@@ -411,10 +505,20 @@ export class PathMeasureTool {
 					material: LINE_COLOR,
 					clampToGround: false,
 				},
-				label: this.labelOptions(`Distance: ${formatDistance(distance)}`),
+				label: this.labelOptions(label),
 				position: this.centroid(),
 			});
-			this.finishedShapes.push(line);
+			this.finished.set(id, {
+				entities: [line],
+				meta: {
+					id,
+					type: "path",
+					label,
+					primary: formatDistance(distance),
+					secondary: heading,
+					vertexCount: this.positions.length,
+				},
+			});
 		}
 
 		this.positions = [];
@@ -484,7 +588,7 @@ export class PathMeasureTool {
 			heading,
 			area,
 			perimeter,
-			finishedCount: this.finishedShapes.length,
+			finished: Array.from(this.finished.values(), (r) => r.meta),
 		});
 	}
 }

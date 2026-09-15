@@ -9,6 +9,9 @@
 		onClose: () => void;
 		onUndo: () => void;
 		onClearAll: () => void;
+		onRemoveMeasurement: (id: string) => void;
+		onZoomToMeasurement: (id: string) => void;
+		onHighlightMeasurement: (id: string, highlighted: boolean) => void;
 		layersOpen: boolean;
 		onToggleLayers: () => void;
 	}
@@ -19,6 +22,9 @@
 		onClose,
 		onUndo,
 		onClearAll,
+		onRemoveMeasurement,
+		onZoomToMeasurement,
+		onHighlightMeasurement,
 		layersOpen,
 		onToggleLayers,
 	}: Props = $props();
@@ -27,6 +33,18 @@
 	// (segment breakdown, coordinates, etc.) is future scope; this just
 	// matches the reference panel's layout so it's a non-event to add later.
 	let advancedOpen = $state(false);
+
+	// Which finished-measurement rows are expanded — a plain Set so any
+	// number of rows can be open at once (the list scrolls internally, see
+	// .measurements-list, so there's no reason to force a single-open
+	// accordion here).
+	let expandedIds = $state(new Set<string>());
+	function toggleExpanded(id: string): void {
+		const next = new Set(expandedIds);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		expandedIds = next;
+	}
 </script>
 
 <div class="toolbar-stack">
@@ -104,62 +122,128 @@
 		{/snippet}
 
 		{#snippet children()}
-			{#if !measureState.drawing}
-				<p class="hint">Click points on the map to draw a path or polygon</p>
-			{:else if measureState.closed}
-				<div class="field-row">
-					<span class="field-label">Area</span>
-					<span class="field-value">{measureState.area}</span>
-				</div>
-				<div class="field-row">
-					<span class="field-label">Perimeter</span>
-					<span class="field-value">{measureState.perimeter}</span>
-				</div>
-			{:else}
-				<div class="field-row">
-					<span class="field-label">Length</span>
-					<span class="field-value">
-						{measureState.length}
-						<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M6 9l6 6 6-6" />
-						</svg>
-					</span>
-				</div>
-				<div class="field-row">
-					<span class="field-label">Heading</span>
-					<span class="field-value">{measureState.heading}</span>
-				</div>
-			{/if}
-
-			{#if measureState.drawing}
-				<div class="panel-divider"></div>
-				<button
-					type="button"
-					class="advanced-row"
-					onclick={() => (advancedOpen = !advancedOpen)}
-					aria-expanded={advancedOpen}
-				>
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<circle cx="12" cy="12" r="9" />
-						<path d="M12 11v5M12 8v.01" />
-					</svg>
-					<span>Advanced measurements</span>
-					<svg class="chevron" class:rotated={advancedOpen} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M6 9l6 6 6-6" />
-					</svg>
-				</button>
-				{#if advancedOpen}
-					<div class="field-row advanced-detail">
-						<span class="field-label">Points</span>
-						<span class="field-value">{measureState.vertexCount}</span>
+			<div class="panel-draw-section">
+				{#if !measureState.drawing}
+					<p class="hint">Click points on the map to draw a path or polygon</p>
+				{:else if measureState.closed}
+					<div class="field-row">
+						<span class="field-label">Area</span>
+						<span class="field-value">{measureState.area}</span>
+					</div>
+					<div class="field-row">
+						<span class="field-label">Perimeter</span>
+						<span class="field-value">{measureState.perimeter}</span>
+					</div>
+				{:else}
+					<div class="field-row">
+						<span class="field-label">Length</span>
+						<span class="field-value">
+							{measureState.length}
+							<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M6 9l6 6 6-6" />
+							</svg>
+						</span>
+					</div>
+					<div class="field-row">
+						<span class="field-label">Heading</span>
+						<span class="field-value">{measureState.heading}</span>
 					</div>
 				{/if}
-			{/if}
 
-			{#if measureState.finishedCount > 0}
-				<button type="button" class="clear-all-btn" onclick={onClearAll}>
-					Clear {measureState.finishedCount} measurement{measureState.finishedCount > 1 ? "s" : ""}
-				</button>
+				{#if measureState.drawing}
+					<div class="panel-divider"></div>
+					<button
+						type="button"
+						class="advanced-row"
+						onclick={() => (advancedOpen = !advancedOpen)}
+						aria-expanded={advancedOpen}
+					>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="9" />
+							<path d="M12 11v5M12 8v.01" />
+						</svg>
+						<span>Advanced measurements</span>
+						<svg class="chevron" class:rotated={advancedOpen} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M6 9l6 6 6-6" />
+						</svg>
+					</button>
+					{#if advancedOpen}
+						<div class="field-row advanced-detail">
+							<span class="field-label">Points</span>
+							<span class="field-value">{measureState.vertexCount}</span>
+						</div>
+					{/if}
+				{/if}
+			</div>
+
+			{#if measureState.finished.length > 0}
+				<div class="panel-divider"></div>
+				<div class="measurements-section">
+					<div class="measurements-header">
+						<span>Measurements ({measureState.finished.length})</span>
+						<button
+							type="button"
+							class="measurements-clear-btn"
+							onclick={onClearAll}
+							title="Clear all measurements"
+							aria-label="Clear all measurements"
+						>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M4 7h16" />
+								<path d="M9 7V4h6v3" />
+								<path d="M6 7l1 13h10l1-13" />
+							</svg>
+						</button>
+					</div>
+
+					<div class="measurements-list">
+						{#each measureState.finished as m (m.id)}
+							{@const expanded = expandedIds.has(m.id)}
+							<div
+								class="measurement-row"
+								role="group"
+								onmouseenter={() => onHighlightMeasurement(m.id, true)}
+								onmouseleave={() => onHighlightMeasurement(m.id, false)}
+							>
+								<button
+									type="button"
+									class="measurement-row-main"
+									onclick={() => toggleExpanded(m.id)}
+									aria-expanded={expanded}
+								>
+									<svg class="measurement-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+										{#if m.type === "path"}
+											<path d="M5 17 L10 8 L14 14 L19 6" />
+										{:else}
+											<path d="M12 4 20 19 4 19Z" />
+										{/if}
+									</svg>
+									<span class="measurement-label">{m.label}</span>
+									<span class="measurement-primary">{m.primary}</span>
+									<svg class="chevron" class:rotated={expanded} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+										<path d="M6 9l6 6 6-6" />
+									</svg>
+								</button>
+								{#if expanded}
+									<div class="measurement-detail">
+										<div class="field-row">
+											<span class="field-label">{m.type === "polygon" ? "Perimeter" : "Heading"}</span>
+											<span class="field-value">{m.secondary}</span>
+										</div>
+										<div class="field-row">
+											<span class="field-label">Points</span>
+											<span class="field-value">{m.vertexCount}</span>
+										</div>
+										<div class="measurement-actions">
+											<button type="button" onclick={() => onZoomToMeasurement(m.id)}>Zoom to</button>
+											<button type="button" class="danger" onclick={() => onRemoveMeasurement(m.id)}>Delete</button>
+										</div>
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
 			{/if}
 		{/snippet}
 
@@ -341,21 +425,166 @@
 		font-size: 0.78rem;
 	}
 
-	.clear-all-btn {
-		align-self: flex-start;
-		padding: 0.3rem 0;
+	/* ---- Draw-in-progress content: natural height, never scrolls — the
+	   measurements list below is the one flexible/scrollable region. ---- */
+	.panel-draw-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		flex: 0 0 auto;
+	}
+
+	/* ---- Finished-measurements list ---- */
+	.measurements-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		/* Shrinks (and its .measurements-list scrolls) once the panel hits
+		   SidePanel's max-height, but never force-stretches past its own
+		   content for a short list — see .measurements-list below. */
+		flex: 0 1 auto;
+		min-height: 0;
+	}
+
+	.measurements-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex: 0 0 auto;
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 0.76rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.measurements-clear-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.6rem;
+		height: 1.6rem;
 		background: transparent;
 		border: none;
-		color: rgba(255, 138, 138, 0.9);
-		font-family: inherit;
-		font-size: 0.75rem;
-		font-weight: 500;
+		border-radius: 50%;
+		color: rgba(255, 255, 255, 0.6);
 		cursor: pointer;
+		transition:
+			background 150ms ease,
+			color 150ms ease;
+	}
+	.measurements-clear-btn svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+	.measurements-clear-btn:hover {
+		background: rgba(255, 138, 138, 0.18);
+		color: rgba(255, 138, 138, 0.95);
+	}
+
+	.measurements-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		/* Thin, low-contrast scrollbar so a long list doesn't look like a
+		   default browser scrollbar bolted onto a dark floating panel. */
+		scrollbar-width: thin;
+		scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+	}
+	.measurements-list::-webkit-scrollbar {
+		width: 6px;
+	}
+	.measurements-list::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.measurements-list::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.2);
+		border-radius: 3px;
+	}
+	.measurements-list::-webkit-scrollbar-thumb:hover {
+		background: rgba(255, 255, 255, 0.35);
+	}
+
+	.measurement-row {
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.04);
+		transition: background 150ms ease;
+	}
+	.measurement-row:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.measurement-row-main {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.45rem 0.55rem;
+		background: transparent;
+		border: none;
+		color: inherit;
+		font-family: inherit;
+		font-size: 0.8rem;
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.measurement-type-icon {
+		width: 0.95rem;
+		height: 0.95rem;
+		color: rgba(255, 204, 51, 0.9);
+		flex-shrink: 0;
+	}
+
+	.measurement-label {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.clear-all-btn:hover {
-		color: rgba(255, 138, 138, 1);
-		text-decoration: underline;
+
+	.measurement-primary {
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.measurement-detail {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 0 0.55rem 0.55rem 2rem;
+		font-size: 0.78rem;
+	}
+
+	.measurement-actions {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 0.1rem;
+	}
+	.measurement-actions button {
+		padding: 0.28rem 0.6rem;
+		background: rgba(255, 255, 255, 0.08);
+		border: none;
+		border-radius: 999px;
+		color: rgba(255, 255, 255, 0.85);
+		font-family: inherit;
+		font-size: 0.72rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 150ms ease;
+	}
+	.measurement-actions button:hover {
+		background: rgba(255, 255, 255, 0.18);
+	}
+	.measurement-actions button.danger {
+		color: rgba(255, 138, 138, 0.95);
+	}
+	.measurement-actions button.danger:hover {
+		background: rgba(255, 138, 138, 0.18);
 	}
 
 	.done-btn {
