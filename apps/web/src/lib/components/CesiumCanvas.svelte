@@ -9,6 +9,7 @@
     import { viewStatus } from "$lib/state/view-status.svelte";
     import { BASEMAPS, DEFAULT_BASEMAP_ID } from "$lib/tiles/basemaps";
     import { PathMeasureTool, type MeasureState } from "$lib/measure/path-measure-tool";
+    import { DataLayerManager, type ActiveLayerState } from "$lib/layers/data-layer-manager";
     import {
         loadSession,
         dispatchSessionAction,
@@ -19,22 +20,24 @@
     import HeadingControl from "$lib/components/HeadingControl.svelte";
     import BasemapPicker from "$lib/components/BasemapPicker.svelte";
     import Toolbar from "$lib/components/Toolbar.svelte";
+    import ActiveLayersPanel from "$lib/components/ActiveLayersPanel.svelte";
 
     interface Props {
         statusBar?: StatusBar;
-        /** Layers panel visibility lives in +page.svelte (it owns
-         *  <LayerControl>) — Toolbar's layers button just reflects/toggles it. */
+        /** Catalog modal visibility lives in +page.svelte (it owns
+         *  <DataLayersCatalog>) — Toolbar's layers button just reflects/toggles it. */
         layersOpen?: boolean;
         onToggleLayers?: () => void;
-        /** Lets +page.svelte hide <LayerControl> while the path/polygon tool's
-         *  own top-right panel is showing — they'd otherwise overlap. */
-        onMeasureActiveChange?: (active: boolean) => void;
+        /** Lets +page.svelte's <DataLayersCatalog> show "Added" vs "Add" per
+         *  card — the active-layer list itself is owned by dataLayerManager,
+         *  inside this component, not up there. */
+        onActiveLayerIdsChange?: (ids: string[]) => void;
     }
     const {
         statusBar,
         layersOpen = false,
         onToggleLayers = () => {},
-        onMeasureActiveChange = () => {},
+        onActiveLayerIdsChange = () => {},
     }: Props = $props();
 
     // Read once at mount — everything below that falls back to a hardcoded
@@ -65,8 +68,11 @@
         perimeter: "",
         finished: [],
     });
+    let dataLayerManager: DataLayerManager | undefined;
+    let layerState = $state<ActiveLayerState[]>([]);
+    let activeLayersPanelCollapsed = $state(initialSession.activeLayersPanelCollapsed ?? false);
     $effect(() => {
-        onMeasureActiveChange(measureState.active);
+        onActiveLayerIdsChange(layerState.map((l) => l.id));
     });
     // Reactive so BasemapPicker can highlight the active skin; picking a new
     // one is the only thing that changes it, so a plain $state (not an
@@ -226,6 +232,11 @@
         });
         measureTool.restoreFinished(initialSession.measurements ?? []);
 
+        dataLayerManager = new DataLayerManager(viewer, (s) => {
+            layerState = s;
+        });
+        await dataLayerManager.restoreLayers(initialSession.layers ?? []);
+
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
         handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction((movement: Cesium.ScreenSpaceEventHandler.MotionEvent) => {
@@ -321,6 +332,14 @@
         if (graticuleOn) addGraticule();
         else removeGraticule();
         dispatchSessionAction({ type: SessionActionType.GraticuleToggled, payload: graticuleOn });
+    }
+
+    function toggleActiveLayersPanelCollapsed(): void {
+        activeLayersPanelCollapsed = !activeLayersPanelCollapsed;
+        dispatchSessionAction({
+            type: SessionActionType.ActiveLayersPanelCollapsed,
+            payload: activeLayersPanelCollapsed,
+        });
     }
 
     /** Reads the camera's current region regardless of scene mode —
@@ -565,21 +584,19 @@
     }
 
     // =========================================================================
-    // Exported controls: kept as a matching no-op surface. There is no
-    // Cesium-side data layer yet (coastlines/scalar fields still render only
-    // through GlobeCanvas's PMTiles pipeline — see #migration notes), so
-    // these intentionally don't throw, just warn once per call.
+    // Exported control: lets +page.svelte's DataLayersCatalog modal (which
+    // lives outside CesiumCanvas, so it has no direct access to
+    // dataLayerManager) add a layer by its catalog id. Everything else
+    // (visibility, opacity, reorder, remove) is driven from ActiveLayersPanel
+    // below, which is rendered inside CesiumCanvas and calls the manager
+    // directly — no pass-through needed for those.
     // =========================================================================
-    export function setLayerVisibility(layerId: string, _visible: boolean): void {
-        console.warn(
-            `[CesiumCanvas] setLayerVisibility("${layerId}") — data layers are not yet ported to Cesium.`,
-        );
+    export function addDataLayer(catalogId: string): void {
+        void dataLayerManager?.addLayer(catalogId);
     }
 
-    export function setLayerOpacity(layerId: string, _opacity: number): void {
-        console.warn(
-            `[CesiumCanvas] setLayerOpacity("${layerId}") — data layers are not yet ported to Cesium.`,
-        );
+    export function removeDataLayer(catalogId: string): void {
+        dataLayerManager?.removeLayer(catalogId);
     }
 
     function onContextLost(e: Event): void {
@@ -597,6 +614,7 @@
         cancelAnimationFrame(rafId);
         handler?.destroy();
         measureTool?.destroy();
+        dataLayerManager?.dispose();
         if (viewer && !viewer.isDestroyed()) viewer.destroy();
     });
 </script>
@@ -641,6 +659,16 @@
     onProjectionChange={switchProjection}
     {graticuleOn}
     onGraticuleToggle={toggleGraticule}
+/>
+
+<ActiveLayersPanel
+    layers={layerState}
+    collapsed={activeLayersPanelCollapsed}
+    onToggleCollapsed={toggleActiveLayersPanelCollapsed}
+    onToggleVisible={(id, visible) => dataLayerManager?.setVisible(id, visible)}
+    onSetOpacity={(id, opacity) => dataLayerManager?.setOpacity(id, opacity)}
+    onReorder={(id, newIndex) => dataLayerManager?.reorder(id, newIndex)}
+    onRemove={(id) => dataLayerManager?.removeLayer(id)}
 />
 
 <style>

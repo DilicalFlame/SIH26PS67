@@ -1,23 +1,22 @@
 <script lang="ts">
 	import CesiumCanvas from '$lib/components/CesiumCanvas.svelte';
 	import StatusBar from '$lib/components/StatusBar.svelte';
-	import LayerControl from '$lib/components/LayerControl.svelte';
+	import DataLayersCatalog from '$lib/components/DataLayersCatalog.svelte';
 	import { loadSession, dispatchSessionAction, SessionActionType } from '$lib/state/session-store';
 
 	const initialSession = loadSession();
 
 	let statusBarRef = $state<StatusBar | undefined>(undefined);
 	let globeCanvasRef = $state<CesiumCanvas | undefined>(undefined);
-	// Owned here (not inside CesiumCanvas) because it gates <LayerControl>,
-	// which is a page-level panel — Toolbar's layers button (inside
+	// Owned here (not inside CesiumCanvas) because it gates <DataLayersCatalog>,
+	// which is a page-level modal — Toolbar's layers button (inside
 	// CesiumCanvas) just reflects/toggles it via props. Defaults closed on a
 	// first-ever visit (no session yet) — restored from a prior session
 	// otherwise, see session-store.ts.
 	let layersOpen = $state(initialSession.layersOpen ?? false);
-	// While the path/polygon tool's own top-right panel is showing, hide
-	// LayerControl rather than guess a pixel offset between the two — both
-	// anchor the same top-right corner (see CesiumCanvas > Toolbar.svelte).
-	let measureActive = $state(false);
+	// Mirrors dataLayerManager's active-layer ids (owned inside CesiumCanvas)
+	// so the catalog modal can show "Added" vs "Add" per card.
+	let activeLayerIds = $state<Set<string>>(new Set());
 
 	function toggleLayersOpen(): void {
 		layersOpen = !layersOpen;
@@ -44,18 +43,20 @@
 			statusBar={statusBarRef}
 			{layersOpen}
 			onToggleLayers={toggleLayersOpen}
-			onMeasureActiveChange={(active) => (measureActive = active)}
+			onActiveLayerIdsChange={(ids) => (activeLayerIds = new Set(ids))}
 		/>
 	</div>
 
-	<!-- Floating layer control panel — visibility toggled from the top-bar
-	     layers icon (see CesiumCanvas > Toolbar.svelte). -->
-	{#if layersOpen && !measureActive}
-		<LayerControl
-			onVisibilityChange={(id, visible) => globeCanvasRef?.setLayerVisibility(id, visible)}
-			onOpacityChange={(id, opacity) => globeCanvasRef?.setLayerOpacity(id, opacity)}
-		/>
-	{/if}
+	<!-- Data layers catalog — a full-screen modal, opened from the top-bar
+	     layers icon (see CesiumCanvas > Toolbar.svelte). The active-layers
+	     list itself (left floating panel) is rendered inside CesiumCanvas. -->
+	<DataLayersCatalog
+		open={layersOpen}
+		activeIds={activeLayerIds}
+		onAdd={(id) => globeCanvasRef?.addDataLayer(id)}
+		onRemove={(id) => globeCanvasRef?.removeDataLayer(id)}
+		onClose={toggleLayersOpen}
+	/>
 
 	<StatusBar bind:this={statusBarRef} />
 </main>
