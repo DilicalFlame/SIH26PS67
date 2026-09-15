@@ -5,7 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.20.0",
+    "asyncpg>=0.31.0",
     "fastapi>=0.141.1",
+    "geoalchemy2>=0.20.0",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.3.5",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy[asyncio]>=2.0.52",
+    "structlog>=26.1.0",
     "uvicorn[standard]>=0.52.4",
 ]
 
@@ -15,3 +23,7 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.5",
 ]
+
+[tool.pytest.ini_options]
+# app/ has no setup.py/editable install — tests otherwise can't `import app`.
+pythonpath = ["."]

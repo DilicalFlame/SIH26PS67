@@ -1,0 +1,20 @@
+[
+  {
+    "nodeId": "node_root",
+    "parentId": null,
+    "role": "user",
+    "content": "Show me sea surface temperature in the Bay of Bengal for January 2020.",
+    "toolCalls": null,
+    "createdAt": "2020-01-15T06:20:00Z"
+  },
+  {
+    "nodeId": "node_reply",
+    "parentId": "node_root",
+    "role": "assistant",
+    "content": "Here's the GLORYS sea surface temperature layer for the Bay of Bengal in January 2020.",
+    "toolCalls": [
+      { "tool": "set_map_layer", "args": { "layer_id": "glorys_thetao", "region": "Bay of Bengal" } }
+    ],
+    "createdAt": "2020-01-15T06:20:04Z"
+  }
+]

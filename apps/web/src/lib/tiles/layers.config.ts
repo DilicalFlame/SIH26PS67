@@ -7,6 +7,8 @@
  * worker, or the shaders.
  */
 
+import type { ScalarFieldMeta } from '$lib/types/scalar-field';
+
 /**
  * Deepest tile zoom the data carries. The camera's max zoom is derived from
  * this (see GlobeCanvas.svelte) so camera zoom and tile detail stay in step.
@@ -50,6 +52,19 @@ export interface TileLayerConfig {
 	minZoom: number;
 	maxZoom: number;
 	styles: LayerStyle[];
+}
+
+/** See contracts §5.1. `meta` is fetched once from `/fields/{id}/meta` and handed in whole. */
+export interface ScalarFieldLayerConfig {
+	kind: 'scalar_field';
+	id: string;
+	meta: ScalarFieldMeta;
+	colormap: string;
+	valueRange: [number, number];
+	opacity: number;
+	visible: boolean;
+	depthIndex: number;
+	timeIndex: number;
 }
 
 // Pastel basemap: muted enough that ocean-data overlays (temperature,
