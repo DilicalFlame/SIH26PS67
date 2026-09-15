@@ -13,8 +13,14 @@ import * as Cesium from "cesium";
 export interface BasemapConfig {
 	id: string;
 	label: string;
-	/** Single emoji/character shown on the picker button. */
-	icon: string;
+	/**
+	 * A real tile from this source, used as the picker's preview instead of
+	 * an icon — the same "minimap" pattern Google Maps/Earth uses for its
+	 * basemap switcher. All six point at the same real-world tile (roughly
+	 * Southern Africa) so the panel reads as one style, N ways rather than N
+	 * unrelated thumbnails.
+	 */
+	thumbnail: string;
 	build: () => Promise<Cesium.ImageryProvider>;
 	/** Per-layer color adjustments (see Cesium.ImageryLayer), applied after build(). */
 	saturation?: number;
@@ -25,7 +31,7 @@ export const BASEMAPS: BasemapConfig[] = [
 	{
 		id: "streets",
 		label: "Streets",
-		icon: "🗺️",
+		thumbnail: "https://tile.openstreetmap.org/3/4/4.png",
 		saturation: 0.55,
 		brightness: 0.95,
 		build: async () =>
@@ -41,7 +47,9 @@ export const BASEMAPS: BasemapConfig[] = [
 	{
 		id: "satellite",
 		label: "Satellite",
-		icon: "🛰️",
+		// Esri's MapServer tile path is z/row/col (y before x), unlike the
+		// z/x/y convention the other five thumbnails use.
+		thumbnail: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/3/4/4",
 		build: async () =>
 			Cesium.ArcGisMapServerImageryProvider.fromUrl(
 				// The legacy public REST endpoint — unlike
@@ -54,7 +62,8 @@ export const BASEMAPS: BasemapConfig[] = [
 	{
 		id: "light",
 		label: "Light",
-		icon: "☀️",
+		thumbnail:
+			"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/3/4/4",
 		// CartoDB's basemaps.cartocdn.com now serves an "API KEY REQUIRED"
 		// watermark tile instead of a 4xx (still a 200 image/png, so a plain
 		// HTTP check doesn't catch it — found by actually looking at a
@@ -68,7 +77,8 @@ export const BASEMAPS: BasemapConfig[] = [
 	{
 		id: "dark",
 		label: "Dark",
-		icon: "🌙",
+		thumbnail:
+			"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/3/4/4",
 		build: async () =>
 			Cesium.ArcGisMapServerImageryProvider.fromUrl(
 				"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer",
@@ -77,7 +87,7 @@ export const BASEMAPS: BasemapConfig[] = [
 	{
 		id: "terrain",
 		label: "Terrain",
-		icon: "⛰️",
+		thumbnail: "https://tile.opentopomap.org/3/4/4.png",
 		build: async () =>
 			new Cesium.UrlTemplateImageryProvider({
 				url: "https://tile.opentopomap.org/{z}/{x}/{y}.png",
@@ -90,7 +100,9 @@ export const BASEMAPS: BasemapConfig[] = [
 	{
 		id: "offline",
 		label: "Simple",
-		icon: "◻️",
+		// Same region as the other five (roughly), from the bundled pyramid
+		// itself — no network needed even for the thumbnail.
+		thumbnail: `${CESIUM_BASE_URL}/Assets/Textures/NaturalEarthII/2/4/1.jpg`,
 		build: async () =>
 			// Bundled with Cesium itself — the only skin that needs no network
 			// at all, and the fallback if every tile server above is
