@@ -12,18 +12,10 @@
     import HeadingControl from "$lib/components/HeadingControl.svelte";
     import BasemapPicker from "$lib/components/BasemapPicker.svelte";
 
-    // Props — mirrors GlobeCanvas's public surface exactly, so this is a
-    // drop-in replacement from +page.svelte's point of view.
     interface Props {
-        activeProjection?: ProjectionType;
-        showGraticule?: boolean;
         statusBar?: StatusBar;
     }
-    const {
-        activeProjection = ProjectionType.Sphere,
-        showGraticule = true,
-        statusBar,
-    }: Props = $props();
+    const { statusBar }: Props = $props();
 
     let containerEl: HTMLDivElement;
     let hasCrashed = $state(false);
@@ -39,9 +31,14 @@
     let currentBasemapId = $state(DEFAULT_BASEMAP_ID);
 
     // Which projection the scene is currently morphed to (or morphing
-    // towards) — kept separate from Cesium's own scene.mode so the $effect
-    // below only calls morphTo*() on an actual change.
-    let currentProjection = ProjectionType.Sphere;
+    // towards). $state (not a plain let) so BasemapPicker's projection
+    // toggle can highlight the active one — driven directly by
+    // switchProjection() below, now that the projection control lives
+    // inside this component instead of being passed down as a prop.
+    let currentProjection = $state(ProjectionType.Sphere);
+    // Likewise for the graticule — was a prop watched by an $effect, now a
+    // local toggle BasemapPicker calls directly.
+    let graticuleOn = $state(true);
 
     // Heading state — same eased-drag-plus-reset-to-north model as
     // GlobeCanvas, just applied to Cesium's camera instead of a shader uniform.
@@ -153,7 +150,7 @@
         });
 
         await switchBasemap(DEFAULT_BASEMAP_ID);
-        if (showGraticule) addGraticule();
+        if (graticuleOn) addGraticule();
 
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
         handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -192,6 +189,24 @@
         if (!gridLayer) return;
         viewer.imageryLayers.remove(gridLayer);
         gridLayer = undefined;
+    }
+
+    function toggleGraticule(): void {
+        graticuleOn = !graticuleOn;
+        if (graticuleOn) addGraticule();
+        else removeGraticule();
+    }
+
+    /** Drives Cesium's own built-in globe <-> map morph. Called directly by
+     *  BasemapPicker's projection toggle. */
+    function switchProjection(next: ProjectionType): void {
+        if (!viewer || next === currentProjection) return;
+        currentProjection = next;
+        if (next === ProjectionType.Sphere) {
+            viewer.scene.morphTo3D(1.0);
+        } else {
+            viewer.scene.morphTo2D(1.0);
+        }
     }
 
     // =========================================================================
@@ -318,35 +333,6 @@
         );
     }
 
-    // =========================================================================
-    // Svelte reactive: respond to parent activeProjection prop changes by
-    // driving Cesium's own built-in globe <-> map morph.
-    // =========================================================================
-    $effect(() => {
-        const p = Number(activeProjection);
-        if (!viewer || p === currentProjection) return;
-        currentProjection = p;
-        if (p === ProjectionType.Sphere) {
-            viewer.scene.morphTo3D(1.0);
-        } else {
-            viewer.scene.morphTo2D(1.0);
-        }
-    });
-
-    $effect(() => {
-        // Read the prop unconditionally, before the `!viewer` guard — this
-        // component mounts before initScene()'s await resolves, so the
-        // effect's first run always hits that guard. An effect only
-        // resubscribes to reactive values it actually read on its last run,
-        // so if `showGraticule` were read after the early return, that first
-        // run would register no dependency at all and this would never fire
-        // again once the button is clicked.
-        const grat = showGraticule;
-        if (!viewer) return;
-        if (grat) addGraticule();
-        else removeGraticule();
-    });
-
     function onContextLost(e: Event): void {
         e.preventDefault();
         console.error("[CesiumCanvas] WebGL context lost. Rendering recovery prompt.", e);
@@ -383,7 +369,15 @@
 
 <HeadingControl bind:this={headingControl} onDrag={onHeadingDrag} {onResetNorth} />
 
-<BasemapPicker basemaps={BASEMAPS} activeId={currentBasemapId} onSelect={switchBasemap} />
+<BasemapPicker
+    basemaps={BASEMAPS}
+    activeId={currentBasemapId}
+    onSelect={switchBasemap}
+    {currentProjection}
+    onProjectionChange={switchProjection}
+    {graticuleOn}
+    onGraticuleToggle={toggleGraticule}
+/>
 
 <style>
     .cesium-canvas {
