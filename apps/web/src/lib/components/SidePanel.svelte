@@ -85,6 +85,10 @@
 		z-index: 20;
 		width: 21rem;
 		max-width: calc(100vw - 1.5rem);
+		/* Bounded to the viewport so a long measurement list scrolls inside
+		   .side-panel-body instead of pushing the footer (Done) off-screen or
+		   growing the panel past the window — see .side-panel-body below. */
+		max-height: calc(100dvh - 2.5rem);
 		display: flex;
 		flex-direction: column;
 		background: rgba(24, 24, 28, 0.92);
@@ -170,6 +174,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
+		/* Natural-height content (hint/fields) plus a scrollable list both
+		   live in here via `children` — min-height: 0 is what lets this flex
+		   child actually shrink below its content height so the inner list
+		   region (flex: 1; min-height: 0; overflow-y: auto) is the thing that
+		   scrolls, rather than the whole panel growing past the viewport. */
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.side-panel-footer {
