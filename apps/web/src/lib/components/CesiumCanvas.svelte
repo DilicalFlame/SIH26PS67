@@ -323,11 +323,57 @@
         dispatchSessionAction({ type: SessionActionType.GraticuleToggled, payload: graticuleOn });
     }
 
-    /** Drives Cesium's own built-in globe <-> map morph. Called directly by
-     *  BasemapPicker's projection toggle. */
+    /** Reads the camera's current region regardless of scene mode —
+     *  `positionCartographic` is maintained by Cesium across SCENE3D,
+     *  SCENE2D and COLUMBUS_VIEW alike (unlike raw `camera.position`, which
+     *  is a projected 2D frame in map modes, not an ECEF Cartesian). */
+    function captureCurrentView(): PersistedCameraView {
+        const carto = viewer.camera.positionCartographic;
+        return {
+            longitude: Cesium.Math.toDegrees(carto.longitude),
+            latitude: Cesium.Math.toDegrees(carto.latitude),
+            height: carto.height,
+            heading: viewer.camera.heading,
+            pitch: viewer.camera.pitch,
+            roll: viewer.camera.roll,
+        };
+    }
+
+    let morphSnapBackRemove: (() => void) | undefined;
+
+    /**
+     * Cesium's own morph animation (duration > 0) hardcodes the end-of-morph
+     * camera to a whole-globe view centered on (lon 0, lat 0) — it does NOT
+     * preserve whatever region you were actually looking at (that
+     * region-preserving computation only happens for an instant, duration-0
+     * morph). That's what makes the default morph feel like "camera jumps
+     * away, then morphs".
+     *
+     * Fighting this live (re-asserting the camera every frame while
+     * scene.mode === MORPHING) was tried and abandoned: the camera during a
+     * morph is owned by SceneTransitioner's own tween, and neither
+     * camera.setView() (produces a runaway/exploding height across frames —
+     * ~9.4M -> ~4 billion meters within under a second) nor writing the raw
+     * position/direction/up vectors directly (silently starves the render
+     * loop to a handful of frames) survives fighting that tween in real
+     * time. So instead of pinning the camera *during* the morph, this snaps
+     * it back to the pre-morph region once, on morphComplete — the region
+     * is preserved at the end, but the mid-morph frames still show
+     * Cesium's own (globe-centered) camera path, not the original region.
+     */
     function switchProjection(next: ProjectionType): void {
         if (!viewer || next === currentProjection) return;
         currentProjection = next;
+
+        morphSnapBackRemove?.();
+        const capturedView = captureCurrentView();
+        const includeOrientation = next === ProjectionType.Sphere;
+        morphSnapBackRemove = viewer.scene.morphComplete.addEventListener(() => {
+            morphSnapBackRemove?.();
+            morphSnapBackRemove = undefined;
+            applyRestoredCamera(capturedView, includeOrientation);
+        });
+
         if (next === ProjectionType.Sphere) {
             viewer.scene.morphTo3D(1.0);
         } else {
