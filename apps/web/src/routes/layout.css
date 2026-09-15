@@ -1,2 +1,111 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+
+@theme {
+	/* Reused straight from layers.config.ts / GlobeCanvas.svelte, so the UI
+	   and the globe read as one surface instead of two mismatched palettes. */
+	--color-void: #0c1420;
+	--color-ocean: #8fb8d8;
+	--color-land: #e8e3d3;
+	--color-grat: #6f9dc0;
+	--color-ice: #f4f7fa;
+
+	/* Panel surface: void color, slightly transparent, so the globe shows
+	   faintly through — per the issue's "panel chrome semi-transparent over
+	   the canvas; the globe is the product." */
+	--color-panel: color-mix(in oklab, var(--color-void) 88%, transparent);
+	--color-panel-border: color-mix(in oklab, var(--color-ocean) 25%, transparent);
+
+	/* Body text on panels. Verified: --color-land on --color-void is a
+	   ~14.4:1 contrast ratio — clears WCAG AA's 4.5:1 requirement easily.
+	   --color-panel is translucent (88% opaque), not plain --color-void, but
+	   the margin holds regardless of what's behind it: even composited over
+	   pure white (the brightest anything on the globe gets), the 12% bleed-
+	   through only lightens the panel to ~RGB(41,48,59), for a ~10:1 ratio —
+	   still comfortably above 4.5:1. */
+	--color-body: var(--color-land);
+
+	/* Two elevation levels only, per "keep it small." */
+	--shadow-panel: 0 4px 16px rgb(0 0 0 / 0.4);
+	--shadow-popover: 0 8px 24px rgb(0 0 0 / 0.5);
+
+	/* Tailwind v4 ships spacing as a single --spacing multiplier (used via
+	   calc(var(--spacing) * N), see the utility classes below) and a radius
+	   scale that stops at --radius-4xl — neither includes a "full/pill"
+	   step, so the slider's fully-rounded ends need this defined explicitly. */
+	--radius-full: 9999px;
+}
+@layer components {
+	.panel {
+		background-color: var(--color-panel);
+		border: 1px solid var(--color-panel-border);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-panel);
+		color: var(--color-body);
+		padding: calc(var(--spacing) * 4);
+	}
+
+	.btn {
+		background-color: var(--color-ocean);
+		color: var(--color-void);
+		border-radius: var(--radius-md);
+		padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+		font-weight: 500;
+		transition: opacity 0.15s ease;
+	}
+	.btn:hover {
+		opacity: 0.85;
+	}
+
+	.input {
+		background-color: var(--color-void);
+		border: 1px solid var(--color-panel-border);
+		border-radius: var(--radius-md);
+		color: var(--color-body);
+		padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+	}
+	.input:focus {
+		outline: 2px solid var(--color-ocean);
+		outline-offset: 1px;
+	}
+
+	/* `background-color`/`border-radius`/`height` on a bare <input type=range>
+	   style the element's own box, not the UA-rendered track — with the
+	   default `appearance: auto` those three declarations are silently
+	   inert and the control falls back to the browser's default track.
+	   `appearance: none` opts into the pseudo-elements below, which are
+	   what actually paint the track and thumb. */
+	.slider {
+		appearance: none;
+		-webkit-appearance: none;
+		background: transparent;
+		height: 4px;
+		cursor: pointer;
+	}
+	.slider::-webkit-slider-runnable-track {
+		background-color: var(--color-panel-border);
+		border-radius: var(--radius-full);
+		height: 4px;
+	}
+	.slider::-moz-range-track {
+		background-color: var(--color-panel-border);
+		border-radius: var(--radius-full);
+		height: 4px;
+	}
+	.slider::-webkit-slider-thumb {
+		appearance: none;
+		-webkit-appearance: none;
+		width: 14px;
+		height: 14px;
+		margin-top: -5px; /* centers the 14px thumb on the 4px track */
+		border-radius: var(--radius-full);
+		background-color: var(--color-ocean);
+	}
+	.slider::-moz-range-thumb {
+		width: 14px;
+		height: 14px;
+		border: none;
+		border-radius: var(--radius-full);
+		background-color: var(--color-ocean);
+	}
+}
