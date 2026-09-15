@@ -23,6 +23,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: var(--spacing-8);
+		padding: calc(var(--spacing) * 8);
 	}
 </style>
