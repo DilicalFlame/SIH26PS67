@@ -10,11 +10,17 @@ export class TileLRUCache<V> {
 	private map = new Map<string, V>();
 
 	constructor(
-		private readonly maxSize: number,
+		private maxSize: number,
 		private readonly onEvict: (key: string, value: V) => void,
 		/** Entries this returns true for are never evicted. */
 		private readonly isPinned?: (value: V) => boolean
 	) {}
+
+	/** Runtime-configurable cache budget (#45) — trims immediately if the new size is smaller. */
+	setMaxSize(maxSize: number): void {
+		this.maxSize = maxSize;
+		this.trim();
+	}
 
 	get(key: string): V | undefined {
 		const v = this.map.get(key);
@@ -53,6 +59,15 @@ export class TileLRUCache<V> {
 	/** Removes without invoking onEvict — the caller owns the value's disposal. */
 	delete(key: string): void {
 		this.map.delete(key);
+	}
+
+	/** Empties the cache, bypassing isPinned — the caller disposes values itself. */
+	clear(): void {
+		this.map.clear();
+	}
+
+	get size(): number {
+		return this.map.size;
 	}
 
 	values(): IterableIterator<V> {
