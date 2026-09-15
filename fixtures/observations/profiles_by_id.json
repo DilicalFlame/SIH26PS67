@@ -1,0 +1,17 @@
+{
+  "5904471_045": {
+    "profileId": "5904471_045",
+    "platformId": "5904471",
+    "observedAt": "2020-01-15T06:12:00Z",
+    "lat": 12.7,
+    "lon": 85.3,
+    "levels": [
+      { "depth": 5.0, "temperature": 28.91, "salinity": 33.42, "pressure": 5.0 },
+      { "depth": 50.0, "temperature": 27.85, "salinity": 33.98, "pressure": 50.4 },
+      { "depth": 100.0, "temperature": 24.1, "salinity": 34.65, "pressure": 100.9 },
+      { "depth": 500.0, "temperature": 11.02, "salinity": 34.98, "pressure": 505.2 },
+      { "depth": 1000.0, "temperature": 6.15, "salinity": 34.85, "pressure": 1011.7 },
+      { "depth": 1985.3, "temperature": 3.42, "salinity": 34.72, "pressure": 2010.6 }
+    ]
+  }
+}
