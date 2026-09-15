@@ -29,6 +29,10 @@ uniform float u_worldShift;
 
 varying vec2 v_tileUV;
 varying vec3 v_sphere;
+// Pass-through so fragment shaders that need real texture coordinates (e.g.
+// scalar-field.ts) can derive their own UV from a bbox uniform, instead of
+// re-deriving the vertex projection math in a second copy.
+varying vec2 v_lonLat;
 
 void main() {
     float lon = a_lonLat.x;
@@ -37,6 +41,7 @@ void main() {
     // The fragment shader's tile clip is meaningless here; sit safely inside it.
     v_tileUV = vec2(0.5);
     v_sphere = lonLatToSphere(lon, lat);
+    v_lonLat = a_lonLat;
 
     vec3 rotated;
     vec2 ndc = projectVertex(
