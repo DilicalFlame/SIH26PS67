@@ -7,8 +7,10 @@
     import { formatLatLonDMS } from "$lib/geo/dms";
     import { pickNiceScale } from "$lib/geo/scale-bar";
     import { viewStatus } from "$lib/state/view-status.svelte";
+    import { BASEMAPS, DEFAULT_BASEMAP_ID } from "$lib/tiles/basemaps";
     import type StatusBar from "$lib/components/StatusBar.svelte";
     import HeadingControl from "$lib/components/HeadingControl.svelte";
+    import BasemapPicker from "$lib/components/BasemapPicker.svelte";
 
     // Props — mirrors GlobeCanvas's public surface exactly, so this is a
     // drop-in replacement from +page.svelte's point of view.
@@ -29,7 +31,12 @@
 
     let viewer: Cesium.Viewer;
     let gridLayer: Cesium.ImageryLayer | undefined;
+    let baseLayer: Cesium.ImageryLayer | undefined;
     let handler: Cesium.ScreenSpaceEventHandler;
+    // Reactive so BasemapPicker can highlight the active skin; picking a new
+    // one is the only thing that changes it, so a plain $state (not an
+    // effect-driven derivation) is enough.
+    let currentBasemapId = $state(DEFAULT_BASEMAP_ID);
 
     // Which projection the scene is currently morphed to (or morphing
     // towards) — kept separate from Cesium's own scene.mode so the $effect
@@ -97,31 +104,13 @@
         Cesium.Ion.defaultAccessToken = "";
 
         // No Ion/Mapbox/MapTiler token available (see .env), so Cesium's own
-        // paid basemaps are out. The bundled offline NaturalEarthII imagery
-        // that ships with Cesium only carries detail to level 2 (a handful of
-        // ~1024px tiles for the whole planet) — fine for the full-globe view,
-        // but it's why zooming in used to just magnify an already-blurry
-        // texture. OpenStreetMap's tile server needs no key and serves real
-        // detail up to level 19, so it's the base layer at every zoom depth
-        // this app allows (see MIN_ZOOM_METERS below). Slightly desaturated
-        // and darkened to sit closer to this app's dark/pastel palette
-        // instead of OSM's stock bright cartography.
-        const baseLayer = new Cesium.ImageryLayer(
-            new Cesium.OpenStreetMapImageryProvider({
-                url: "https://tile.openstreetmap.org/",
-                // The public tile server doesn't serve past z19; MIN_ZOOM_METERS
-                // (10m) lets the camera get close enough to ask for z20+, which
-                // 404s (surfacing in devtools as a CORS error, since an error
-                // page has no CORS headers). Capping here makes Cesium hold and
-                // magnify the last real z19 tile instead of requesting past it.
-                maximumLevel: 19,
-            }),
-        );
-        baseLayer.saturation = 0.55;
-        baseLayer.brightness = 0.95;
-
+        // paid basemaps are out. Every skin in basemaps.ts is a free,
+        // key-less tile source instead; the base layer itself is attached
+        // below via switchBasemap() once the viewer exists, so the picker's
+        // logic (build → adjust → swap) is exercised on the very first load
+        // too, not duplicated here.
         viewer = new Cesium.Viewer(containerEl, {
-            baseLayer,
+            baseLayer: false,
             mapProjection: new Cesium.GeographicProjection(),
             baseLayerPicker: false,
             geocoder: false,
@@ -163,6 +152,7 @@
                     : ProjectionType.Equirectangular;
         });
 
+        await switchBasemap(DEFAULT_BASEMAP_ID);
         if (showGraticule) addGraticule();
 
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
@@ -202,6 +192,37 @@
         if (!gridLayer) return;
         viewer.imageryLayers.remove(gridLayer);
         gridLayer = undefined;
+    }
+
+    // =========================================================================
+    // Basemap ("skin") switching — see basemaps.ts. Builds the new provider
+    // BEFORE touching the layer collection, so a slow or failing tile source
+    // (network hiccup, an offline skin's key-less server down) leaves the
+    // current basemap on screen instead of flashing to bare globe. Always
+    // inserted at index 0 so the graticule — appended on top via
+    // addImageryProvider — stays above it regardless of how many times the
+    // base layer is swapped.
+    // =========================================================================
+    async function switchBasemap(id: string): Promise<void> {
+        const config = BASEMAPS.find((b) => b.id === id) ?? BASEMAPS[0];
+        let provider: Cesium.ImageryProvider;
+        try {
+            provider = await config.build();
+        } catch (err) {
+            console.error(`[CesiumCanvas] Failed to load basemap "${config.id}":`, err);
+            return;
+        }
+        if (!viewer || viewer.isDestroyed()) return; // component may have unmounted mid-fetch
+
+        const nextLayer = new Cesium.ImageryLayer(provider);
+        if (config.saturation !== undefined) nextLayer.saturation = config.saturation;
+        if (config.brightness !== undefined) nextLayer.brightness = config.brightness;
+
+        const previousLayer = baseLayer;
+        viewer.imageryLayers.add(nextLayer, 0);
+        if (previousLayer) viewer.imageryLayers.remove(previousLayer);
+        baseLayer = nextLayer;
+        currentBasemapId = config.id;
     }
 
     // =========================================================================
@@ -361,6 +382,8 @@
 ></div>
 
 <HeadingControl bind:this={headingControl} onDrag={onHeadingDrag} {onResetNorth} />
+
+<BasemapPicker basemaps={BASEMAPS} activeId={currentBasemapId} onSelect={switchBasemap} />
 
 <style>
     .cesium-canvas {
