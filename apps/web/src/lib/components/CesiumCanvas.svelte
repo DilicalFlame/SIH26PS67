@@ -20,8 +20,16 @@
          *  <LayerControl>) — Toolbar's layers button just reflects/toggles it. */
         layersOpen?: boolean;
         onToggleLayers?: () => void;
+        /** Lets +page.svelte hide <LayerControl> while the path/polygon tool's
+         *  own top-right panel is showing — they'd otherwise overlap. */
+        onMeasureActiveChange?: (active: boolean) => void;
     }
-    const { statusBar, layersOpen = true, onToggleLayers = () => {} }: Props = $props();
+    const {
+        statusBar,
+        layersOpen = true,
+        onToggleLayers = () => {},
+        onMeasureActiveChange = () => {},
+    }: Props = $props();
 
     let containerEl: HTMLDivElement;
     let hasCrashed = $state(false);
@@ -37,8 +45,15 @@
         drawing: false,
         vertexCount: 0,
         canClose: false,
-        liveLabel: "",
+        closed: false,
+        length: "",
+        heading: "",
+        area: "",
+        perimeter: "",
         finishedCount: 0,
+    });
+    $effect(() => {
+        onMeasureActiveChange(measureState.active);
     });
     // Reactive so BasemapPicker can highlight the active skin; picking a new
     // one is the only thing that changes it, so a plain $state (not an
@@ -238,9 +253,6 @@
     function finishMeasure(): void {
         measureTool?.finishCurrent();
     }
-    function cancelMeasure(): void {
-        measureTool?.cancelCurrent();
-    }
     function undoMeasureVertex(): void {
         measureTool?.undoLastVertex();
     }
@@ -413,7 +425,7 @@
     {measureState}
     onTogglePathTool={togglePathTool}
     onFinish={finishMeasure}
-    onCancel={cancelMeasure}
+    onClose={togglePathTool}
     onUndo={undoMeasureVertex}
     onClearAll={clearMeasurements}
     {layersOpen}

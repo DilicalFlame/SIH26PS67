@@ -49,6 +49,17 @@ export function polygonAreaSquareMeters(points: Cesium.Cartographic[]): number {
 	return Math.abs((total * EARTH_RADIUS_M * EARTH_RADIUS_M) / 2);
 }
 
+/** Forward azimuth (degrees, 0-360, 0 = north) of the geodesic from a to b. */
+export function headingDegrees(a: Cesium.Cartographic, b: Cesium.Cartographic): number {
+	const deg = Cesium.Math.toDegrees(new Cesium.EllipsoidGeodesic(a, b).startHeading);
+	return ((deg % 360) + 360) % 360;
+}
+
+/** e.g. "91.86°". */
+export function formatHeading(degrees: number): string {
+	return `${degrees.toFixed(2)}°`;
+}
+
 /** e.g. "850 m" below 1km, "1.24 km" above. */
 export function formatDistance(meters: number): string {
 	if (meters < 1000) return `${Math.round(meters)} m`;
