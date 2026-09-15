@@ -38,6 +38,11 @@ import {
 	formatArea,
 	formatHeading,
 } from "$lib/geo/measure";
+import {
+	dispatchSessionAction,
+	SessionActionType,
+	type PersistedMeasurementRecord,
+} from "$lib/state/session-store";
 
 export interface FinishedMeasurement {
 	/** Stable, opaque id for backend correlation — from a monotonic counter, never reused. */
@@ -94,6 +99,23 @@ const HIGHLIGHT_FILL_COLOR = Cesium.Color.fromCssColorString("#ffcc33").withAlph
 
 function toCartographic(p: Cesium.Cartesian3): Cesium.Cartographic {
 	return Cesium.Cartographic.fromCartesian(p);
+}
+
+function centroidOf(points: Cesium.Cartesian3[]): Cesium.Cartesian3 {
+	const sum = points.reduce(
+		(acc, p) => Cesium.Cartesian3.add(acc, p, acc),
+		new Cesium.Cartesian3(0, 0, 0),
+	);
+	return Cesium.Cartesian3.divideByScalar(sum, points.length, sum);
+}
+
+/** [longitude, latitude] degree pairs — the wire format persisted to
+ *  localStorage (see session-store.ts's PersistedMeasurementRecord). */
+function toLonLatPairs(points: Cesium.Cartesian3[]): [number, number][] {
+	return points.map((p) => {
+		const c = toCartographic(p);
+		return [Cesium.Math.toDegrees(c.longitude), Cesium.Math.toDegrees(c.latitude)];
+	});
 }
 
 export class PathMeasureTool {
@@ -185,6 +207,7 @@ export class PathMeasureTool {
 		this.nextMeasurementId = 1;
 		this.nextPathNumber = 1;
 		this.nextPolygonNumber = 1;
+		dispatchSessionAction({ type: SessionActionType.MeasurementsCleared });
 		this.emitState();
 	}
 
@@ -194,6 +217,7 @@ export class PathMeasureTool {
 		if (!record) return;
 		for (const e of record.entities) this.dataSource.entities.remove(e);
 		this.finished.delete(id);
+		dispatchSessionAction({ type: SessionActionType.MeasurementRemoved, payload: id });
 		this.emitState();
 	}
 
@@ -226,6 +250,113 @@ export class PathMeasureTool {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Rebuilds finished shapes from persisted records (session restore).
+	 * Recomputes geometry/metrics from the raw positions rather than
+	 * trusting anything precomputed, and advances the id/label counters past
+	 * whatever's restored so a newly drawn shape can never collide with a
+	 * restored one — matters because ids/labels are otherwise only ever
+	 * handed out by finishCurrent() in-process. Call once, right after
+	 * construction, before the tool is activated.
+	 */
+	restoreFinished(records: PersistedMeasurementRecord[]): void {
+		let maxId = 0;
+		let maxPathNumber = 0;
+		let maxPolygonNumber = 0;
+
+		for (const record of records) {
+			if (record.positions.length < 2) continue; // guards a corrupt/hand-edited blob
+			const cartesians = record.positions.map(([lon, lat]) =>
+				Cesium.Cartesian3.fromDegrees(lon, lat),
+			);
+			const cartographics = cartesians.map(toCartographic);
+
+			let entity: Cesium.Entity;
+			let primary: string;
+			let secondary: string;
+			if (record.type === "polygon" && cartesians.length >= 3) {
+				const area = polygonAreaSquareMeters(cartographics);
+				const perimeter = pathLengthMeters([...cartographics, cartographics[0]]);
+				entity = this.dataSource.entities.add({
+					polygon: {
+						hierarchy: cartesians,
+						material: FILL_COLOR,
+						outline: true,
+						outlineColor: LINE_COLOR,
+						height: 0,
+					},
+					label: this.labelOptions(record.label),
+					position: centroidOf(cartesians),
+				});
+				primary = formatArea(area);
+				secondary = formatDistance(perimeter);
+			} else {
+				const distance = pathLengthMeters(cartographics);
+				const heading = formatHeading(
+					headingDegrees(
+						cartographics[cartographics.length - 2],
+						cartographics[cartographics.length - 1],
+					),
+				);
+				entity = this.dataSource.entities.add({
+					polyline: {
+						positions: cartesians,
+						width: 5,
+						material: LINE_COLOR,
+						clampToGround: false,
+					},
+					label: this.labelOptions(record.label),
+					position: centroidOf(cartesians),
+				});
+				primary = formatDistance(distance);
+				secondary = heading;
+			}
+
+			this.finished.set(record.id, {
+				entities: [entity],
+				meta: {
+					id: record.id,
+					type: record.type,
+					label: record.label,
+					primary,
+					secondary,
+					vertexCount: cartesians.length,
+				},
+			});
+
+			const idNum = Number(record.id.replace(/^m-/, ""));
+			if (Number.isFinite(idNum)) maxId = Math.max(maxId, idNum);
+			const labelNum = Number(record.label.replace(/^\D+/, ""));
+			if (Number.isFinite(labelNum)) {
+				if (record.type === "polygon") maxPolygonNumber = Math.max(maxPolygonNumber, labelNum);
+				else maxPathNumber = Math.max(maxPathNumber, labelNum);
+			}
+		}
+
+		this.nextMeasurementId = Math.max(this.nextMeasurementId, maxId + 1);
+		this.nextPathNumber = Math.max(this.nextPathNumber, maxPathNumber + 1);
+		this.nextPolygonNumber = Math.max(this.nextPolygonNumber, maxPolygonNumber + 1);
+		if (records.length > 0) this.emitState();
+	}
+
+	/** Persists a just-finished shape's raw vertices — called from
+	 *  finishCurrent() only; restoreFinished() reconstructs from this same
+	 *  wire format on the next load. */
+	private persistFinished(
+		id: string,
+		type: "path" | "polygon",
+		label: string,
+		positions: Cesium.Cartesian3[],
+	): void {
+		const record: PersistedMeasurementRecord = {
+			id,
+			type,
+			label,
+			positions: toLonLatPairs(positions),
+		};
+		dispatchSessionAction({ type: SessionActionType.MeasurementAdded, payload: record });
 	}
 
 	destroy(): void {
@@ -482,6 +613,7 @@ export class PathMeasureTool {
 					vertexCount: this.positions.length,
 				},
 			});
+			this.persistFinished(id, "polygon", label, this.positions);
 		} else {
 			const label = `Path ${this.nextPathNumber++}`;
 			const cartographics = this.positions.map(toCartographic);
@@ -519,6 +651,7 @@ export class PathMeasureTool {
 					vertexCount: this.positions.length,
 				},
 			});
+			this.persistFinished(id, "path", label, this.positions);
 		}
 
 		this.positions = [];
@@ -529,11 +662,7 @@ export class PathMeasureTool {
 	}
 
 	private centroid(): Cesium.Cartesian3 {
-		const sum = this.positions.reduce(
-			(acc, p) => Cesium.Cartesian3.add(acc, p, acc),
-			new Cesium.Cartesian3(0, 0, 0),
-		);
-		return Cesium.Cartesian3.divideByScalar(sum, this.positions.length, sum);
+		return centroidOf(this.positions);
 	}
 
 	private labelOptions(text: string): Cesium.LabelGraphics.ConstructorOptions {

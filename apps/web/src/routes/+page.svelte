@@ -2,7 +2,7 @@
 	import CesiumCanvas from '$lib/components/CesiumCanvas.svelte';
 	import StatusBar from '$lib/components/StatusBar.svelte';
 	import LayerControl from '$lib/components/LayerControl.svelte';
-	import { loadSession, patchSession } from '$lib/state/session-store';
+	import { loadSession, dispatchSessionAction, SessionActionType } from '$lib/state/session-store';
 
 	const initialSession = loadSession();
 
@@ -21,7 +21,7 @@
 
 	function toggleLayersOpen(): void {
 		layersOpen = !layersOpen;
-		patchSession({ layersOpen });
+		dispatchSessionAction({ type: SessionActionType.LayersPanelToggled, payload: layersOpen });
 	}
 </script>
 
