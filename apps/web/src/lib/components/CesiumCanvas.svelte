@@ -666,7 +666,6 @@
     collapsed={activeLayersPanelCollapsed}
     onToggleCollapsed={toggleActiveLayersPanelCollapsed}
     onToggleVisible={(id, visible) => dataLayerManager?.setVisible(id, visible)}
-    onSetOpacity={(id, opacity) => dataLayerManager?.setOpacity(id, opacity)}
     onReorder={(id, newIndex) => dataLayerManager?.reorder(id, newIndex)}
     onRemove={(id) => dataLayerManager?.removeLayer(id)}
 />
