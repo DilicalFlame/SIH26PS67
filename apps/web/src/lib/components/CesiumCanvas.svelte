@@ -8,14 +8,20 @@
     import { pickNiceScale } from "$lib/geo/scale-bar";
     import { viewStatus } from "$lib/state/view-status.svelte";
     import { BASEMAPS, DEFAULT_BASEMAP_ID } from "$lib/tiles/basemaps";
+    import { PathMeasureTool, type MeasureState } from "$lib/measure/path-measure-tool";
     import type StatusBar from "$lib/components/StatusBar.svelte";
     import HeadingControl from "$lib/components/HeadingControl.svelte";
     import BasemapPicker from "$lib/components/BasemapPicker.svelte";
+    import Toolbar from "$lib/components/Toolbar.svelte";
 
     interface Props {
         statusBar?: StatusBar;
+        /** Layers panel visibility lives in +page.svelte (it owns
+         *  <LayerControl>) — Toolbar's layers button just reflects/toggles it. */
+        layersOpen?: boolean;
+        onToggleLayers?: () => void;
     }
-    const { statusBar }: Props = $props();
+    const { statusBar, layersOpen = true, onToggleLayers = () => {} }: Props = $props();
 
     let containerEl: HTMLDivElement;
     let hasCrashed = $state(false);
@@ -25,6 +31,15 @@
     let gridLayer: Cesium.ImageryLayer | undefined;
     let baseLayer: Cesium.ImageryLayer | undefined;
     let handler: Cesium.ScreenSpaceEventHandler;
+    let measureTool: PathMeasureTool | undefined;
+    let measureState = $state<MeasureState>({
+        active: false,
+        drawing: false,
+        vertexCount: 0,
+        canClose: false,
+        liveLabel: "",
+        finishedCount: 0,
+    });
     // Reactive so BasemapPicker can highlight the active skin; picking a new
     // one is the only thing that changes it, so a plain $state (not an
     // effect-driven derivation) is enough.
@@ -152,6 +167,10 @@
         await switchBasemap(DEFAULT_BASEMAP_ID);
         if (graticuleOn) addGraticule();
 
+        measureTool = new PathMeasureTool(viewer, (s) => {
+            measureState = s;
+        });
+
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
         handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction((movement: Cesium.ScreenSpaceEventHandler.MotionEvent) => {
@@ -207,6 +226,26 @@
         } else {
             viewer.scene.morphTo2D(1.0);
         }
+    }
+
+    // =========================================================================
+    // Path/polygon measure tool — thin pass-throughs to PathMeasureTool
+    // (path-measure-tool.ts), called by Toolbar.
+    // =========================================================================
+    function togglePathTool(): void {
+        measureTool?.toggle();
+    }
+    function finishMeasure(): void {
+        measureTool?.finishCurrent();
+    }
+    function cancelMeasure(): void {
+        measureTool?.cancelCurrent();
+    }
+    function undoMeasureVertex(): void {
+        measureTool?.undoLastVertex();
+    }
+    function clearMeasurements(): void {
+        measureTool?.clearAll();
     }
 
     // =========================================================================
@@ -347,6 +386,7 @@
         if (!browser) return;
         cancelAnimationFrame(rafId);
         handler?.destroy();
+        measureTool?.destroy();
         if (viewer && !viewer.isDestroyed()) viewer.destroy();
     });
 </script>
@@ -368,6 +408,17 @@
 ></div>
 
 <HeadingControl bind:this={headingControl} onDrag={onHeadingDrag} {onResetNorth} />
+
+<Toolbar
+    {measureState}
+    onTogglePathTool={togglePathTool}
+    onFinish={finishMeasure}
+    onCancel={cancelMeasure}
+    onUndo={undoMeasureVertex}
+    onClearAll={clearMeasurements}
+    {layersOpen}
+    {onToggleLayers}
+/>
 
 <BasemapPicker
     basemaps={BASEMAPS}
