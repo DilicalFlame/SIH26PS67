@@ -123,6 +123,11 @@ services:
 
     volumes:
       - ../../apps/api:/app
+      # repo-root fixtures/ isn't under the apps/api build context or the
+      # bind-mount above, so the stub routes (#38) can't see it without this.
+      # Mounted one level inside /app so app/core/fixtures.py's upward search
+      # from app/core/ finds it at the same relative depth as on the host.
+      - ../../fixtures:/app/fixtures:ro
 
     depends_on:
       postgres:

@@ -1,0 +1,17 @@
+[
+  { "type": "node_created", "nodeId": "node_user_stub", "parentId": null, "role": "user" },
+  { "type": "token", "nodeId": "node_assistant_stub", "text": "Here's " },
+  { "type": "token", "nodeId": "node_assistant_stub", "text": "the GLORYS " },
+  { "type": "token", "nodeId": "node_assistant_stub", "text": "temperature layer." },
+  {
+    "type": "tool_call",
+    "nodeId": "node_assistant_stub",
+    "tool": "set_map_layer",
+    "args": { "layer_id": "glorys_thetao", "region": "Bay of Bengal" }
+  },
+  {
+    "type": "ui_action",
+    "action": { "type": "set_map_layer", "layerId": "glorys_thetao", "depthIndex": 0, "timeIndex": 0 }
+  },
+  { "type": "done", "nodeId": "node_assistant_stub" }
+]
