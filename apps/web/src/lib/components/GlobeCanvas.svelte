@@ -6,6 +6,7 @@
 	import { buildSouthPolarCap } from '$lib/geo/polar-cap';
 	import { ProjectionType } from '$lib/types/projection';
 	import { TileManager } from '$lib/tiles/tile-manager';
+	import { PointLayer } from '$lib/render/point-layer';
 	import { TILE_LAYERS, MAX_CAMERA_ZOOM, OCEAN_COLOR, VOID_COLOR } from '$lib/tiles/layers.config';
 	import { unprojectPoint, viewDirection, zoomForScale, scaleForZoom } from '$lib/tiles/projection-math';
 	import { lonLatToTile } from '$lib/tiles/tile-math';
@@ -54,6 +55,7 @@
 	let bodyMat:  THREE.ShaderMaterial;
 	let rafId:     number;
 	let tileManager: TileManager;
+	let pointLayer: PointLayer;
 	/** Whole-world meshes, drawn once per visible east-west copy of the map. */
 	let worldCopies: { graticule: THREE.LineSegments; cap: THREE.Mesh; shift: number }[] = [];
 	let capMat: THREE.ShaderMaterial;
@@ -394,6 +396,7 @@
 		} catch (err) {
 			console.error('[GlobeCanvas] Failed to initialize tile layers:', err);
 		}
+		pointLayer = new PointLayer(scene);
 
 		// Resize observer
 		const ro = new ResizeObserver(onResize);
@@ -735,6 +738,15 @@
 			blend:         gratMat.uniforms.u_blend.value,
 			pan:           mapPan,
 		});
+		pointLayer?.update({
+			rotMat3,
+			scale: currentScale,
+			aspect: gratMat.uniforms.u_aspect.value,
+			projectionA: currentProjection,
+			projectionB: pendingProjection,
+			blend: gratMat.uniforms.u_blend.value,
+			pan: mapPan,
+		});
 
 		renderer.render(scene, camera);
 
@@ -856,6 +868,7 @@
 		if (!browser) return;
 		cancelAnimationFrame(rafId);
 		tileManager?.dispose();
+		pointLayer?.dispose();
 		renderer?.dispose();
 	});
 </script>
