@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { ActiveLayerState } from "$lib/layers/data-layer-manager";
+	import { DATA_LAYERS } from "$lib/tiles/data-layers-catalog";
+	import ContextMenu, { type ContextMenuItem } from "$lib/components/ContextMenu.svelte";
+	import LayerInfoOverlay from "$lib/components/LayerInfoOverlay.svelte";
 
 	interface Props {
 		/** Top-of-stack first (see DataLayerManager.emitState) — the row at
@@ -8,30 +11,14 @@
 		collapsed: boolean;
 		onToggleCollapsed: () => void;
 		onToggleVisible: (id: string, visible: boolean) => void;
-		onSetOpacity: (id: string, opacity: number) => void;
 		/** newIndex is a position within DataLayerManager's own bottom-to-top
 		 *  array — the caller converts from this panel's top-first display
 		 *  order before invoking this. */
 		onReorder: (id: string, newIndex: number) => void;
 		onRemove: (id: string) => void;
 	}
-	const {
-		layers,
-		collapsed,
-		onToggleCollapsed,
-		onToggleVisible,
-		onSetOpacity,
-		onReorder,
-		onRemove,
-	}: Props = $props();
-
-	let expandedIds = $state(new Set<string>());
-	function toggleExpanded(id: string): void {
-		const next = new Set(expandedIds);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		expandedIds = next;
-	}
+	const { layers, collapsed, onToggleCollapsed, onToggleVisible, onReorder, onRemove }: Props =
+		$props();
 
 	let draggingId = $state<string | null>(null);
 	let dragOverId = $state<string | null>(null);
@@ -66,6 +53,58 @@
 	function handleDragEnd(): void {
 		draggingId = null;
 		dragOverId = null;
+	}
+
+	// Right-click context menu (Info / Delete) — replaces the old
+	// click-to-expand row, which held an opacity slider, description, and a
+	// Remove button all at once. Hovering a (now single-line, possibly
+	// truncated) row title shows the full name instead — see .row-tooltip.
+	let contextMenuLayerId = $state<string | null>(null);
+	let contextMenuX = $state(0);
+	let contextMenuY = $state(0);
+
+	function openContextMenu(e: MouseEvent, id: string): void {
+		e.preventDefault();
+		contextMenuX = e.clientX;
+		contextMenuY = e.clientY;
+		contextMenuLayerId = id;
+	}
+	function closeContextMenu(): void {
+		contextMenuLayerId = null;
+	}
+
+	function menuItemsFor(id: string): ContextMenuItem[] {
+		return [
+			{ id: "info", label: "Information", icon: "info", onSelect: () => (infoLayerId = id) },
+			{
+				id: "delete",
+				label: "Delete",
+				icon: "delete",
+				danger: true,
+				onSelect: () => onRemove(id),
+			},
+		];
+	}
+
+	let infoLayerId = $state<string | null>(null);
+	const infoEntry = $derived(
+		infoLayerId ? (DATA_LAYERS.find((d) => d.id === infoLayerId) ?? null) : null,
+	);
+
+	// Tooltip is `position: fixed` and positioned from the hovered row's own
+	// rect (not plain CSS :hover + absolute) because it needs to escape
+	// .layer-list's `overflow-y: auto` — an element can't overflow visibly
+	// past an ancestor with overflow:auto on the *other* axis either (a
+	// non-"visible" overflow-y forces overflow-x to clip too), so a
+	// CSS-only tooltip anchored inside a scrolling row would get clipped
+	// at the list's right edge instead of floating beside the panel.
+	let hoveredRow = $state<{ title: string; top: number; left: number } | null>(null);
+	function showTooltip(e: MouseEvent, title: string): void {
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		hoveredRow = { title, top: rect.top + rect.height / 2, left: rect.right + 10 };
+	}
+	function hideTooltip(): void {
+		hoveredRow = null;
 	}
 </script>
 
@@ -109,7 +148,6 @@
 		{#if !collapsed}
 			<div class="layer-list">
 				{#each layers as layer (layer.id)}
-					{@const expanded = expandedIds.has(layer.id)}
 					<div
 						class="layer-row"
 						class:dragging={draggingId === layer.id}
@@ -121,63 +159,26 @@
 						ondragleave={() => handleDragLeave(layer.id)}
 						ondrop={(e) => handleDrop(e, layer.id)}
 						ondragend={handleDragEnd}
+						oncontextmenu={(e) => openContextMenu(e, layer.id)}
+						onmouseenter={(e) => showTooltip(e, layer.title)}
+						onmouseleave={hideTooltip}
 					>
-						<div class="layer-row-main">
-							<span class="drag-handle" aria-hidden="true" title="Drag to reorder">
-								<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-									<circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" />
-									<circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" />
-									<circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" />
-								</svg>
-							</span>
-							<button
-								type="button"
-								class="visibility-btn"
-								onclick={() => onToggleVisible(layer.id, !layer.visible)}
-								aria-pressed={layer.visible}
-								aria-label={layer.visible ? `Hide ${layer.title}` : `Show ${layer.title}`}
-							>
-								{#if layer.visible}
-									<svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
-									>
-										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-										<circle cx="12" cy="12" r="3" />
-									</svg>
-								{:else}
-									<svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
-									>
-										<path
-											d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-2.66 3.44M6.5 6.53C3.9 8.24 2 12 2 12s3.5 7 10 7a10.6 10.6 0 0 0 3.87-.72"
-										/>
-										<path d="M10.58 10.58a3 3 0 1 0 4.24 4.24" />
-										<path d="M3 3l18 18" />
-									</svg>
-								{/if}
-							</button>
-							<button
-								type="button"
-								class="layer-title-btn"
-								onclick={() => toggleExpanded(layer.id)}
-								aria-expanded={expanded}
-							>
-								<span class="layer-title">{layer.title}</span>
+						<span class="drag-handle" aria-hidden="true" title="Drag to reorder">
+							<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+								<circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" />
+								<circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" />
+								<circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" />
+							</svg>
+						</span>
+						<button
+							type="button"
+							class="visibility-btn"
+							onclick={() => onToggleVisible(layer.id, !layer.visible)}
+							aria-pressed={layer.visible}
+							aria-label={layer.visible ? `Hide ${layer.title}` : `Show ${layer.title}`}
+						>
+							{#if layer.visible}
 								<svg
-									class="chevron"
-									class:rotated={expanded}
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -186,39 +187,52 @@
 									stroke-linejoin="round"
 									aria-hidden="true"
 								>
-									<path d="M6 9l6 6 6-6" />
+									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+									<circle cx="12" cy="12" r="3" />
 								</svg>
-							</button>
-						</div>
-						{#if expanded}
-							<div class="layer-detail">
-								<p class="layer-description">{layer.description}</p>
-								{#if layer.attribution}
-									<p class="layer-attribution">{layer.attribution}</p>
-								{/if}
-								<label class="opacity-row">
-									<span>Opacity</span>
-									<input
-										type="range"
-										min="0"
-										max="1"
-										step="0.05"
-										value={layer.opacity}
-										oninput={(e) =>
-											onSetOpacity(layer.id, parseFloat(e.currentTarget.value))}
-										aria-label={`${layer.title} opacity`}
+							{:else}
+								<svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<path
+										d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-2.66 3.44M6.5 6.53C3.9 8.24 2 12 2 12s3.5 7 10 7a10.6 10.6 0 0 0 3.87-.72"
 									/>
-								</label>
-								<button type="button" class="remove-btn" onclick={() => onRemove(layer.id)}>
-									Remove
-								</button>
-							</div>
-						{/if}
+									<path d="M10.58 10.58a3 3 0 1 0 4.24 4.24" />
+									<path d="M3 3l18 18" />
+								</svg>
+							{/if}
+						</button>
+						<span class="layer-title">{layer.title}</span>
 					</div>
 				{/each}
 			</div>
 		{/if}
 	</div>
+{/if}
+
+{#if hoveredRow}
+	<div class="row-tooltip" role="tooltip" style:top="{hoveredRow.top}px" style:left="{hoveredRow.left}px">
+		{hoveredRow.title}
+	</div>
+{/if}
+
+{#if contextMenuLayerId}
+	<ContextMenu
+		x={contextMenuX}
+		y={contextMenuY}
+		items={menuItemsFor(contextMenuLayerId)}
+		onClose={closeContextMenu}
+	/>
+{/if}
+
+{#if infoEntry}
+	<LayerInfoOverlay layer={infoEntry} onClose={() => (infoLayerId = null)} />
 {/if}
 
 <style>
@@ -316,6 +330,10 @@
 	}
 
 	.layer-row {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.4rem 0.5rem;
 		border-radius: 8px;
 		background: rgba(255, 255, 255, 0.04);
 		transition:
@@ -330,13 +348,6 @@
 	}
 	.layer-row.drag-over {
 		background: rgba(59, 130, 246, 0.25);
-	}
-
-	.layer-row-main {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		padding: 0.4rem 0.5rem;
 	}
 
 	.drag-handle {
@@ -379,89 +390,36 @@
 		height: 1.05rem;
 	}
 
-	.layer-title-btn {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		background: transparent;
-		border: none;
-		color: inherit;
-		font-family: inherit;
-		font-size: 0.8rem;
-		cursor: pointer;
-		text-align: left;
-		padding: 0.1rem 0;
-	}
-
 	.layer-title {
+		display: block;
 		flex: 1;
 		min-width: 0;
+		font-size: 0.8rem;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.layer-detail {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0 0.55rem 0.6rem 2.35rem;
-		font-size: 0.78rem;
-	}
-
-	.layer-description {
-		color: rgba(255, 255, 255, 0.7);
-		line-height: 1.4;
-	}
-
-	.layer-attribution {
-		color: rgba(255, 255, 255, 0.45);
-		font-size: 0.7rem;
-	}
-
-	.opacity-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: rgba(255, 255, 255, 0.6);
-	}
-	.opacity-row input[type="range"] {
-		flex: 1;
-		height: 4px;
-		appearance: none;
-		background: rgba(255, 255, 255, 0.15);
-		border-radius: 2px;
-		outline: none;
-		cursor: pointer;
-	}
-	.opacity-row input[type="range"]::-webkit-slider-thumb {
-		appearance: none;
-		width: 10px;
-		height: 10px;
-		background: #ffffff;
-		border-radius: 50%;
-		transition: transform 100ms ease;
-	}
-	.opacity-row input[type="range"]::-webkit-slider-thumb:hover {
-		transform: scale(1.2);
-	}
-
-	.remove-btn {
-		align-self: flex-start;
-		padding: 0.28rem 0.6rem;
-		background: rgba(255, 138, 138, 0.12);
-		border: none;
-		border-radius: 999px;
-		color: rgba(255, 138, 138, 0.95);
-		font-family: inherit;
-		font-size: 0.72rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: background 150ms ease;
-	}
-	.remove-btn:hover {
-		background: rgba(255, 138, 138, 0.22);
+	/* Custom tooltip (not the native `title` attribute) to match this app's
+	   own bespoke tooltip look elsewhere (see Toolbar's .tool-tooltip).
+	   `position: fixed` and positioned in JS (see showTooltip) rather than
+	   CSS `:hover` + `position: absolute` anchored to the row, because it
+	   needs to escape .layer-list's `overflow-y: auto` clipping — a
+	   non-"visible" overflow on one axis clips the other axis too, so an
+	   absolutely-positioned tooltip anchored inside a scrolling row would
+	   get cut off at the list's edge instead of floating beside the panel. */
+	.row-tooltip {
+		position: fixed;
+		z-index: 25;
+		transform: translateY(-50%);
+		background: rgba(20, 20, 25, 0.96);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		color: #ffffff;
+		font-size: 0.76rem;
+		white-space: nowrap;
+		padding: 0.35rem 0.6rem;
+		border-radius: 6px;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+		pointer-events: none;
 	}
 </style>

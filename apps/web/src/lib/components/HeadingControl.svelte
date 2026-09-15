@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ContextMenu, { type ContextMenuItem } from "$lib/components/ContextMenu.svelte";
+
 	interface Props {
 		/** Incremental angle (radians), fired continuously while dragging. */
 		onDrag: (deltaRad: number) => void;
@@ -74,16 +76,11 @@
 	function closeMenu(): void {
 		menuOpen = false;
 	}
-	function resetNorth(): void {
-		onResetNorth();
-		closeMenu();
+
+	function buildMenuItems(): ContextMenuItem[] {
+		return [{ id: "reset-north", label: "Reset to North", icon: "compass", onSelect: onResetNorth }];
 	}
 </script>
-
-<svelte:window
-	onclick={() => { if (menuOpen) closeMenu(); }}
-	onkeydown={(e) => { if (menuOpen && e.key === 'Escape') closeMenu(); }}
-/>
 
 {#if visible}
 	<div
@@ -110,9 +107,7 @@
 {/if}
 
 {#if menuOpen}
-	<div class="context-menu" style:left="{menuX}px" style:top="{menuY}px">
-		<button type="button" onclick={resetNorth}>Reset to North</button>
-	</div>
+	<ContextMenu x={menuX} y={menuY} items={buildMenuItems()} onClose={closeMenu} />
 {/if}
 
 <style>
@@ -151,31 +146,4 @@
 		filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.8));
 	}
 
-	.context-menu {
-		position: fixed;
-		z-index: 20;
-		background: rgba(20, 24, 30, 0.95);
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		border-radius: 0.5rem;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-		padding: 0.25rem;
-		font-family: 'Noto Sans', system-ui, sans-serif;
-		font-size: 0.8rem;
-	}
-
-	.context-menu button {
-		display: block;
-		width: 100%;
-		text-align: left;
-		padding: 0.4rem 0.75rem;
-		background: transparent;
-		border: none;
-		border-radius: 0.35rem;
-		color: #fff;
-		cursor: pointer;
-	}
-
-	.context-menu button:hover {
-		background: rgba(255, 255, 255, 0.1);
-	}
 </style>
