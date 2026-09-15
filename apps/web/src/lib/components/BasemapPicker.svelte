@@ -170,34 +170,48 @@
 
 	.skin-panel {
 		display: flex;
-		flex-direction: row;
-		gap: 0.6rem;
-		padding: 0.6rem;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.5rem;
 		background: rgba(20, 20, 25, 0.85);
 		backdrop-filter: blur(18px) saturate(160%);
 		-webkit-backdrop-filter: blur(18px) saturate(160%);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 14px;
 		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+		max-height: 70vh;
+		overflow-y: auto;
 	}
 
 	.skin-option {
 		position: relative;
 		display: flex;
-		flex-direction: column;
+		flex-direction: row;
 		align-items: center;
-		width: 4.25rem;
-		padding: 0;
+		gap: 0.6rem;
+		width: 9rem;
+		padding: 0.3rem;
 		background: transparent;
 		border: none;
+		border-radius: 8px;
 		cursor: pointer;
 		font-family: inherit;
+		transition: background 150ms ease;
+	}
+
+	.skin-option:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.skin-option.active {
+		background: rgba(59, 130, 246, 0.15);
 	}
 
 	.skin-option .thumb {
-		width: 4.25rem;
-		height: 4.25rem;
-		border-radius: 8px;
+		flex-shrink: 0;
+		width: 2.75rem;
+		height: 2.75rem;
+		border-radius: 7px;
 		border: 2px solid rgba(255, 255, 255, 0.15);
 		transition: border-color 150ms ease;
 	}
@@ -211,8 +225,7 @@
 	}
 
 	.skin-label {
-		margin-top: 0.3rem;
-		font-size: 0.68rem;
+		font-size: 0.78rem;
 		font-weight: 500;
 		letter-spacing: 0.02em;
 		color: rgba(255, 255, 255, 0.7);
@@ -222,12 +235,5 @@
 	.skin-option.active .skin-label {
 		color: #ffffff;
 		font-weight: 600;
-	}
-
-	@media (max-width: 480px) {
-		.skin-panel {
-			flex-wrap: wrap;
-			max-width: 220px;
-		}
 	}
 </style>
