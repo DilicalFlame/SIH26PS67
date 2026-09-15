@@ -5,6 +5,10 @@
 
 	let statusBarRef = $state<StatusBar | undefined>(undefined);
 	let globeCanvasRef = $state<CesiumCanvas | undefined>(undefined);
+	// Owned here (not inside CesiumCanvas) because it gates <LayerControl>,
+	// which is a page-level panel — Toolbar's layers button (inside
+	// CesiumCanvas) just reflects/toggles it via props.
+	let layersOpen = $state(true);
 </script>
 
 <svelte:head>
@@ -21,14 +25,22 @@
 	     now (see BasemapPicker.svelte's bottom-left panel) — one control
 	     cluster instead of three separate floating elements. -->
 	<div class="canvas-wrapper">
-		<CesiumCanvas bind:this={globeCanvasRef} statusBar={statusBarRef} />
+		<CesiumCanvas
+			bind:this={globeCanvasRef}
+			statusBar={statusBarRef}
+			{layersOpen}
+			onToggleLayers={() => (layersOpen = !layersOpen)}
+		/>
 	</div>
 
-	<!-- Floating layer control panel -->
-	<LayerControl
-		onVisibilityChange={(id, visible) => globeCanvasRef?.setLayerVisibility(id, visible)}
-		onOpacityChange={(id, opacity) => globeCanvasRef?.setLayerOpacity(id, opacity)}
-	/>
+	<!-- Floating layer control panel — visibility toggled from the top-bar
+	     layers icon (see CesiumCanvas > Toolbar.svelte). -->
+	{#if layersOpen}
+		<LayerControl
+			onVisibilityChange={(id, visible) => globeCanvasRef?.setLayerVisibility(id, visible)}
+			onOpacityChange={(id, opacity) => globeCanvasRef?.setLayerOpacity(id, opacity)}
+		/>
+	{/if}
 
 	<StatusBar bind:this={statusBarRef} />
 </main>
