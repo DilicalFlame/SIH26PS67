@@ -21,3 +21,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# CesiumJS static runtime assets — vendored via scripts/copy-cesium-assets.mjs
+# (postinstall), not committed.
+/static/cesium

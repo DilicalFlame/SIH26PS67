@@ -8,6 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
+		"postinstall": "node scripts/copy-cesium-assets.mjs",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:unit": "vitest",
@@ -35,6 +36,7 @@
 	},
 	"dependencies": {
 		"@mapbox/vector-tile": "^3.0.0",
+		"cesium": "^1.145.0",
 		"comlink": "^4.4.2",
 		"earcut": "^3.2.3",
 		"pbf": "^5.1.2",
