@@ -34,7 +34,11 @@ async def _sse_stream() -> AsyncIterator[str]:
         yield f"data: {event.model_dump_json(by_alias=True, exclude_unset=True)}\n\n"
 
 
-@router.post("/projects/{project_id}/chat/nodes")
+@router.post(
+    "/projects/{project_id}/chat/nodes",
+    response_class=StreamingResponse,
+    responses={200: {"content": {"text/event-stream": {}}}},
+)
 async def create_chat_node(project_id: str, body: ChatNodeCreateRequest) -> StreamingResponse:
     return StreamingResponse(_sse_stream(), media_type="text/event-stream")
 
