@@ -46,7 +46,12 @@ async def list_platform_profiles(
     """start/end/limit are accepted and ignored, same as list_platforms above."""
     if platform_id not in _known_platform_ids():
         raise ApiError("not_found", f"Platform '{platform_id}' does not exist")
-    return [ProfileSummary.model_validate(raw) for raw in load_fixture("observations/profiles_summary.json") if raw["profileId"].startswith(f"{platform_id}_")]
+    all_summaries = load_fixture("observations/profiles_summary.json")
+    return [
+        ProfileSummary.model_validate(raw)
+        for raw in all_summaries
+        if raw["profileId"].startswith(f"{platform_id}_")
+    ]
 
 
 @router.get("/profiles/{profile_id}", response_model=Profile, responses=NOT_FOUND_RESPONSE)

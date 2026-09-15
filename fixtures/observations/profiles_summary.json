@@ -14,5 +14,13 @@
     "lon": 85.28,
     "cycleNumber": 44,
     "maxDepth": 1978.6
+  },
+  {
+    "profileId": "2902746_112",
+    "observedAt": "2020-01-10T18:45:00Z",
+    "lat": 10.2,
+    "lon": 88.1,
+    "cycleNumber": 112,
+    "maxDepth": 2001.4
   }
 ]

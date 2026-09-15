@@ -27,6 +27,15 @@ def test_list_platform_profiles_for_known_platform() -> None:
     assert [p["profileId"] for p in body] == ["5904471_045", "5904471_044"]
 
 
+def test_list_platform_profiles_does_not_leak_other_platforms() -> None:
+    client = TestClient(create_app())
+    resp = client.get("/api/v1/observations/platforms/2902746/profiles")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert [p["profileId"] for p in body] == ["2902746_112"]
+
+
 def test_list_platform_profiles_for_unknown_platform_returns_error_envelope() -> None:
     client = TestClient(create_app())
     resp = client.get("/api/v1/observations/platforms/does-not-exist/profiles")
