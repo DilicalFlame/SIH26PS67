@@ -11,8 +11,8 @@
     import { PathMeasureTool, type MeasureState } from "$lib/measure/path-measure-tool";
     import {
         loadSession,
-        patchSession,
-        patchSessionDebounced,
+        dispatchSessionAction,
+        SessionActionType,
         type PersistedCameraView,
     } from "$lib/state/session-store";
     import type StatusBar from "$lib/components/StatusBar.svelte";
@@ -38,10 +38,10 @@
     }: Props = $props();
 
     // Read once at mount — everything below that falls back to a hardcoded
-    // default (basemap, projection, graticule, camera) prefers this instead,
-    // so a refresh restores the previous session rather than resetting.
-    // Deliberately NOT restored: the path/polygon tool's active/drawing
-    // state and any finished measurement geometry — see session-store.ts.
+    // default (basemap, projection, graticule, camera, finished
+    // measurements) prefers this instead, so a refresh restores the
+    // previous session rather than resetting. Deliberately NOT restored:
+    // the path/polygon tool's active/drawing state — see session-store.ts.
     const initialSession = loadSession();
 
     let containerEl: HTMLDivElement;
@@ -213,6 +213,7 @@
         measureTool = new PathMeasureTool(viewer, (s) => {
             measureState = s;
         });
+        measureTool.restoreFinished(initialSession.measurements ?? []);
 
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
         handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -304,7 +305,7 @@
         graticuleOn = !graticuleOn;
         if (graticuleOn) addGraticule();
         else removeGraticule();
-        patchSession({ graticuleOn });
+        dispatchSessionAction({ type: SessionActionType.GraticuleToggled, payload: graticuleOn });
     }
 
     /** Drives Cesium's own built-in globe <-> map morph. Called directly by
@@ -317,7 +318,7 @@
         } else {
             viewer.scene.morphTo2D(1.0);
         }
-        patchSession({ projection: next });
+        dispatchSessionAction({ type: SessionActionType.ProjectionChanged, payload: next });
     }
 
     // =========================================================================
@@ -375,7 +376,7 @@
         if (previousLayer) viewer.imageryLayers.remove(previousLayer);
         baseLayer = nextLayer;
         currentBasemapId = config.id;
-        patchSession({ basemapId: config.id });
+        dispatchSessionAction({ type: SessionActionType.BasemapChanged, payload: config.id });
     }
 
     // =========================================================================
@@ -433,23 +434,52 @@
         }
     }
 
+    // Last camera values actually dispatched to session-store — compared
+    // against on every throttled tick below so scheduleSaveCamera() only
+    // dispatches when the camera truly moved. This matters a lot more than
+    // it looks: animate()'s RAF loop runs forever, not just while the user
+    // is interacting, so calling dispatchSessionAction() unconditionally on
+    // every tick would keep re-arming CameraChanged's 500ms debounce timer
+    // indefinitely — it would never get a quiet window to actually fire,
+    // and the camera would silently never persist from panning/zooming
+    // alone (it previously only appeared to work when some other action,
+    // e.g. switching basemap, forced an immediate write that happened to
+    // flush an in-memory camera value nothing had actually saved yet).
+    let lastDispatchedCamera: PersistedCameraView | undefined;
+    const CAMERA_EPS_DEG = 1e-7;
+    const CAMERA_EPS_M = 0.1;
+    const CAMERA_EPS_RAD = 1e-6;
+
+    function cameraChanged(a: PersistedCameraView, b: PersistedCameraView): boolean {
+        return (
+            Math.abs(a.longitude - b.longitude) > CAMERA_EPS_DEG ||
+            Math.abs(a.latitude - b.latitude) > CAMERA_EPS_DEG ||
+            Math.abs(a.height - b.height) > CAMERA_EPS_M ||
+            Math.abs(a.heading - b.heading) > CAMERA_EPS_RAD ||
+            Math.abs(a.pitch - b.pitch) > CAMERA_EPS_RAD ||
+            Math.abs(a.roll - b.roll) > CAMERA_EPS_RAD
+        );
+    }
+
     /** Debounced camera persistence, piggybacked on the same throttled tick
      *  as pushStatusReadout — fires up to ~15x/sec while the camera is
-     *  actively moving, but patchSessionDebounced's own 500ms trailing
-     *  debounce means only one actual localStorage write happens per pause,
-     *  not per tick. */
+     *  actively moving, but only actually dispatches when the camera changed
+     *  since the last dispatch (see lastDispatchedCamera above), so
+     *  CameraChanged's 500ms debounce in session-store.ts gets a real quiet
+     *  window to fire once movement stops. */
     function scheduleSaveCamera(): void {
         const carto = viewer.camera.positionCartographic;
-        patchSessionDebounced({
-            camera: {
-                longitude: Cesium.Math.toDegrees(carto.longitude),
-                latitude: Cesium.Math.toDegrees(carto.latitude),
-                height: carto.height,
-                heading: viewer.camera.heading,
-                pitch: viewer.camera.pitch,
-                roll: viewer.camera.roll,
-            },
-        });
+        const cam: PersistedCameraView = {
+            longitude: Cesium.Math.toDegrees(carto.longitude),
+            latitude: Cesium.Math.toDegrees(carto.latitude),
+            height: carto.height,
+            heading: viewer.camera.heading,
+            pitch: viewer.camera.pitch,
+            roll: viewer.camera.roll,
+        };
+        if (lastDispatchedCamera && !cameraChanged(lastDispatchedCamera, cam)) return;
+        lastDispatchedCamera = cam;
+        dispatchSessionAction({ type: SessionActionType.CameraChanged, payload: cam });
     }
 
     function animate(now: number): void {
