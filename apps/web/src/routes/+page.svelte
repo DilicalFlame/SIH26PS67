@@ -2,17 +2,27 @@
 	import CesiumCanvas from '$lib/components/CesiumCanvas.svelte';
 	import StatusBar from '$lib/components/StatusBar.svelte';
 	import LayerControl from '$lib/components/LayerControl.svelte';
+	import { loadSession, patchSession } from '$lib/state/session-store';
+
+	const initialSession = loadSession();
 
 	let statusBarRef = $state<StatusBar | undefined>(undefined);
 	let globeCanvasRef = $state<CesiumCanvas | undefined>(undefined);
 	// Owned here (not inside CesiumCanvas) because it gates <LayerControl>,
 	// which is a page-level panel — Toolbar's layers button (inside
-	// CesiumCanvas) just reflects/toggles it via props.
-	let layersOpen = $state(true);
+	// CesiumCanvas) just reflects/toggles it via props. Defaults closed on a
+	// first-ever visit (no session yet) — restored from a prior session
+	// otherwise, see session-store.ts.
+	let layersOpen = $state(initialSession.layersOpen ?? false);
 	// While the path/polygon tool's own top-right panel is showing, hide
 	// LayerControl rather than guess a pixel offset between the two — both
 	// anchor the same top-right corner (see CesiumCanvas > Toolbar.svelte).
 	let measureActive = $state(false);
+
+	function toggleLayersOpen(): void {
+		layersOpen = !layersOpen;
+		patchSession({ layersOpen });
+	}
 </script>
 
 <svelte:head>
@@ -33,7 +43,7 @@
 			bind:this={globeCanvasRef}
 			statusBar={statusBarRef}
 			{layersOpen}
-			onToggleLayers={() => (layersOpen = !layersOpen)}
+			onToggleLayers={toggleLayersOpen}
 			onMeasureActiveChange={(active) => (measureActive = active)}
 		/>
 	</div>
