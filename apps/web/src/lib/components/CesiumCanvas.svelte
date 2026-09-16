@@ -71,6 +71,7 @@
     let dataLayerManager: DataLayerManager | undefined;
     let layerState = $state<ActiveLayerState[]>([]);
     let activeLayersPanelCollapsed = $state(initialSession.activeLayersPanelCollapsed ?? false);
+    let layerTimeIso = $state(initialSession.layerTimeIso ?? new Date().toISOString());
     $effect(() => {
         onActiveLayerIdsChange(layerState.map((l) => l.id));
     });
@@ -236,6 +237,9 @@
             layerState = s;
         });
         await dataLayerManager.restoreLayers(initialSession.layers ?? []);
+        // Restored layers each start at their own build()-baked default TIME —
+        // apply whatever time was last chosen on top of that, if any.
+        if (initialSession.layerTimeIso) dataLayerManager.setGlobalTime(initialSession.layerTimeIso);
 
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
         handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -342,6 +346,12 @@
         });
     }
 
+    function setLayerTime(iso: string): void {
+        layerTimeIso = iso;
+        dataLayerManager?.setGlobalTime(iso);
+        dispatchSessionAction({ type: SessionActionType.LayerTimeChanged, payload: iso });
+    }
+
     /** Reads the camera's current region regardless of scene mode —
      *  `positionCartographic` is maintained by Cesium across SCENE3D,
      *  SCENE2D and COLUMBUS_VIEW alike (unlike raw `camera.position`, which
@@ -425,6 +435,15 @@
     }
     function setMeasurementHighlighted(id: string, highlighted: boolean): void {
         measureTool?.setMeasurementHighlighted(id, highlighted);
+    }
+    /** Opens the analysis page in a new tab for one finished measurement.
+     *  No payload is passed directly — the analysis route reads the same
+     *  localStorage session (loadSession()) on its own mount to find the
+     *  measurement by id and the currently active layers; this is a
+     *  same-origin, same-browser handoff, not a live link (the new tab
+     *  won't see edits made back here afterward). */
+    function openAnalysisTab(id: string): void {
+        window.open(`/analysis?measurement=${encodeURIComponent(id)}`, "_blank", "noopener");
     }
 
     // =========================================================================
@@ -649,6 +668,8 @@
     onHighlightMeasurement={setMeasurementHighlighted}
     {layersOpen}
     {onToggleLayers}
+    hasActiveLayers={layerState.length > 0}
+    onVisualiseData={openAnalysisTab}
 />
 
 <BasemapPicker
@@ -668,6 +689,8 @@
     onToggleVisible={(id, visible) => dataLayerManager?.setVisible(id, visible)}
     onReorder={(id, newIndex) => dataLayerManager?.reorder(id, newIndex)}
     onRemove={(id) => dataLayerManager?.removeLayer(id)}
+    {layerTimeIso}
+    onLayerTimeChange={setLayerTime}
 />
 
 <style>
