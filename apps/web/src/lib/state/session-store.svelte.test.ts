@@ -46,8 +46,7 @@ const validPolygon = {
 
 const validLayer = {
 	id: 'copernicus_thetao',
-	visible: true,
-	opacity: 0.85
+	visible: true
 };
 
 beforeEach(() => {
@@ -88,7 +87,8 @@ describe('loadSession', () => {
 			layersOpen: true,
 			measurements: [validPath, validPolygon],
 			layers: [validLayer],
-			activeLayersPanelCollapsed: true
+			activeLayersPanelCollapsed: true,
+			layerTimeIso: '2026-06-23T00:00:00.000Z'
 		};
 		localStorage.setItem(KEY, JSON.stringify(session));
 		expect(loadSession()).toEqual(session);
@@ -147,9 +147,17 @@ describe('loadSession', () => {
 		expect(loadSession().layers).toEqual([validLayer, { ...validLayer, id: 'other' }]);
 	});
 
-	it('rejects an active layer with a non-finite opacity', () => {
-		localStorage.setItem(KEY, JSON.stringify({ layers: [{ ...validLayer, opacity: NaN }] }));
+	it('rejects an active layer missing required fields', () => {
+		localStorage.setItem(KEY, JSON.stringify({ layers: [{ id: 'copernicus_thetao' }] }));
 		expect(loadSession().layers).toEqual([]);
+	});
+
+	it('accepts a layerTimeIso string and rejects a non-string one', () => {
+		localStorage.setItem(KEY, JSON.stringify({ layerTimeIso: '2026-01-01T00:00:00.000Z' }));
+		expect(loadSession().layerTimeIso).toBe('2026-01-01T00:00:00.000Z');
+
+		localStorage.setItem(KEY, JSON.stringify({ layerTimeIso: 12345 }));
+		expect(loadSession().layerTimeIso).toBeUndefined();
 	});
 });
 
@@ -193,7 +201,7 @@ describe('dispatchSessionAction: immediate (non-debounced) actions', () => {
 		let stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
 		expect(stored.layers).toEqual([validLayer]);
 
-		const updated = { ...validLayer, opacity: 0.4 };
+		const updated = { ...validLayer, visible: false };
 		dispatchSessionAction({ type: SessionActionType.LayersChanged, payload: [updated] });
 		stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
 		expect(stored.layers).toEqual([updated]);
@@ -203,6 +211,15 @@ describe('dispatchSessionAction: immediate (non-debounced) actions', () => {
 		dispatchSessionAction({ type: SessionActionType.ActiveLayersPanelCollapsed, payload: true });
 		const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
 		expect(stored.activeLayersPanelCollapsed).toBe(true);
+	});
+
+	it('LayerTimeChanged writes immediately', () => {
+		dispatchSessionAction({
+			type: SessionActionType.LayerTimeChanged,
+			payload: '2026-05-01T00:00:00.000Z'
+		});
+		const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+		expect(stored.layerTimeIso).toBe('2026-05-01T00:00:00.000Z');
 	});
 
 	it('an immediate action flushes a still-pending debounced action from a different type', () => {

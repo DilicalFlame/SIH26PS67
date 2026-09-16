@@ -31,7 +31,10 @@ export interface ActiveLayerState {
 	source: DataLayerCatalogEntry["source"];
 	attribution?: string;
 	visible: boolean;
-	opacity: number;
+	/** Present only when the layer declares a time range (see
+	 *  DataLayerCatalogEntry.timeStart/timeEnd) — lets the UI show/enable a
+	 *  time slider only for layers that actually support one. */
+	supportsTime: boolean;
 }
 
 interface ActiveLayerRecord {
@@ -39,7 +42,6 @@ interface ActiveLayerRecord {
 	catalogEntry: DataLayerCatalogEntry;
 	imageryLayer: Cesium.ImageryLayer;
 	visible: boolean;
-	opacity: number;
 }
 
 export class DataLayerManager {
@@ -52,16 +54,15 @@ export class DataLayerManager {
 		this.onUpdate = onUpdate;
 	}
 
-	/** Builds + inserts one layer. Never persists — used by both addLayer
-	 *  (a live user action, which does persist after calling this) and
-	 *  restoreLayers (which reconstructs from an already-persisted list and
-	 *  must not re-dispatch, same split as PathMeasureTool's
-	 *  persistFinished/restoreFinished). Returns whether a layer was added. */
-	private async instantiateLayer(
-		catalogId: string,
-		visible: boolean,
-		opacity: number,
-	): Promise<boolean> {
+	/** Builds + inserts one layer at its catalog default opacity (no longer
+	 *  user-adjustable — the opacity slider UI was removed; every layer
+	 *  simply renders at entry.defaultOpacity, which is 1 for every current
+	 *  entry). Never persists — used by both addLayer (a live user action,
+	 *  which does persist after calling this) and restoreLayers (which
+	 *  reconstructs from an already-persisted list and must not re-dispatch,
+	 *  same split as PathMeasureTool's persistFinished/restoreFinished).
+	 *  Returns whether a layer was added. */
+	private async instantiateLayer(catalogId: string, visible: boolean): Promise<boolean> {
 		if (this.layers.some((l) => l.id === catalogId)) return false; // already active
 		const entry = DATA_LAYERS.find((d) => d.id === catalogId);
 		if (!entry) return false;
@@ -76,18 +77,17 @@ export class DataLayerManager {
 		if (!this.viewer || this.viewer.isDestroyed()) return false; // unmounted mid-fetch
 
 		const imageryLayer = new Cesium.ImageryLayer(provider);
-		imageryLayer.alpha = opacity;
+		imageryLayer.alpha = entry.defaultOpacity;
 		imageryLayer.show = visible;
 		const absoluteIndex = 1 + this.layers.length;
 		this.viewer.imageryLayers.add(imageryLayer, absoluteIndex);
 
-		this.layers.push({ id: catalogId, catalogEntry: entry, imageryLayer, visible, opacity });
+		this.layers.push({ id: catalogId, catalogEntry: entry, imageryLayer, visible });
 		return true;
 	}
 
 	async addLayer(catalogId: string): Promise<void> {
-		const entry = DATA_LAYERS.find((d) => d.id === catalogId);
-		const added = await this.instantiateLayer(catalogId, true, entry?.defaultOpacity ?? 1);
+		const added = await this.instantiateLayer(catalogId, true);
 		if (!added) return;
 		this.emitState();
 		this.persist();
@@ -111,13 +111,22 @@ export class DataLayerManager {
 		this.persist();
 	}
 
-	setOpacity(id: string, opacity: number): void {
-		const record = this.layers.find((l) => l.id === id);
-		if (!record) return;
-		record.opacity = opacity;
-		record.imageryLayer.alpha = opacity;
-		this.emitState();
-		this.persist();
+	/** Applies `isoDate` to every currently-active layer that declares a time
+	 *  range — a single shared slider, not a per-layer control (no product
+	 *  need yet for independent dates per layer). Mutates the provider's
+	 *  `dimensions` in place rather than removing/re-adding the ImageryLayer,
+	 *  which Cesium's WebMapTileServiceImageryProvider documents as
+	 *  triggering a tile reload on its own; CesiumCanvas verifies this
+	 *  actually happens (see setTime's call site) before relying on it, and
+	 *  swaps to an explicit remove+re-add fallback if it doesn't. */
+	setGlobalTime(isoDate: string): void {
+		for (const record of this.layers) {
+			if (!record.catalogEntry.timeStart) continue;
+			const provider = record.imageryLayer.imageryProvider;
+			if (provider instanceof Cesium.WebMapTileServiceImageryProvider) {
+				provider.dimensions = { ...provider.dimensions, TIME: isoDate };
+			}
+		}
 	}
 
 	/** Moves the layer with `id` to `newIndex` within the active-layer stack
@@ -153,7 +162,7 @@ export class DataLayerManager {
 	async restoreLayers(persisted: PersistedActiveLayer[]): Promise<void> {
 		let restoredAny = false;
 		for (const p of persisted) {
-			const added = await this.instantiateLayer(p.id, p.visible, p.opacity);
+			const added = await this.instantiateLayer(p.id, p.visible);
 			if (added) restoredAny = true;
 		}
 		if (restoredAny) this.emitState();
@@ -169,7 +178,7 @@ export class DataLayerManager {
 	private persist(): void {
 		dispatchSessionAction({
 			type: SessionActionType.LayersChanged,
-			payload: this.layers.map((l) => ({ id: l.id, visible: l.visible, opacity: l.opacity })),
+			payload: this.layers.map((l) => ({ id: l.id, visible: l.visible })),
 		});
 	}
 
@@ -187,7 +196,7 @@ export class DataLayerManager {
 				source: l.catalogEntry.source,
 				attribution: l.catalogEntry.attribution,
 				visible: l.visible,
-				opacity: l.opacity,
+				supportsTime: Boolean(l.catalogEntry.timeStart),
 			})),
 		);
 	}

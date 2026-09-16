@@ -3,6 +3,7 @@
 	import { DATA_LAYERS } from "$lib/tiles/data-layers-catalog";
 	import ContextMenu, { type ContextMenuItem } from "$lib/components/ContextMenu.svelte";
 	import LayerInfoOverlay from "$lib/components/LayerInfoOverlay.svelte";
+	import TimeSlider from "$lib/components/analysis/TimeSlider.svelte";
 
 	interface Props {
 		/** Top-of-stack first (see DataLayerManager.emitState) — the row at
@@ -16,9 +17,33 @@
 		 *  order before invoking this. */
 		onReorder: (id: string, newIndex: number) => void;
 		onRemove: (id: string) => void;
+		/** One shared slider for every active time-capable layer, not
+		 *  per-layer — see DataLayerManager.setGlobalTime. */
+		layerTimeIso: string;
+		onLayerTimeChange: (isoDate: string) => void;
 	}
-	const { layers, collapsed, onToggleCollapsed, onToggleVisible, onReorder, onRemove }: Props =
-		$props();
+	const {
+		layers,
+		collapsed,
+		onToggleCollapsed,
+		onToggleVisible,
+		onReorder,
+		onRemove,
+		layerTimeIso,
+		onLayerTimeChange,
+	}: Props = $props();
+
+	// The bounds shown are whichever active layer declares them first — a
+	// second time-capable layer with different bounds (e.g. the forecast's
+	// shorter window) just gets its own values clamped into by the caller
+	// (CesiumCanvas.setGlobalTime doesn't clamp; a per-layer TIME outside its
+	// own range would 400 — out of scope for this shared control today,
+	// since both current catalog entries' windows overlap heavily).
+	const timeCapableEntry = $derived(
+		layers
+			.map((l) => DATA_LAYERS.find((d) => d.id === l.id))
+			.find((entry) => entry?.timeStart),
+	);
 
 	let draggingId = $state<string | null>(null);
 	let dragOverId = $state<string | null>(null);
@@ -212,6 +237,17 @@
 					</div>
 				{/each}
 			</div>
+			{#if timeCapableEntry}
+				<div class="time-slider-row">
+					<TimeSlider
+						timeStart={timeCapableEntry.timeStart}
+						timeEnd={timeCapableEntry.timeEnd}
+						timeStepSeconds={timeCapableEntry.timeStepSeconds}
+						value={layerTimeIso}
+						onChange={onLayerTimeChange}
+					/>
+				</div>
+			{/if}
 		{/if}
 	</div>
 {/if}
@@ -317,6 +353,12 @@
 		min-height: 0;
 		scrollbar-width: thin;
 		scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+	}
+
+	.time-slider-row {
+		flex: 0 0 auto;
+		padding: 0.6rem 0.85rem 0.75rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.08);
 	}
 	.layer-list::-webkit-scrollbar {
 		width: 6px;

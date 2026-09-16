@@ -14,6 +14,11 @@
 		onHighlightMeasurement: (id: string, highlighted: boolean) => void;
 		layersOpen: boolean;
 		onToggleLayers: () => void;
+		/** "Visualise Data" only makes sense once there's data to visualise —
+		 *  hidden entirely rather than shown-disabled when no data layer is
+		 *  active. */
+		hasActiveLayers: boolean;
+		onVisualiseData: (id: string) => void;
 	}
 	const {
 		measureState,
@@ -27,6 +32,8 @@
 		onHighlightMeasurement,
 		layersOpen,
 		onToggleLayers,
+		hasActiveLayers,
+		onVisualiseData,
 	}: Props = $props();
 
 	// "Advanced measurements" is a static disclosure for now — real content
@@ -236,6 +243,11 @@
 										</div>
 										<div class="measurement-actions">
 											<button type="button" onclick={() => onZoomToMeasurement(m.id)}>Zoom to</button>
+											{#if hasActiveLayers}
+												<button type="button" onclick={() => onVisualiseData(m.id)}>
+													Visualise Data
+												</button>
+											{/if}
 											<button type="button" class="danger" onclick={() => onRemoveMeasurement(m.id)}>Delete</button>
 										</div>
 									</div>

@@ -53,13 +53,13 @@ export interface PersistedMeasurementRecord {
 
 /** Wire format for one active data layer — layer id (from the frontend
  *  data-layers-catalog registry, not any backend catalog) plus its
- *  user-controlled visibility/opacity. Array order is stack order, bottom
- *  to top, matching DataLayerManager's own `layers` array. */
+ *  user-controlled visibility. Array order is stack order, bottom to top,
+ *  matching DataLayerManager's own `layers` array. No opacity field: every
+ *  layer renders at its catalog defaultOpacity (now always 1) and there's
+ *  no UI to change it per-layer, so there's nothing to persist. */
 export interface PersistedActiveLayer {
 	id: string;
 	visible: boolean;
-	/** 0-1. */
-	opacity: number;
 }
 
 export interface PersistedSession {
@@ -73,6 +73,9 @@ export interface PersistedSession {
 	measurements?: PersistedMeasurementRecord[];
 	layers?: PersistedActiveLayer[];
 	activeLayersPanelCollapsed?: boolean;
+	/** ISO 8601 — the shared time-slider position applied to every active
+	 *  layer that supports one (see DataLayerManager.setGlobalTime). */
+	layerTimeIso?: string;
 }
 
 export enum SessionActionType {
@@ -86,6 +89,7 @@ export enum SessionActionType {
 	MeasurementsCleared = "MEASUREMENTS_CLEARED",
 	LayersChanged = "LAYERS_CHANGED",
 	ActiveLayersPanelCollapsed = "ACTIVE_LAYERS_PANEL_COLLAPSED",
+	LayerTimeChanged = "LAYER_TIME_CHANGED",
 }
 
 export type SessionAction =
@@ -98,7 +102,8 @@ export type SessionAction =
 	| { type: SessionActionType.MeasurementRemoved; payload: string }
 	| { type: SessionActionType.MeasurementsCleared }
 	| { type: SessionActionType.LayersChanged; payload: PersistedActiveLayer[] }
-	| { type: SessionActionType.ActiveLayersPanelCollapsed; payload: boolean };
+	| { type: SessionActionType.ActiveLayersPanelCollapsed; payload: boolean }
+	| { type: SessionActionType.LayerTimeChanged; payload: string };
 
 /** Debounce delay per action type, in ms — absent/0 means "write immediately".
  *  Only CameraChanged is high-frequency (fires continuously while
@@ -145,12 +150,7 @@ function isValidMeasurementRecord(value: unknown): value is PersistedMeasurement
 function isValidActiveLayer(value: unknown): value is PersistedActiveLayer {
 	if (!value || typeof value !== "object") return false;
 	const v = value as Record<string, unknown>;
-	return (
-		typeof v.id === "string" &&
-		typeof v.visible === "boolean" &&
-		typeof v.opacity === "number" &&
-		Number.isFinite(v.opacity)
-	);
+	return typeof v.id === "string" && typeof v.visible === "boolean";
 }
 
 /** Reads + sanitizes the persisted session. Never throws — a missing key,
@@ -183,6 +183,7 @@ export function loadSession(): PersistedSession {
 		if (typeof p.activeLayersPanelCollapsed === "boolean") {
 			session.activeLayersPanelCollapsed = p.activeLayersPanelCollapsed;
 		}
+		if (typeof p.layerTimeIso === "string") session.layerTimeIso = p.layerTimeIso;
 		return session;
 	} catch (err) {
 		console.warn("[session-store] Failed to read persisted session, ignoring:", err);
@@ -236,6 +237,8 @@ function applyAction(session: PersistedSession, action: SessionAction): Persiste
 			return { ...session, layers: action.payload };
 		case SessionActionType.ActiveLayersPanelCollapsed:
 			return { ...session, activeLayersPanelCollapsed: action.payload };
+		case SessionActionType.LayerTimeChanged:
+			return { ...session, layerTimeIso: action.payload };
 	}
 }
 
