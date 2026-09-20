@@ -846,7 +846,7 @@
     onGraticuleToggle={toggleGraticule}
     {currentProjection}
     onProjectionChange={switchProjection}
-    hidden={volumetricMode.active}
+    shapeToolDisabled={volumetricMode.active}
 />
 
 <BasemapPicker basemaps={BASEMAPS} activeId={currentBasemapId} onSelect={switchBasemap} />
@@ -862,7 +862,6 @@
     onZoomTo={(id) => dataLayerManager?.zoomToLayer(id)}
     {layerTimeIso}
     onLayerTimeChange={setLayerTime}
-    hidden={volumetricMode.active}
 />
 
 <ShapeVisualiseButton
