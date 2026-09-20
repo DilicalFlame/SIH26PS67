@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { viewStatus } from "$lib/state/view-status.svelte";
+	import { volumetricMode } from "$lib/state/volumetric-mode.svelte";
 
 	// Plain `let`, not `$state` - setCoords writes to it imperatively via
 	// innerText, bypassing Svelte reactivity entirely so per-pixel pointermove
@@ -29,6 +30,13 @@
 		<span class="status-value">{viewStatus.altitudeKm.toFixed(0)} km</span>
 	</div>
 
+	{#if volumetricMode.active && volumetricMode.loading}
+		<div class="status-section volume-loading" title="Fetching depth-layer data for the 3D view">
+			<span class="loading-dot" aria-hidden="true"></span>
+			<span class="status-value">Loading depth data&hellip;</span>
+		</div>
+	{/if}
+
 	<div class="status-section scale-bar-group" title="Scale bar for the current view">
 		<span class="scale-bar" style:width="{viewStatus.scaleBarWidthPx}px"
 		></span>
@@ -47,8 +55,11 @@
 		/* Equal flanking columns keep the center column's midpoint pinned to
 		 * the bar's midpoint no matter how wide the coords text or the scale
 		 * bar get - only a `justify-content: space-between` flex row would
-		 * let the altitude readout drift sideways as its neighbors resize. */
-		grid-template-columns: 1fr auto 1fr;
+		 * let the altitude readout drift sideways as its neighbors resize.
+		 * The loading indicator is a 3rd, conditionally-rendered middle
+		 * column (auto-width, collapses to nothing when absent) rather than
+		 * living inside .altitude, so it never nudges the altitude text. */
+		grid-template-columns: 1fr auto auto 1fr;
 		align-items: center;
 		gap: 1.5rem;
 		padding: 0 1.25rem;
@@ -127,6 +138,31 @@
 
 	.scale-bar-group {
 		justify-self: end;
+	}
+
+	.volume-loading {
+		justify-self: center;
+	}
+
+	.loading-dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 50%;
+		background: #ffcc33;
+		box-shadow: 0 0 6px rgba(255, 204, 51, 0.8);
+		animation: pulse 1.1s ease-in-out infinite;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 0.35;
+			transform: scale(0.85);
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.1);
+		}
 	}
 
 	.scale-bar {

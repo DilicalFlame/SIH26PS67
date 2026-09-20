@@ -2,51 +2,46 @@
 	/**
 	 * VolumetricScene.svelte
 	 *
-	 * The "Visualise Data" 3D popout's own canvas + three.js renderer/camera/
-	 * OrbitControls, layered transparently on top of Cesium's own canvas
-	 * (which stays live underneath - see CesiumCanvas.svelte's
-	 * enterVolumeView and PolygonDimOverlay.svelte, which dims everywhere
-	 * except the shape itself so the globe/graticule still read as "the
-	 * ground this volume is standing on" instead of being replaced by a
-	 * separate scene). The three.js camera is one-time-synced to wherever
-	 * Cesium's own camera was framing the shape (see
-	 * cesium-local-frame.ts) so the volume visually grows out of the right
-	 * spot on screen; from then on OrbitControls owns it independently -
-	 * Cesium's camera inputs are disabled for the duration (see
-	 * CesiumCanvas), so the two never fight over the same drag gesture.
+	 * The "Visualise Data" 3D popout's own canvas, layered transparently on
+	 * top of Cesium's own canvas (which stays live and fully interactive
+	 * underneath - see CesiumCanvas.svelte's enterVolumeView and
+	 * PolygonDimOverlay.svelte, which dims everywhere except the shape
+	 * itself). This canvas has no camera controls of its own: every
+	 * animation frame it re-derives its three.js camera from Cesium's
+	 * current (live, user-driven) camera via captureLocalCameraSnapshot,
+	 * so the globe and the volume move together as one continuous 3D space
+	 * instead of two independently-navigable ones - drag/pan/zoom on
+	 * Cesium's canvas underneath, and the volume rides along exactly.
 	 * CesiumCanvas mounts this only while volumetricMode.active is true and
 	 * unmounts it (see onDestroy's explicit disposal) the moment the user
 	 * exits, so repeated open/close cycles never leak a WebGL context.
 	 */
 	import { onMount, onDestroy } from "svelte";
 	import * as THREE from "three";
-	import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+	import type * as Cesium from "cesium";
 	import { volumetricMode } from "$lib/state/volumetric-mode.svelte";
 	import { volumeControls } from "$lib/state/volume-controls.svelte";
 	import { buildData3DTexture } from "$lib/render/volume-field";
 	import { toLUTTexture } from "$lib/render/colormaps";
 	import { createVolumeMaterial, createVolumeMesh, type VolumeMaterialHandle } from "$lib/render/volume-raymarch";
 	import { EARTH_RADIUS_M } from "$lib/geo/measure";
-	import type { LocalFrameCameraSnapshot } from "$lib/geo/cesium-local-frame";
+	import { captureLocalCameraSnapshot } from "$lib/geo/cesium-local-frame";
 
 	interface Props {
 		/** [longitude, latitude] positions of the shape this popout belongs
 		 *  to - drawn as a ground-level outline so the volume stays anchored
 		 *  to something recognisable rather than floating in empty space. */
 		shapePositions: [number, number][];
-		/** Where Cesium's own camera was looking when the popout opened -
-		 *  null falls back to a top-down heuristic framing (see
-		 *  rebuildVolume) rather than failing outright. */
-		cameraSnapshot: LocalFrameCameraSnapshot | null;
+		viewer: Cesium.Viewer;
+		centroid: Cesium.Cartesian3;
 		onExit: () => void;
 	}
-	const { shapePositions, cameraSnapshot, onExit }: Props = $props();
+	const { shapePositions, viewer, centroid, onExit }: Props = $props();
 
 	let containerEl: HTMLDivElement;
 	let renderer: THREE.WebGLRenderer | undefined;
 	let scene: THREE.Scene | undefined;
 	let camera: THREE.PerspectiveCamera | undefined;
-	let controls: OrbitControls | undefined;
 	let rafId: number | undefined;
 
 	let volumeGroup: THREE.Group | undefined;
@@ -54,18 +49,39 @@
 	let materialHandle: VolumeMaterialHandle | undefined;
 	let volumeTexture: THREE.Data3DTexture | undefined;
 	let builtForGrid: unknown = null; // identity-compares volumetricMode.grid so a re-entrant grid only builds once
+	/** Floor for syncCameraToCesium's per-frame near/far - see rebuildVolume. */
+	let sceneMaxDim = 100_000;
 
 	const DEG2RAD = Math.PI / 180;
 
-	/** Flat-earth local ENU meters relative to the shape's own centroid -
-	 *  same approximation path-measure-tool.ts's rectangle/ellipse drawing
-	 *  already uses; accurate enough at the scale a single drawn shape spans. */
+	/** Flat-earth local frame meters relative to the shape's own centroid:
+	 *  x=East, z=South - same (East, Up, South) right-handed convention
+	 *  cesium-local-frame.ts's captureLocalCameraSnapshot uses (see its
+	 *  header comment for why it's South, not North: East x Up = -North in
+	 *  a right-handed ENU frame, so +North would silently mirror this
+	 *  scene relative to Cesium's camera). volume-raymarch.ts's box
+	 *  geometry/texture-coordinate mapping assumes this same convention -
+	 *  keep all three in sync. */
 	function toLocalMeters(lon: number, lat: number, centerLon: number, centerLat: number): { x: number; z: number } {
 		const metersPerLon = EARTH_RADIUS_M * Math.max(Math.cos(centerLat * DEG2RAD), 0.01);
 		return {
 			x: (lon - centerLon) * DEG2RAD * metersPerLon,
-			z: (lat - centerLat) * DEG2RAD * EARTH_RADIUS_M,
+			z: -(lat - centerLat) * DEG2RAD * EARTH_RADIUS_M,
 		};
+	}
+
+	function bboxOfShapePositions(positions: [number, number][]): [number, number, number, number] {
+		let west = Infinity;
+		let south = Infinity;
+		let east = -Infinity;
+		let north = -Infinity;
+		for (const [lon, lat] of positions) {
+			if (lon < west) west = lon;
+			if (lon > east) east = lon;
+			if (lat < south) south = lat;
+			if (lat > north) north = lat;
+		}
+		return [west, south, east, north];
 	}
 
 	function buildOutline(centerLon: number, centerLat: number): THREE.LineLoop {
@@ -118,18 +134,15 @@
 		volumeGroup.add(volumeMesh);
 		applyVerticalExaggeration();
 
-		// Near/far only - camera position/target were already set once at
-		// mount (from cameraSnapshot, or the top-down fallback below) and
-		// must NOT be reset here: the grid usually finishes loading well
-		// after the scene mounts, and resetting the camera on arrival would
-		// yank it away from wherever Cesium's own camera (or the user, via
-		// OrbitControls) had it framed.
-		if (camera) {
-			const maxDim = Math.max(widthM, heightM, depthTotalM * volumeControls.verticalExaggeration);
-			camera.near = Math.max(0.1, maxDim / 1000);
-			camera.far = maxDim * 20;
-			camera.updateProjectionMatrix();
-		}
+		// Only a floor for syncCameraToCesium's dynamic near/far (see
+		// there) - not applied to the camera directly here. A one-time
+		// near/far sized off the box's own dimensions broke as soon as the
+		// user free-navigated Cesium's camera to a very different distance
+		// from the shape than it started at (e.g. a rotate-drag that pivots
+		// around a different ground point) - the box would appear to fill
+		// the whole screen because the camera had ended up far closer to
+		// (or inside) it than the fixed near/far range accounted for.
+		sceneMaxDim = Math.max(widthM, heightM, depthTotalM * volumeControls.verticalExaggeration);
 	}
 
 	/** Vertical exaggeration is a scale on the GROUP the mesh sits in, not
@@ -144,9 +157,43 @@
 		if (volumeGroup) volumeGroup.scale.y = volumeControls.verticalExaggeration;
 	}
 
+	/** Mirrors Cesium's current camera into this scene's camera - called
+	 *  every frame (see animate below), not once, so the volume tracks
+	 *  Cesium's own live pan/zoom/rotate exactly instead of drifting off
+	 *  into an independently-navigated view. */
+	function syncCameraToCesium(): void {
+		if (!camera) return;
+		const snapshot = captureLocalCameraSnapshot(viewer, centroid);
+		if (!snapshot) return;
+		camera.position.set(...snapshot.position);
+		camera.up.set(...snapshot.up);
+		camera.lookAt(...snapshot.target);
+
+		// Near/far sized off the camera's LIVE distance to the shape, not a
+		// one-time value computed from the box's own dimensions - Cesium's
+		// camera is fully free to navigate during the popout (drag/zoom/
+		// rotate), and a rotate can pivot around a different ground point
+		// than the shape centroid, changing that distance a lot. A fixed
+		// range broke (the box appeared to fill the whole screen) the
+		// moment the camera ended up much closer than the range assumed.
+		const distance = Math.hypot(
+			camera.position.x - snapshot.target[0],
+			camera.position.y - snapshot.target[1],
+			camera.position.z - snapshot.target[2],
+		);
+		const near = Math.max(0.05, Math.min(distance / 100, sceneMaxDim / 1000));
+		const far = Math.max(distance * 4, sceneMaxDim * 20);
+		if (camera.fov !== snapshot.fovDeg || camera.near !== near || camera.far !== far) {
+			camera.fov = snapshot.fovDeg;
+			camera.near = near;
+			camera.far = far;
+			camera.updateProjectionMatrix();
+		}
+	}
+
 	function animate(): void {
 		rafId = requestAnimationFrame(animate);
-		controls?.update();
+		syncCameraToCesium();
 		if (renderer && scene && camera) renderer.render(scene, camera);
 	}
 
@@ -175,15 +222,10 @@
 		renderer.setSize(containerEl.clientWidth, containerEl.clientHeight);
 		containerEl.appendChild(renderer.domElement);
 
-		controls = new OrbitControls(camera, renderer.domElement);
-		controls.enableDamping = true;
-		controls.dampingFactor = 0.08;
-		controls.minDistance = 1;
-
 		volumeGroup = new THREE.Group();
 		scene.add(volumeGroup);
 
-		const [west, south, east, north] = volumetricMode.grid?.bbox ?? bboxOfShapePositions(shapePositions);
+		const [west, south, east, north] = bboxOfShapePositions(shapePositions);
 		scene.add(buildOutline((west + east) / 2, (south + north) / 2));
 
 		scene.add(new THREE.AmbientLight(0xffffff, 0.6));
@@ -191,47 +233,18 @@
 		dirLight.position.set(1, 2, 1);
 		scene.add(dirLight);
 
-		if (cameraSnapshot) {
-			camera.position.set(...cameraSnapshot.position);
-			controls.target.set(...cameraSnapshot.target);
-			camera.fov = cameraSnapshot.fovDeg;
-		} else {
-			// Fallback: a top-down-ish framing sized off the shape's own
-			// bbox (grid.bbox isn't known yet at mount time) - only reached
-			// if Cesium's frustum wasn't a PerspectiveFrustum, which
-			// shouldn't happen in practice (see captureLocalCameraSnapshot).
-			const metersPerLon = EARTH_RADIUS_M * Math.max(Math.cos(((south + north) / 2) * DEG2RAD), 0.01);
-			const widthM = Math.max(1, (east - west) * DEG2RAD * metersPerLon);
-			const heightM = Math.max(1, (north - south) * DEG2RAD * EARTH_RADIUS_M);
-			const maxDim = Math.max(widthM, heightM);
-			camera.position.set(0, maxDim * 1.7, maxDim * 0.35);
-			controls.target.set(0, 0, 0);
-		}
-		camera.updateProjectionMatrix();
-		controls.update();
-
+		syncCameraToCesium();
 		rebuildVolume();
 		window.addEventListener("resize", handleResize);
 		rafId = requestAnimationFrame(animate);
 	});
 
-	function bboxOfShapePositions(positions: [number, number][]): [number, number, number, number] {
-		let west = Infinity;
-		let south = Infinity;
-		let east = -Infinity;
-		let north = -Infinity;
-		for (const [lon, lat] of positions) {
-			if (lon < west) west = lon;
-			if (lon > east) east = lon;
-			if (lat < south) south = lat;
-			if (lat > north) north = lat;
-		}
-		return [west, south, east, north];
-	}
-
 	$effect(() => {
 		// Re-run whenever a fresh grid arrives (rebuildVolume no-ops if it's
-		// the same object it already built for).
+		// the same object it already built for) - the volume mesh fades in
+		// once the fetch finishes, without blocking anything before that (see
+		// StatusBar.svelte's own loading indicator instead of a blocking
+		// overlay here).
 		void volumetricMode.grid;
 		rebuildVolume();
 	});
@@ -250,7 +263,6 @@
 	onDestroy(() => {
 		window.removeEventListener("resize", handleResize);
 		if (rafId !== undefined) cancelAnimationFrame(rafId);
-		controls?.dispose();
 		disposeVolume();
 		if (renderer) {
 			renderer.dispose();
@@ -263,19 +275,14 @@
 	});
 </script>
 
-<div class="volumetric-scene" bind:this={containerEl}>
-	{#if volumetricMode.loading}
-		<div class="overlay">
-			<div class="spinner" aria-hidden="true"></div>
-			<p>Fetching depth layers&hellip;</p>
-		</div>
-	{:else if volumetricMode.error}
-		<div class="overlay">
-			<p class="error">{volumetricMode.error}</p>
-			<button type="button" onclick={onExit}>Close</button>
-		</div>
-	{/if}
-</div>
+<div class="volumetric-scene" bind:this={containerEl}></div>
+
+{#if volumetricMode.error}
+	<div class="error-banner">
+		<p>{volumetricMode.error}</p>
+		<button type="button" onclick={onExit}>Exit 3D View</button>
+	</div>
+{/if}
 
 <style>
 	.volumetric-scene {
@@ -286,50 +293,39 @@
 		   VolumeControlPanel.svelte's header comment for the full stack. */
 		z-index: 16;
 		background: transparent;
-		/* OrbitControls needs to receive drags on this canvas even though
-		   its background is transparent and Cesium's (input-disabled)
-		   canvas sits directly underneath. */
-		pointer-events: auto;
+		/* This canvas has no controls of its own (see syncCameraToCesium) -
+		   every drag/wheel/click must reach Cesium's canvas underneath. */
+		pointer-events: none;
 	}
 	.volumetric-scene :global(canvas) {
 		display: block;
 	}
-	.overlay {
-		position: absolute;
-		inset: 0;
+	.error-banner {
+		position: fixed;
+		top: 1.25rem;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 25;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		justify-content: center;
 		gap: 0.75rem;
-		color: #e6ecf3;
-		background: rgba(5, 7, 12, 0.55);
-		z-index: 1;
-	}
-	.overlay .error {
-		color: #ff8080;
+		padding: 0.6rem 1rem;
+		border-radius: 10px;
+		background: rgba(30, 10, 10, 0.85);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border: 1px solid rgba(255, 128, 128, 0.3);
+		color: #ffb3b3;
+		font-size: 0.8rem;
 		max-width: 26rem;
-		text-align: center;
 	}
-	.overlay button {
-		padding: 0.5rem 1.25rem;
+	.error-banner button {
+		flex-shrink: 0;
+		padding: 0.3rem 0.7rem;
 		border-radius: 6px;
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		background: rgba(255, 255, 255, 0.08);
 		color: inherit;
 		cursor: pointer;
-	}
-	.spinner {
-		width: 2rem;
-		height: 2rem;
-		border-radius: 50%;
-		border: 3px solid rgba(255, 255, 255, 0.2);
-		border-top-color: #ffcc33;
-		animation: spin 0.8s linear infinite;
-	}
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 </style>

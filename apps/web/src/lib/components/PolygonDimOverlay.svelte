@@ -4,36 +4,41 @@
 	 *
 	 * Dims the whole screen except a cutout shaped like the shape being
 	 * visualised, so Cesium's globe (and its graticule, if on - see
-	 * CesiumCanvas.svelte's enterVolumeView, which stops hiding Cesium's
-	 * canvas entirely) stays visible underneath the 3D popout instead of
-	 * being replaced by it: polygon (undimmed, full Cesium brightness),
-	 * then whatever Cesium itself is rendering there (e.g. the grid), then
-	 * the volume (VolumetricScene, a separate transparent-background
-	 * canvas layered above this one).
+	 * CesiumCanvas.svelte's enterVolumeView, which keeps Cesium's canvas
+	 * live and interactive under the 3D popout instead of replacing it)
+	 * stays visible underneath: the shape itself (undimmed, full Cesium
+	 * brightness), then whatever Cesium is rendering there (e.g. the
+	 * grid), then the volume (VolumetricScene, a separate
+	 * transparent-background canvas layered above this one).
 	 *
-	 * `points` is captured once by the caller right after the camera parks
-	 * (see cesium-local-frame.ts's captureShapeScreenPoints) - Cesium's
-	 * camera inputs are disabled for the duration of the popout, so the
-	 * projection doesn't need to be recomputed every frame, only on
-	 * window resize (see CesiumCanvas's resize wiring).
+	 * Cesium's camera is fully interactive during the popout, so the
+	 * shape's screen-space projection changes every frame - updatePoints()
+	 * is called from CesiumCanvas's existing animate() loop, same
+	 * imperative-DOM-write pattern as ShapeVisualiseButton's
+	 * updatePositions (a direct SVG attribute write, not $state, since
+	 * this runs at render cadence).
 	 */
-	interface Props {
-		points: [number, number][] | null;
-	}
-	const { points }: Props = $props();
+	let svgEl: SVGSVGElement | undefined = $state();
+	let polygonEl: SVGPolygonElement | undefined = $state();
 
-	const pointsAttr = $derived(points ? points.map(([x, y]) => `${x},${y}`).join(" ") : "");
+	export function updatePoints(points: [number, number][] | null): void {
+		if (!svgEl || !polygonEl) return;
+		if (!points || points.length < 3) {
+			svgEl.style.display = "none";
+			return;
+		}
+		svgEl.style.display = "block";
+		polygonEl.setAttribute("points", points.map(([x, y]) => `${x},${y}`).join(" "));
+	}
 </script>
 
-{#if points && points.length >= 3}
-	<svg class="dim-overlay" aria-hidden="true">
-		<mask id="polygon-cutout">
-			<rect x="0" y="0" width="100%" height="100%" fill="white" />
-			<polygon points={pointsAttr} fill="black" />
-		</mask>
-		<rect x="0" y="0" width="100%" height="100%" fill="#05070c" fill-opacity="0.72" mask="url(#polygon-cutout)" />
-	</svg>
-{/if}
+<svg class="dim-overlay" bind:this={svgEl} aria-hidden="true" style="display: none;">
+	<mask id="polygon-cutout">
+		<rect x="0" y="0" width="100%" height="100%" fill="white" />
+		<polygon bind:this={polygonEl} points="" fill="black" />
+	</mask>
+	<rect x="0" y="0" width="100%" height="100%" fill="#05070c" fill-opacity="0.72" mask="url(#polygon-cutout)" />
+</svg>
 
 <style>
 	.dim-overlay {
