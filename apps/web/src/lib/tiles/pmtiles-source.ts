@@ -2,7 +2,7 @@
  * pmtiles-source.ts
  *
  * Resolves a configured layer's MinIO URL and reads its PMTiles header
- * (once, on the main thread) to learn the tileset's real min/max zoom —
+ * (once, on the main thread) to learn the tileset's real min/max zoom -
  * actual tile bytes are fetched inside tile.worker.ts, off the main thread.
  */
 

@@ -1,4 +1,4 @@
-# All variables here come from the root .env (see .env.example) — invoke as
+# All variables here come from the root .env (see .env.example) - invoke as
 # `docker compose --env-file .env -f infra/docker/compose.yml up -d` from the
 # repo root, or Compose won't find it: it looks for .env next to *this*
 # file's own directory by default, not the caller's cwd.
@@ -12,7 +12,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-thalassa}
       POSTGRES_USER: ${POSTGRES_USER:-thalassa}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.example to .env at the repo root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - copy .env.example to .env at the repo root}
 
     ports:
       - "5432:5432"
@@ -36,7 +36,7 @@ services:
 
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thalassa}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required — copy .env.example to .env at the repo root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required - copy .env.example to .env at the repo root}
       # Server-wide CORS so the browser can issue the many small Range
       # requests PMTiles relies on directly against MinIO (per-bucket CORS
       # XML via `mc cors set` isn't reliably supported by this MinIO build).
@@ -58,7 +58,7 @@ services:
 
   # One-shot init: creates the "tiles" bucket and makes it public-read (tile
   # bytes are non-sensitive open geo data) so the browser can fetch PMTiles
-  # byte ranges directly from MinIO — see docs/architecture/Thalassa
+  # byte ranges directly from MinIO - see docs/architecture/Thalassa
   # Architecture.webp, which draws SvelteKit -> MinIO as a direct arrow (no
   # API proxy in the middle). CORS is handled server-wide via
   # MINIO_API_CORS_ALLOW_ORIGIN on the minio service above.
@@ -70,7 +70,7 @@ services:
         condition: service_healthy
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thalassa}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required — copy .env.example to .env at the repo root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required - copy .env.example to .env at the repo root}
       MINIO_BUCKET: ${MINIO_BUCKET:-tiles}
     entrypoint: >
       /bin/sh -c "
@@ -88,7 +88,7 @@ services:
   # NOT set here: composing it as a string would need
   # "...://${POSTGRES_USER}:${POSTGRES_PASSWORD}@..." literally, and with
   # the documented default password admin@123 that embeds a second,
-  # unescaped '@' ambiguous with the userinfo/host delimiter — confirmed to
+  # unescaped '@' ambiguous with the userinfo/host delimiter - confirmed to
   # make psycopg parse "123" as the hostname. The app builds the URL itself
   # from the POSTGRES_* parts below instead (see
   # app/core/database.py:get_database_url()), which percent-encodes each
@@ -105,10 +105,10 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-thalassa}
       POSTGRES_USER: ${POSTGRES_USER:-thalassa}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.example to .env at the repo root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - copy .env.example to .env at the repo root}
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-thalassa}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required — copy .env.example to .env at the repo root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required - copy .env.example to .env at the repo root}
       MINIO_BUCKET: ${MINIO_BUCKET:-tiles}
       API_HOST: ${API_HOST:-0.0.0.0}
       API_PORT: ${API_PORT:-8000}

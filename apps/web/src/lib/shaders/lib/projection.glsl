@@ -1,5 +1,5 @@
 /**
- * projection.glsl — shared GPU map-projection engine.
+ * projection.glsl - shared GPU map-projection engine.
  *
  * Included by the fill and line shaders (via vite-plugin-glsl #include) so the
  * two can never drift apart. Requires the includer to declare:

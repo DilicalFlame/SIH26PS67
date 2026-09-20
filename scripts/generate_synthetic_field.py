@@ -36,7 +36,7 @@ TIMES = ["2020-01-01T00:00:00Z"]
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = REPO_ROOT / "fixtures" / "fields" / PRODUCT_ID / VARIABLE
 
-# Positional naming per §2: d<depth_index>_t<time_index>.f32 — index into
+# Positional naming per §2: d<depth_index>_t<time_index>.f32 - index into
 # DEPTHS/TIMES, not the values themselves. One depth, one time here.
 FIELD_FILE = OUTPUT_DIR / "d0_t0.f32"
 META_FILE = OUTPUT_DIR / "meta.json"
@@ -156,7 +156,7 @@ def generate_field() -> np.ndarray:
 
     field[landmask] = np.nan
 
-    # §2: "raw little-endian Float32 grid" — force it explicitly rather than
+    # §2: "raw little-endian Float32 grid" - force it explicitly rather than
     # relying on the host's native byte order (little-endian on every
     # realistic dev/CI machine here, but not guaranteed by plain float32).
     return field.astype("<f4")

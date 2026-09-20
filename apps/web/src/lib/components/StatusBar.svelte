@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { viewStatus } from "$lib/state/view-status.svelte";
 
-	// Plain `let`, not `$state` — setCoords writes to it imperatively via
+	// Plain `let`, not `$state` - setCoords writes to it imperatively via
 	// innerText, bypassing Svelte reactivity entirely so per-pixel pointermove
 	// events never trigger a re-render.
 	let coordsEl: HTMLSpanElement;
@@ -14,14 +14,14 @@
 	/** Called when the cursor leaves the canvas or unprojects to nothing
 	 *  (off-silhouette), so stale coordinates don't linger. */
 	export function clearCoords(): void {
-		if (coordsEl) coordsEl.innerText = "—";
+		if (coordsEl) coordsEl.innerText = "-";
 	}
 </script>
 
 <div class="status-bar">
 	<div class="status-section coords" title="Cursor position: latitude, longitude">
 		<span class="status-label">Location</span>
-		<span class="status-value" bind:this={coordsEl}>—</span>
+		<span class="status-value" bind:this={coordsEl}>-</span>
 	</div>
 
 	<div class="status-section altitude" title="Camera altitude above sea level">
@@ -46,14 +46,14 @@
 		display: grid;
 		/* Equal flanking columns keep the center column's midpoint pinned to
 		 * the bar's midpoint no matter how wide the coords text or the scale
-		 * bar get — only a `justify-content: space-between` flex row would
+		 * bar get - only a `justify-content: space-between` flex row would
 		 * let the altitude readout drift sideways as its neighbors resize. */
 		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
 		gap: 1.5rem;
 		padding: 0 1.25rem;
 		/* Dark gradient anchored to the bottom edge guarantees a minimum
-		 * contrast floor behind the text, independent of the glass tint —
+		 * contrast floor behind the text, independent of the glass tint -
 		 * without it, bright terrain (e.g. sand-colored landmass) showing
 		 * through the blur can wash the white text out entirely. Darker and
 		 * taller than before so text stays legible without relying much on
@@ -68,7 +68,7 @@
 		backdrop-filter: blur(18px) saturate(160%);
 		-webkit-backdrop-filter: blur(18px) saturate(160%);
 		border-top: 1px solid rgba(255, 255, 255, 0.1);
-		/* Lighter shadow than the projection-bar's — the darker background
+		/* Lighter shadow than the projection-bar's - the darker background
 		 * above now does the contrast work, so the shadow only needs to
 		 * separate the bar from the canvas, not fight for legibility too. */
 		box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
@@ -89,14 +89,14 @@
 		gap: 0.5rem;
 		white-space: nowrap;
 		/* Re-enable hover just over this small hitbox (for the title-attribute
-		 * tooltip) without undoing the bar's own pointer-events:none — most of
+		 * tooltip) without undoing the bar's own pointer-events:none - most of
 		 * the strip, including the gaps between sections, still passes drag
 		 * and wheel input straight through to the canvas. */
 		pointer-events: auto;
 	}
 
 	/* Solid white everywhere, differentiated by weight/size/opacity rather
-	 * than hue — one small shadow is enough for contrast now that the bar's
+	 * than hue - one small shadow is enough for contrast now that the bar's
 	 * own background is dark, and it's cheap to paint (unlike the layered
 	 * shadow + filter this replaced). */
 	.status-label,
@@ -136,7 +136,7 @@
 		border-right: 1px solid #fff;
 		border-bottom: 1px solid #fff;
 		transition: width 150ms ease;
-		/* box-shadow instead of filter:drop-shadow — this element's width is
+		/* box-shadow instead of filter:drop-shadow - this element's width is
 		 * rewritten by the animate() loop at ~15fps while zooming, and
 		 * box-shadow is the cheaper of the two to repaint on a plain
 		 * rectangle (drop-shadow rebuilds an alpha mask every time). */

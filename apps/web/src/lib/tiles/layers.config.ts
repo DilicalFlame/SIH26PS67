@@ -3,7 +3,7 @@
  *
  * Registry of PMTiles sources served from MinIO, plus the style for each MVT
  * sub-layer inside them. Adding a new tileset (bathymetry, EEZ, political
- * boundaries, ...) is one entry here — no changes in tile-manager.ts, the
+ * boundaries, ...) is one entry here - no changes in tile-manager.ts, the
  * worker, or the shaders.
  */
 
@@ -16,7 +16,7 @@ import type { ScalarFieldMeta } from '$lib/types/scalar-field';
 export const MAX_TILE_ZOOM = 14;
 
 /**
- * Deepest CAMERA zoom to allow — one level past MAX_TILE_ZOOM. TileManager
+ * Deepest CAMERA zoom to allow - one level past MAX_TILE_ZOOM. TileManager
  * already clamps its own tile requests to MAX_TILE_ZOOM (see updateLayer in
  * tile-manager.ts), so letting the camera go one level further is a plain
  * overzoom: the deepest available tile gets magnified past its native

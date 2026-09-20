@@ -6,7 +6,7 @@ export interface Colormap {
 }
 
 // 64 stops per map, sampled directly from the real cmocean (thermal/haline/
-// balance) and matplotlib (viridis) RGB tables at even t in [0, 1] — not
+// balance) and matplotlib (viridis) RGB tables at even t in [0, 1] - not
 // hand-picked. A sparser hand-picked set (originally 4-7 stops) was checked
 // against the true 256-entry tables and produced up to ~26/255 per-channel
 // error mid-ramp (worst on viridis and balance, whose paths through RGB

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-create_issues.py — turn issues.json into real GitHub issues via `gh`.
+create_issues.py - turn issues.json into real GitHub issues via `gh`.
 
 Two phases:
 
@@ -8,8 +8,8 @@ Two phases:
           task's "Depends on" line is resolved to a real "#N" link
           immediately, because dependencies always point BACKWARDS
           in creation order (the backlog doc guarantees this). The
-          "Blocks" line can't be resolved yet — those targets don't
-          exist as issues yet — so it's written as plain T-ids for
+          "Blocks" line can't be resolved yet - those targets don't
+          exist as issues yet - so it's written as plain T-ids for
           now and fixed in the patch phase.
 
   patch   Runs once everything exists. Rewrites every task body so
@@ -40,12 +40,12 @@ import time
 from pathlib import Path
 
 MILESTONE_TITLES = {
-    "M0": "M0 — Foundation",
-    "M1": "M1 — Internals demo",
-    "M2": "M2 — Data & rendering core",
-    "M3": "M3 — AI & research workflow",
-    "M4": "M4 — Research output",
-    "M5": "M5 — Hardening & delivery",
+    "M0": "M0 - Foundation",
+    "M1": "M1 - Internals demo",
+    "M2": "M2 - Data & rendering core",
+    "M3": "M3 - AI & research workflow",
+    "M4": "M4 - Research output",
+    "M5": "M5 - Hardening & delivery",
 }
 
 MILESTONE_DUE = {
@@ -199,7 +199,7 @@ def task_body(t, state):
     else:
         lines.append("**Depends on:** none")
     if t["blocks"]:
-        # Not resolvable yet on first pass (forward refs) — plain
+        # Not resolvable yet on first pass (forward refs) - plain
         # T-ids for now, fixed in the patch phase.
         note = f" ({t['blocks_note']})" if t.get("blocks_note") else ""
         lines.append(f"**Blocks:** {', '.join(t['blocks'])}{note}")
@@ -238,7 +238,7 @@ def epic_body(epic, state, tasks_by_id):
     for cid in child_ids:
         if cid in state:
             title = tasks_by_id.get(cid, {}).get("title", cid)
-            checklist.append(f"- [ ] #{state[cid]} — {title}")
+            checklist.append(f"- [ ] #{state[cid]} - {title}")
         else:
             checklist.append(f"- [ ] {cid} (not yet created)")
     milestone_title = MILESTONE_TITLES.get(epic["milestone"], epic["milestone"])
@@ -284,7 +284,7 @@ def do_create(args, data, state, state_path):
         if item["kind"] == "epic":
             title = f"[Epic] {item['title']}"
             body = (f"**Milestone:** {MILESTONE_TITLES.get(item['milestone'])}\n\n"
-                    f"### Tasks\n(linked after all child issues are created — "
+                    f"### Tasks\n(linked after all child issues are created - "
                     f"run `patch` once `create` finishes)")
             labels = ["epic"]
             milestone = MILESTONE_TITLES.get(item["milestone"])

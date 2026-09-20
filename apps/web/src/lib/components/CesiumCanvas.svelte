@@ -7,8 +7,14 @@
     import { formatLatLonDMS } from "$lib/geo/dms";
     import { pickNiceScale } from "$lib/geo/scale-bar";
     import { viewStatus } from "$lib/state/view-status.svelte";
+    import { hoverPointState } from "$lib/state/hover-point.svelte";
     import { BASEMAPS, DEFAULT_BASEMAP_ID } from "$lib/tiles/basemaps";
-    import { PathMeasureTool, type MeasureState } from "$lib/measure/path-measure-tool";
+    import {
+        PathMeasureTool,
+        type MeasureState,
+        type FinishedMeasurement,
+        type ShapeMode,
+    } from "$lib/measure/path-measure-tool";
     import { DataLayerManager, type ActiveLayerState } from "$lib/layers/data-layer-manager";
     import {
         loadSession,
@@ -25,26 +31,31 @@
     interface Props {
         statusBar?: StatusBar;
         /** Catalog modal visibility lives in +page.svelte (it owns
-         *  <DataLayersCatalog>) — Toolbar's layers button just reflects/toggles it. */
-        layersOpen?: boolean;
+         *  <DataLayersCatalog>) - ActiveLayersPanel's "Add Layer" button just
+         *  toggles it (see that component's onAddLayer prop below). */
         onToggleLayers?: () => void;
         /** Lets +page.svelte's <DataLayersCatalog> show "Added" vs "Add" per
-         *  card — the active-layer list itself is owned by dataLayerManager,
+         *  card - the active-layer list itself is owned by dataLayerManager,
          *  inside this component, not up there. */
         onActiveLayerIdsChange?: (ids: string[]) => void;
+        /** Same reasoning as onActiveLayerIdsChange - +page.svelte's
+         *  <DataLayersCatalog> needs the current finished polygons for its
+         *  "Area of Interest" filter, but measureTool/measureState are
+         *  private to this component. */
+        onMeasurementsChange?: (measurements: FinishedMeasurement[]) => void;
     }
     const {
         statusBar,
-        layersOpen = false,
         onToggleLayers = () => {},
         onActiveLayerIdsChange = () => {},
+        onMeasurementsChange = () => {},
     }: Props = $props();
 
-    // Read once at mount — everything below that falls back to a hardcoded
+    // Read once at mount - everything below that falls back to a hardcoded
     // default (basemap, projection, graticule, camera, finished
     // measurements) prefers this instead, so a refresh restores the
     // previous session rather than resetting. Deliberately NOT restored:
-    // the path/polygon tool's active/drawing state — see session-store.ts.
+    // the path/polygon tool's active/drawing state - see session-store.ts.
     const initialSession = loadSession();
 
     let containerEl: HTMLDivElement;
@@ -75,6 +86,9 @@
     $effect(() => {
         onActiveLayerIdsChange(layerState.map((l) => l.id));
     });
+    $effect(() => {
+        onMeasurementsChange(measureState.finished);
+    });
     // Reactive so BasemapPicker can highlight the active skin; picking a new
     // one is the only thing that changes it, so a plain $state (not an
     // effect-driven derivation) is enough.
@@ -82,10 +96,10 @@
 
     // Which projection the scene is currently morphed to (or morphing
     // towards). $state (not a plain let) so BasemapPicker's projection
-    // toggle can highlight the active one — driven directly by
+    // toggle can highlight the active one - driven directly by
     // switchProjection() below, now that the projection control lives
     // inside this component instead of being passed down as a prop.
-    // Only Equirectangular is worth restoring explicitly — anything else
+    // Only Equirectangular is worth restoring explicitly - anything else
     // (missing, corrupt, a stale future value) falls back to Sphere, same
     // as a first-ever visit.
     let currentProjection = $state(
@@ -93,16 +107,16 @@
             ? ProjectionType.Equirectangular
             : ProjectionType.Sphere,
     );
-    // Likewise for the graticule — was a prop watched by an $effect, now a
+    // Likewise for the graticule - was a prop watched by an $effect, now a
     // local toggle BasemapPicker calls directly. Defaults OFF (not ON) on a
     // first-ever visit, same "inactive unless a session says otherwise"
     // policy as every other toggle here.
     let graticuleOn = $state(initialSession.graticuleOn ?? false);
 
-    // Heading state — same eased-drag-plus-reset-to-north model as
+    // Heading state - same eased-drag-plus-reset-to-north model as
     // GlobeCanvas, just applied to Cesium's camera instead of a shader uniform.
     // Seeded from the restored camera (if any) so the first onResetNorth()
-    // eases from the actual restored heading instead of assuming 0 — see
+    // eases from the actual restored heading instead of assuming 0 - see
     // restoreSession() below, which also re-syncs these once the real
     // Cesium camera is set.
     let headingAngle = initialSession.camera?.heading ?? 0;
@@ -118,7 +132,7 @@
 
     // Closest the camera is allowed to get to the surface. Below this,
     // imagery has nothing higher-resolution left to show anyway, the
-    // altitude/scale readout stops being meaningful, and — more importantly —
+    // altitude/scale readout stops being meaningful, and - more importantly -
     // letting the camera distance run all the way to 0 (a big, fast wheel
     // delta can do this in a single frame) sends Cesium's internal
     // direction/right vectors through a zero-length normalize and crashes
@@ -128,7 +142,7 @@
     const MIN_ZOOM_METERS = 10;
     // Farthest the camera is allowed to pull back. Past this the globe
     // shrinks to a small dot in a lot of empty black space and it's easy to
-    // lose track of where you are — worth capping generally, but especially
+    // lose track of where you are - worth capping generally, but especially
     // now that the last zoom level persists across reloads (see
     // session-store.ts): without a cap, an accidental scroll-out-forever
     // could get "stuck" as the restored view on every future load.
@@ -139,7 +153,7 @@
     const MAX_SCALE_BAR_PX = 120;
     const MIN_SCALE_BAR_PX = 40;
 
-    /** True while the flat equirectangular map is the dominant projection —
+    /** True while the flat equirectangular map is the dominant projection -
      *  heading only makes sense while looking at a rotatable sphere. */
     function isFlatMode(): boolean {
         return viewer.scene.mode !== Cesium.SceneMode.SCENE3D;
@@ -195,7 +209,7 @@
             shouldAnimate: true,
             // Cesium's own crash dialog (raw stack trace, no way back short of
             // reloading the tab) is replaced by the same recovery overlay used
-            // for a lost WebGL context — see scene.renderError below.
+            // for a lost WebGL context - see scene.renderError below.
             showRenderLoopErrors: false,
         });
 
@@ -204,8 +218,8 @@
         viewer.scene.screenSpaceCameraController.minimumZoomDistance = MIN_ZOOM_METERS;
         viewer.scene.screenSpaceCameraController.maximumZoomDistance = MAX_ZOOM_METERS;
         // Releasing a drag and immediately wheel-zooming at the same cursor
-        // position — a very ordinary "pan, then zoom in on what I was just
-        // looking at" gesture — can send Cesium's internal camera math
+        // position - a very ordinary "pan, then zoom in on what I was just
+        // looking at" gesture - can send Cesium's internal camera math
         // through a zero-length Cartesian3.normalize, which by default kills
         // the render loop outright. Disabling translate inertia closes one
         // reproducible path into that race; scene.renderError below is the
@@ -237,11 +251,14 @@
             layerState = s;
         });
         await dataLayerManager.restoreLayers(initialSession.layers ?? []);
-        // Restored layers each start at their own build()-baked default TIME —
+        // Restored layers each start at their own build()-baked default TIME -
         // apply whatever time was last chosen on top of that, if any.
         if (initialSession.layerTimeIso) dataLayerManager.setGlobalTime(initialSession.layerTimeIso);
 
         // Hover readout, mirroring GlobeCanvas's pointermove -> statusBar wiring.
+        // Also publishes the same lon/lat to hoverPointState - ActiveLayersPanel
+        // samples each visible layer's value there (see its hover-sampling
+        // $effect) rather than this component needing to know about layers/WMTS.
         handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction((movement: Cesium.ScreenSpaceEventHandler.MotionEvent) => {
             const cartesian = viewer.camera.pickEllipsoid(
@@ -253,13 +270,21 @@
                 const latDeg = Cesium.Math.toDegrees(carto.latitude);
                 const lonDeg = Cesium.Math.toDegrees(carto.longitude);
                 statusBar?.setCoords(formatLatLonDMS(latDeg, lonDeg));
+                hoverPointState.point = { lon: lonDeg, lat: latDeg };
             } else {
                 statusBar?.clearCoords();
+                hoverPointState.point = null;
             }
         }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
         handler.setInputAction(() => {
             statusBar?.clearCoords();
         }, Cesium.ScreenSpaceEventType.LEFT_UP);
+        // Cesium's ScreenSpaceEventHandler only fires MOUSE_MOVE while the
+        // cursor is over the canvas - moving straight from the globe to
+        // browser chrome (no final off-globe move event) would otherwise
+        // leave a stale hover point (and stale per-layer values) active
+        // indefinitely. A plain DOM listener catches exactly that gap.
+        viewer.scene.canvas.addEventListener("mouseleave", clearHoverPoint);
 
         // WebGL crash recovery, same UX as GlobeCanvas.
         viewer.scene.canvas.addEventListener("webglcontextlost", onContextLost);
@@ -268,16 +293,16 @@
     }
 
     // =========================================================================
-    // Session restore — camera position + projection, from session-store.ts.
+    // Session restore - camera position + projection, from session-store.ts.
     // =========================================================================
     function applyRestoredCamera(cam: PersistedCameraView, includeOrientation: boolean): void {
         // A stale/corrupt height (e.g. 0) fed straight into setView is
         // exactly the zero-length-normalize crash MIN_ZOOM_METERS otherwise
-        // guards against — that floor (and the MAX_ZOOM_METERS ceiling) is
+        // guards against - that floor (and the MAX_ZOOM_METERS ceiling) is
         // enforced on the camera controller, not on setView, so both have to
         // be reapplied here explicitly. The ceiling also matters for a
         // session saved before MAX_ZOOM_METERS existed, or one edited by
-        // hand — restoring it uncapped would put the user right back at the
+        // hand - restoring it uncapped would put the user right back at the
         // "lost in empty space" view this cap exists to prevent.
         const height = Math.min(Math.max(cam.height, MIN_ZOOM_METERS), MAX_ZOOM_METERS);
         const destination = Cesium.Cartesian3.fromDegrees(cam.longitude, cam.latitude, height);
@@ -291,7 +316,7 @@
             headingControl?.setHeadingDeg((cam.heading * 180) / Math.PI);
         } else {
             // heading/pitch/roll don't round-trip meaningfully in 2D/Columbus
-            // mode the way they do in 3D — passing a 3D-derived orientation
+            // mode the way they do in 3D - passing a 3D-derived orientation
             // into a 2D destination is a plausible route into the same
             // normalize crash, so only the destination is restored here.
             viewer.camera.setView({ destination });
@@ -300,11 +325,11 @@
 
     /** Restores the persisted camera + projection, if any. Must run after
      *  the viewer (and its morphComplete listener above) exist, and BEFORE
-     *  switchBasemap/addGraticule — imagery doesn't depend on camera state,
+     *  switchBasemap/addGraticule - imagery doesn't depend on camera state,
      *  so there's no reason to wait. */
     function restoreSession(): void {
         if (currentProjection === ProjectionType.Equirectangular) {
-            // morphTo2D completes asynchronously even with duration 0 — a
+            // morphTo2D completes asynchronously even with duration 0 - a
             // setView issued synchronously right after it can still land
             // pre-morph and get silently overwritten. Apply the camera once
             // the morph actually finishes instead.
@@ -352,7 +377,7 @@
         dispatchSessionAction({ type: SessionActionType.LayerTimeChanged, payload: iso });
     }
 
-    /** Reads the camera's current region regardless of scene mode —
+    /** Reads the camera's current region regardless of scene mode -
      *  `positionCartographic` is maintained by Cesium across SCENE3D,
      *  SCENE2D and COLUMBUS_VIEW alike (unlike raw `camera.position`, which
      *  is a projected 2D frame in map modes, not an ECEF Cartesian). */
@@ -372,7 +397,7 @@
 
     /**
      * Cesium's own morph animation (duration > 0) hardcodes the end-of-morph
-     * camera to a whole-globe view centered on (lon 0, lat 0) — it does NOT
+     * camera to a whole-globe view centered on (lon 0, lat 0) - it does NOT
      * preserve whatever region you were actually looking at (that
      * region-preserving computation only happens for an instant, duration-0
      * morph). That's what makes the default morph feel like "camera jumps
@@ -381,12 +406,12 @@
      * Fighting this live (re-asserting the camera every frame while
      * scene.mode === MORPHING) was tried and abandoned: the camera during a
      * morph is owned by SceneTransitioner's own tween, and neither
-     * camera.setView() (produces a runaway/exploding height across frames —
+     * camera.setView() (produces a runaway/exploding height across frames -
      * ~9.4M -> ~4 billion meters within under a second) nor writing the raw
      * position/direction/up vectors directly (silently starves the render
      * loop to a handful of frames) survives fighting that tween in real
      * time. So instead of pinning the camera *during* the morph, this snaps
-     * it back to the pre-morph region once, on morphComplete — the region
+     * it back to the pre-morph region once, on morphComplete - the region
      * is preserved at the end, but the mid-morph frames still show
      * Cesium's own (globe-centered) camera path, not the original region.
      */
@@ -412,11 +437,24 @@
     }
 
     // =========================================================================
-    // Path/polygon measure tool — thin pass-throughs to PathMeasureTool
+    // Path/polygon measure tool - thin pass-throughs to PathMeasureTool
     // (path-measure-tool.ts), called by Toolbar.
     // =========================================================================
     function togglePathTool(): void {
         measureTool?.toggle();
+    }
+    // Mirrors measureTool's own mode so Toolbar's shape button can show the
+    // right icon/tooltip without reaching into the tool instance itself -
+    // same "owner mutates, prop mirrors" pattern as layerState/measureState.
+    let shapeMode = $state<ShapeMode>("path");
+    /** Picking a shape from the dropdown should let you start drawing it
+     *  right away, whether or not the tool was already active - see
+     *  PathMeasureTool.setMode's doc comment for why switching modes never
+     *  needs a separate toggle-on step. */
+    function selectShapeMode(mode: ShapeMode): void {
+        measureTool?.setMode(mode);
+        shapeMode = mode;
+        if (!measureTool?.active) measureTool?.activate();
     }
     function finishMeasure(): void {
         measureTool?.finishCurrent();
@@ -437,7 +475,7 @@
         measureTool?.setMeasurementHighlighted(id, highlighted);
     }
     /** Opens the analysis page in a new tab for one finished measurement.
-     *  No payload is passed directly — the analysis route reads the same
+     *  No payload is passed directly - the analysis route reads the same
      *  localStorage session (loadSession()) on its own mount to find the
      *  measurement by id and the currently active layers; this is a
      *  same-origin, same-browser handoff, not a live link (the new tab
@@ -447,12 +485,12 @@
     }
 
     // =========================================================================
-    // Basemap ("skin") switching — see basemaps.ts. Builds the new provider
+    // Basemap ("skin") switching - see basemaps.ts. Builds the new provider
     // BEFORE touching the layer collection, so a slow or failing tile source
     // (network hiccup, an offline skin's key-less server down) leaves the
     // current basemap on screen instead of flashing to bare globe. Always
-    // inserted at index 0 so the graticule — appended on top via
-    // addImageryProvider — stays above it regardless of how many times the
+    // inserted at index 0 so the graticule - appended on top via
+    // addImageryProvider - stays above it regardless of how many times the
     // base layer is swapped.
     // =========================================================================
     async function switchBasemap(id: string): Promise<void> {
@@ -488,7 +526,7 @@
 
         // Sample two ellipsoid points a fixed pixel span apart at screen
         // center to get a local km-per-pixel, then convert to a nice scale
-        // bar width — same approach as GlobeCanvas, just measured instead of
+        // bar width - same approach as GlobeCanvas, just measured instead of
         // derived from projection math.
         const cx = canvas.clientWidth / 2;
         const cy = canvas.clientHeight / 2;
@@ -506,7 +544,7 @@
         if (p1 && p2) {
             kmPerPx = Cesium.Cartesian3.distance(p1, p2) / 1000 / SAMPLE_PX;
         } else {
-            // Off-globe (zoomed out past the limb in 3D) — fall back to a
+            // Off-globe (zoomed out past the limb in 3D) - fall back to a
             // circumference-based estimate so the bar doesn't freeze at a
             // stale value.
             kmPerPx =
@@ -515,10 +553,10 @@
         }
 
         const { km, label } = pickNiceScale(kmPerPx, MAX_SCALE_BAR_PX, MIN_SCALE_BAR_PX);
-        // pickNiceScale can't step below its finest graduation (10m — see
+        // pickNiceScale can't step below its finest graduation (10m - see
         // NICE_KM), so once actual km-per-pixel gets smaller than that (right
         // at the MIN_ZOOM_METERS floor) the "nice" bar for 10m legitimately
-        // needs more than MAX_SCALE_BAR_PX to draw — clamp the rendered width
+        // needs more than MAX_SCALE_BAR_PX to draw - clamp the rendered width
         // rather than let the bar run off past the status bar's edge.
         const barWidthPx = Math.min(MAX_SCALE_BAR_PX, km / kmPerPx);
 
@@ -533,13 +571,13 @@
         }
     }
 
-    // Last camera values actually dispatched to session-store — compared
+    // Last camera values actually dispatched to session-store - compared
     // against on every throttled tick below so scheduleSaveCamera() only
     // dispatches when the camera truly moved. This matters a lot more than
     // it looks: animate()'s RAF loop runs forever, not just while the user
     // is interacting, so calling dispatchSessionAction() unconditionally on
     // every tick would keep re-arming CameraChanged's 500ms debounce timer
-    // indefinitely — it would never get a quiet window to actually fire,
+    // indefinitely - it would never get a quiet window to actually fire,
     // and the camera would silently never persist from panning/zooming
     // alone (it previously only appeared to work when some other action,
     // e.g. switching basemap, forced an immediate write that happened to
@@ -561,7 +599,7 @@
     }
 
     /** Debounced camera persistence, piggybacked on the same throttled tick
-     *  as pushStatusReadout — fires up to ~15x/sec while the camera is
+     *  as pushStatusReadout - fires up to ~15x/sec while the camera is
      *  actively moving, but only actually dispatches when the camera changed
      *  since the last dispatch (see lastDispatchedCamera above), so
      *  CameraChanged's 500ms debounce in session-store.ts gets a real quiet
@@ -591,6 +629,16 @@
         } else if (headingAngle !== targetHeadingAngle) {
             headingAngle = targetHeadingAngle;
             applyHeading();
+        } else if (!isFlatMode() && Math.abs(viewer.camera.heading - headingAngle) > 1e-4) {
+            // Cesium's own screen-space camera controller can rotate the
+            // globe (and thus camera.heading) directly during an ordinary
+            // drag, entirely outside applyHeading()/onHeadingDrag() - pull
+            // that change back into our tracked heading each frame so the
+            // compass needle doesn't go stale mid-drag. Just mirror the
+            // camera here (no camera.setView) to avoid fighting the drag.
+            headingAngle = viewer.camera.heading;
+            targetHeadingAngle = headingAngle;
+            headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
         }
 
         headingControl?.setVisible(!isFlatMode());
@@ -608,7 +656,7 @@
     // dataLayerManager) add a layer by its catalog id. Everything else
     // (visibility, opacity, reorder, remove) is driven from ActiveLayersPanel
     // below, which is rendered inside CesiumCanvas and calls the manager
-    // directly — no pass-through needed for those.
+    // directly - no pass-through needed for those.
     // =========================================================================
     export function addDataLayer(catalogId: string): void {
         void dataLayerManager?.addLayer(catalogId);
@@ -622,6 +670,10 @@
         e.preventDefault();
         console.error("[CesiumCanvas] WebGL context lost. Rendering recovery prompt.", e);
         hasCrashed = true;
+    }
+
+    function clearHoverPoint(): void {
+        hoverPointState.point = null;
     }
 
     onMount(() => {
@@ -666,29 +718,27 @@
     onRemoveMeasurement={removeMeasurement}
     onZoomToMeasurement={flyToMeasurement}
     onHighlightMeasurement={setMeasurementHighlighted}
-    {layersOpen}
-    {onToggleLayers}
     hasActiveLayers={layerState.length > 0}
     onVisualiseData={openAnalysisTab}
-/>
-
-<BasemapPicker
-    basemaps={BASEMAPS}
-    activeId={currentBasemapId}
-    onSelect={switchBasemap}
-    {currentProjection}
-    onProjectionChange={switchProjection}
+    {shapeMode}
+    onSelectShapeMode={selectShapeMode}
     {graticuleOn}
     onGraticuleToggle={toggleGraticule}
+    {currentProjection}
+    onProjectionChange={switchProjection}
 />
+
+<BasemapPicker basemaps={BASEMAPS} activeId={currentBasemapId} onSelect={switchBasemap} />
 
 <ActiveLayersPanel
     layers={layerState}
     collapsed={activeLayersPanelCollapsed}
     onToggleCollapsed={toggleActiveLayersPanelCollapsed}
+    onAddLayer={onToggleLayers}
     onToggleVisible={(id, visible) => dataLayerManager?.setVisible(id, visible)}
     onReorder={(id, newIndex) => dataLayerManager?.reorder(id, newIndex)}
     onRemove={(id) => dataLayerManager?.removeLayer(id)}
+    onZoomTo={(id) => dataLayerManager?.zoomToLayer(id)}
     {layerTimeIso}
     onLayerTimeChange={setLayerTime}
 />
@@ -706,7 +756,7 @@
         cursor: grabbing;
     }
 
-    /* Cesium's own credit/logo bar — keep it, but out from under our status
+    /* Cesium's own credit/logo bar - keep it, but out from under our status
        bar (see StatusBar.svelte, height 2.25rem, pinned to the bottom edge). */
     .cesium-canvas :global(.cesium-viewer-bottom) {
         bottom: 2.25rem;

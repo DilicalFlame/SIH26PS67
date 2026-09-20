@@ -1,6 +1,6 @@
 """Application settings, read from the environment (contracts §1).
 
-Postgres variables are deliberately not modelled here — app/core/database.py
+Postgres variables are deliberately not modelled here - app/core/database.py
 already owns DATABASE_URL resolution (and is tested on its own), and
 duplicating that logic here would let the two drift apart. This module only
 carries the vars the app factory / CORS / healthz / chat-and-auth layers
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     MINIO_ENDPOINT: str = "http://localhost:9000"
 
-    # API-local operational knob, not part of contracts §1 — no other
+    # API-local operational knob, not part of contracts §1 - no other
     # service reads it, so it doesn't need a frozen-contract entry.
     LOG_LEVEL: str = "INFO"
 

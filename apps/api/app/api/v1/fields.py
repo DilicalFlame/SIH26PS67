@@ -38,7 +38,7 @@ async def get_field_meta(layer_id: str) -> ScalarFieldMeta:
     responses={200: {"content": {"application/octet-stream": {}}}, **NOT_FOUND_RESPONSE},
 )
 async def get_field_grid(layer_id: str, depth_index: int = 0, time_index: int = 0) -> Response:
-    """Fallback path (contracts §4.3) — the browser normally fetches the
+    """Fallback path (contracts §4.3) - the browser normally fetches the
     .f32 object directly via gridUrlTemplate, bypassing this route."""
     meta_path = _find_meta(layer_id)
     if meta_path is None:

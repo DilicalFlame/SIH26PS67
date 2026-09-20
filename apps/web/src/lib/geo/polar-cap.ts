@@ -2,7 +2,7 @@
  * polar-cap.ts
  *
  * Web Mercator tiles stop at ±85.05°, so no tile covers the ground beneath
- * Antarctica — the south pole is a hole the tile pipeline can never fill. This
+ * Antarctica - the south pole is a hole the tile pipeline can never fill. This
  * builds that cap analytically: a fan of triangles from the pole out to the
  * tile pyramid's southern edge, drawn with the ice colour underneath the real
  * ice tiles.

@@ -3,7 +3,7 @@
  *
  * Round-robin pool of tile-decode workers. There's no true network-level
  * cancellation of an in-flight decode (Comlink calls aren't abortable
- * mid-flight without extra plumbing) — instead tile-manager.ts simply
+ * mid-flight without extra plumbing) - instead tile-manager.ts simply
  * ignores results for tiles that are no longer wanted by the time they
  * arrive, which is the standard/acceptable pattern for tile prefetching.
  */

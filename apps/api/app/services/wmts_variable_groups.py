@@ -1,0 +1,228 @@
+"""Maps a Copernicus WMTS variable code to a human-friendly group.
+
+Deliberately partial: the live catalog has 1,043 distinct variable codes,
+the long tail of which is per-instrument QC/metadata fields (`flags`,
+`quality_level`, `POSITION_QC`, `GDOP_QC`, `SENSORMASK`, ...) that aren't a
+"variable" a user would ever pick from a list - those are correctly left
+unmapped (`None`) rather than forced into a bucket, and surface in the
+picker as a visible "Uncategorized" facet value rather than being hidden,
+same principle as wmts_facets.py's "other" buckets. This table covers the
+~120 highest-value, most-requested physical variable codes (verified
+against the real catalog's most-frequent codes); extend it opportunistically
+as the "Uncategorized" count in production usage points at codes worth
+adding, rather than trying to enumerate all 1,043 up front.
+
+Lookup MUST stay exact-code, never substring/prefix - `si` (silicate, a
+nutrient) vs. `siconc`/`sithick` (sea ice concentration/thickness) is a real
+collision a substring match would get wrong.
+"""
+
+from __future__ import annotations
+
+# group key -> display label
+GROUP_LABELS: dict[str, str] = {
+    "temperature": "Temperature",
+    "salinity": "Salinity",
+    "currents": "Currents",
+    "sea_level": "Sea Surface Height & Sea Level",
+    "mixed_layer": "Mixed Layer & Density",
+    "wind": "Wind",
+    "waves": "Waves",
+    "sea_ice": "Sea Ice",
+    "chlorophyll_ocean_colour": "Chlorophyll & Ocean Colour",
+    "biogeochemistry_nutrients": "Nutrients & Biogeochemistry",
+    "bathymetry_grid": "Bathymetry & Model Grid",
+}
+
+# variable code -> group key
+_VARIABLE_TO_GROUP: dict[str, str] = {
+    # Temperature
+    "thetao": "temperature",
+    "bottomT": "temperature",
+    "tob": "temperature",
+    "TEMP": "temperature",
+    "analysed_sst": "temperature",
+    "sea_surface_temperature": "temperature",
+    "adjusted_sea_surface_temperature": "temperature",
+    "sst_dtime": "temperature",
+    "bias_to_reference_sst": "temperature",
+    "sources_of_sst": "temperature",
+    # Salinity
+    "so": "salinity",
+    "sob": "salinity",
+    "PSAL": "salinity",
+    "CNDC": "salinity",
+    # Currents
+    "uo": "currents",
+    "vo": "currents",
+    "wo": "currents",
+    "sea_water_velocity": "currents",
+    "surface_geostrophic_sea_water_velocity": "currents",
+    "ugos": "currents",
+    "vgos": "currents",
+    "EWCT": "currents",
+    "NSCT": "currents",
+    "HCSP": "currents",
+    "HCDT": "currents",
+    "GSPD": "currents",
+    "GDIR": "currents",
+    # Sea surface height / sea level
+    "zos": "sea_level",
+    "sla": "sea_level",
+    "sla_filtered": "sea_level",
+    "sla_unfiltered": "sea_level",
+    "mdt": "sea_level",
+    "SLEV": "sea_level",
+    "ocean_tide": "sea_level",
+    "internal_tide": "sea_level",
+    "dac": "sea_level",
+    "lwe": "sea_level",
+    # Mixed layer / density
+    "mlotst": "mixed_layer",
+    "DENS": "mixed_layer",
+    # Wind
+    "wind": "wind",
+    "wind_speed": "wind",
+    "eastward_wind": "wind",
+    "northward_wind": "wind",
+    "wind_to_dir": "wind",
+    "model_wind_to_dir": "wind",
+    "eastward_model_wind": "wind",
+    "northward_model_wind": "wind",
+    "model_wind_speed": "wind",
+    "WDIR": "wind",
+    "WSPD": "wind",
+    "wind_curl": "wind",
+    "wind_divergence": "wind",
+    "wind_stress_magnitude": "wind",
+    "eastward_stress": "wind",
+    "northward_stress": "wind",
+    "surface_downward_stress": "wind",
+    "air_density": "wind",
+    "stress_curl": "wind",
+    "stress_divergence": "wind",
+    "eastward_model_stress": "wind",
+    "northward_model_stress": "wind",
+    "model_stress_curl": "wind",
+    "model_stress_divergence": "wind",
+    "model_stress_magnitude": "wind",
+    "se_eastward_model_wind": "wind",
+    "se_northward_model_wind": "wind",
+    "se_model_speed": "wind",
+    "se_model_wind_curl": "wind",
+    "se_model_wind_divergence": "wind",
+    # Waves
+    "VHM0": "waves",
+    "VHM0_SW1": "waves",
+    "VHM0_SW2": "waves",
+    "VHM0_WW": "waves",
+    "VHM0_UNFILTERED": "waves",
+    "VAVH": "waves",
+    "VAVH_UNFILTERED": "waves",
+    "VTM02": "waves",
+    "VTM10": "waves",
+    "VTM01_SW1": "waves",
+    "VTM01_SW2": "waves",
+    "VTM01_WW": "waves",
+    "VMDR": "waves",
+    "VMDR_SW1": "waves",
+    "VMDR_SW2": "waves",
+    "VMDR_WW": "waves",
+    "VPED": "waves",
+    "VTPK": "waves",
+    "VCMX": "waves",
+    "VZMX": "waves",
+    "VSDX": "waves",
+    "VSDY": "waves",
+    "VAVT": "waves",
+    "VDIR": "waves",
+    "VGHS": "waves",
+    "VTZA": "waves",
+    "VTZM": "waves",
+    "VHZA": "waves",
+    "VH110": "waves",
+    "VT110": "waves",
+    "VEMH": "waves",
+    "VEPK": "waves",
+    "VGTA": "waves",
+    "VPSP": "waves",
+    # Sea ice
+    "siconc": "sea_ice",
+    "sithick": "sea_ice",
+    "sisnthick": "sea_ice",
+    "sea_ice_velocity": "sea_ice",
+    "eastward_sea_ice_velocity": "sea_ice",
+    "northward_sea_ice_velocity": "sea_ice",
+    "sea_ice_fraction": "sea_ice",
+    "vxsi": "sea_ice",
+    "vysi": "sea_ice",
+    "usi": "sea_ice",
+    "vsi": "sea_ice",
+    # Chlorophyll & ocean colour
+    "chl": "chlorophyll_ocean_colour",
+    "CHL": "chlorophyll_ocean_colour",
+    "CHLT": "chlorophyll_ocean_colour",
+    "CPHL": "chlorophyll_ocean_colour",
+    "CHL_uncertainty": "chlorophyll_ocean_colour",
+    "CHL_count": "chlorophyll_ocean_colour",
+    "CHL_error": "chlorophyll_ocean_colour",
+    "MICRO": "chlorophyll_ocean_colour",
+    "NANO": "chlorophyll_ocean_colour",
+    "PICO": "chlorophyll_ocean_colour",
+    "DIATO": "chlorophyll_ocean_colour",
+    "DINO": "chlorophyll_ocean_colour",
+    "GREEN": "chlorophyll_ocean_colour",
+    "PROKAR": "chlorophyll_ocean_colour",
+    "phyc": "chlorophyll_ocean_colour",
+    "zooc": "chlorophyll_ocean_colour",
+    "nppv": "chlorophyll_ocean_colour",
+    "KD490": "chlorophyll_ocean_colour",
+    "KD490_uncertainty": "chlorophyll_ocean_colour",
+    "kd": "chlorophyll_ocean_colour",
+    "BBP443": "chlorophyll_ocean_colour",
+    "SPM": "chlorophyll_ocean_colour",
+    "TUR": "chlorophyll_ocean_colour",
+    "TUR4": "chlorophyll_ocean_colour",
+    "CDOM": "chlorophyll_ocean_colour",
+    "RRS400": "chlorophyll_ocean_colour",
+    "RRS412": "chlorophyll_ocean_colour",
+    "RRS412_uncertainty": "chlorophyll_ocean_colour",
+    "RRS443": "chlorophyll_ocean_colour",
+    "RRS443_uncertainty": "chlorophyll_ocean_colour",
+    "RRS490": "chlorophyll_ocean_colour",
+    "RRS490_uncertainty": "chlorophyll_ocean_colour",
+    "RRS510": "chlorophyll_ocean_colour",
+    "RRS560": "chlorophyll_ocean_colour",
+    "RRS620": "chlorophyll_ocean_colour",
+    "RRS665": "chlorophyll_ocean_colour",
+    # Nutrients & biogeochemistry
+    "no3": "biogeochemistry_nutrients",
+    "po4": "biogeochemistry_nutrients",
+    "si": "biogeochemistry_nutrients",  # silicate - NOT sea ice, exact-code lookup only
+    "nh4": "biogeochemistry_nutrients",
+    "talk": "biogeochemistry_nutrients",
+    "dissic": "biogeochemistry_nutrients",
+    "spco2": "biogeochemistry_nutrients",
+    "o2": "biogeochemistry_nutrients",
+    "DOX1": "biogeochemistry_nutrients",
+    "DOX2": "biogeochemistry_nutrients",
+    "DOXY": "biogeochemistry_nutrients",
+    "OSAT": "biogeochemistry_nutrients",
+    "ph": "biogeochemistry_nutrients",
+    "PHPH": "biogeochemistry_nutrients",
+    # Bathymetry & model grid
+    "deptho": "bathymetry_grid",
+    "deptho_lev": "bathymetry_grid",
+    "model_depth": "bathymetry_grid",
+    "e1t": "bathymetry_grid",
+    "e2t": "bathymetry_grid",
+    "e3t": "bathymetry_grid",
+    "mask": "bathymetry_grid",
+}
+
+
+def classify_variable(variable: str) -> str | None:
+    """Returns the friendly group key, or None if this code isn't in the
+    curated table (rendered as "Uncategorized" in the picker - see module
+    docstring for why that's the correct outcome, not a bug)."""
+    return _VARIABLE_TO_GROUP.get(variable)

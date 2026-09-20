@@ -20,7 +20,7 @@ target_metadata = Base.metadata
 
 def get_url() -> str:
     """Same resolution as the running app (DATABASE_URL, or the individual
-    POSTGRES_* variables — see get_database_url()'s docstring for why the
+    POSTGRES_* variables - see get_database_url()'s docstring for why the
     latter matters), except migrations run synchronously: nothing here
     benefits from async, and it keeps this file simple."""
     url = get_database_url().set(drivername="postgresql+psycopg")

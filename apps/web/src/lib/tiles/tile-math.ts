@@ -2,7 +2,7 @@
  * tile-math.ts
  *
  * Standard slippy-map (Web Mercator XYZ) tile <-> lon/lat conversions. This
- * is purely a spatial index for streaming PMTiles pyramids — it has nothing
+ * is purely a spatial index for streaming PMTiles pyramids - it has nothing
  * to do with which of the 4 GPU projections is currently on screen (see
  * globe.vert.glsl). All angles here are degrees unless noted.
  */
@@ -73,7 +73,7 @@ function tileRange(bounds: LonLatBounds, z: number) {
 
 	// latMax should map to the smaller y, but a degenerate or inverted bbox
 	// (which polar views can produce) would otherwise yield y0 > y1 and an
-	// empty loop — dropping every tile and blanking the map.
+	// empty loop - dropping every tile and blanking the map.
 	let y0 = Math.floor(Math.min(top.y, bot.y));
 	let y1 = Math.floor(Math.max(top.y, bot.y));
 	y0 = Math.max(0, Math.min(n - 1, y0));

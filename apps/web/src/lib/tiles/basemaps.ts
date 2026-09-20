@@ -1,11 +1,11 @@
 /**
  * basemaps.ts
  *
- * Basemap ("skin") registry for CesiumCanvas's bottom-left basemap picker —
+ * Basemap ("skin") registry for CesiumCanvas's bottom-left basemap picker -
  * the Cesium analogue of Google Earth's imagery-layer switcher. Every entry
  * here is a free, key-less tile source (see CesiumCanvas.svelte's imagery
  * comment for why: no Ion/Mapbox/MapTiler token is configured), verified to
- * serve CORS-enabled tiles. Adding a skin is one entry here — no changes
+ * serve CORS-enabled tiles. Adding a skin is one entry here - no changes
  * needed in CesiumCanvas or BasemapPicker.
  */
 import * as Cesium from "cesium";
@@ -15,7 +15,7 @@ export interface BasemapConfig {
 	label: string;
 	/**
 	 * A real tile from this source, used as the picker's preview instead of
-	 * an icon — the same "minimap" pattern Google Maps/Earth uses for its
+	 * an icon - the same "minimap" pattern Google Maps/Earth uses for its
 	 * basemap switcher. All six point at the same real-world tile (roughly
 	 * Southern Africa) so the panel reads as one style, N ways rather than N
 	 * unrelated thumbnails.
@@ -52,7 +52,7 @@ export const BASEMAPS: BasemapConfig[] = [
 		thumbnail: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/3/4/4",
 		build: async () =>
 			Cesium.ArcGisMapServerImageryProvider.fromUrl(
-				// The legacy public REST endpoint — unlike
+				// The legacy public REST endpoint - unlike
 				// ArcGisMapServerImageryProvider.fromBasemapType(), which now
 				// proxies through Esri's paid ibasemaps-api.arcgis.com and
 				// requires an access token, this one still serves free.
@@ -66,7 +66,7 @@ export const BASEMAPS: BasemapConfig[] = [
 			"https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/3/4/4",
 		// CartoDB's basemaps.cartocdn.com now serves an "API KEY REQUIRED"
 		// watermark tile instead of a 4xx (still a 200 image/png, so a plain
-		// HTTP check doesn't catch it — found by actually looking at a
+		// HTTP check doesn't catch it - found by actually looking at a
 		// rendered tile). Esri's legacy Canvas basemaps are the free,
 		// key-less equivalent.
 		build: async () =>
@@ -101,10 +101,10 @@ export const BASEMAPS: BasemapConfig[] = [
 		id: "offline",
 		label: "Simple",
 		// Same region as the other five (roughly), from the bundled pyramid
-		// itself — no network needed even for the thumbnail.
+		// itself - no network needed even for the thumbnail.
 		thumbnail: `${CESIUM_BASE_URL}/Assets/Textures/NaturalEarthII/2/4/1.jpg`,
 		build: async () =>
-			// Bundled with Cesium itself — the only skin that needs no network
+			// Bundled with Cesium itself - the only skin that needs no network
 			// at all, and the fallback if every tile server above is
 			// unreachable. Detail only to zoom level 2 (see CesiumCanvas's
 			// original imagery comment), so it reads as a flat world map at

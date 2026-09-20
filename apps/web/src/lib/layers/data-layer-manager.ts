@@ -1,7 +1,7 @@
 /**
  * data-layer-manager.ts
  *
- * Owns the stack of active data-layer ImageryLayers on top of the basemap —
+ * Owns the stack of active data-layer ImageryLayers on top of the basemap -
  * plain Cesium, no Svelte, mirroring PathMeasureTool's relationship to
  * CesiumCanvas: one instance is constructed once, driven by UI callbacks,
  * and mirrors its state out via onUpdate for the UI to render.
@@ -13,11 +13,13 @@
  * graticule (if on) is always appended last via plain addImageryProvider()
  * with no index, so it stays on top regardless of how many data layers
  * exist or how they're reordered. There is no bulk-reorder API on
- * Cesium's ImageryLayerCollection (confirmed from its source) — moving a
+ * Cesium's ImageryLayerCollection (confirmed from its source) - moving a
  * layer to an arbitrary position is remove(layer, false) + add(layer, index).
  */
 import * as Cesium from "cesium";
-import { DATA_LAYERS, type DataLayerCatalogEntry } from "$lib/tiles/data-layers-catalog";
+import type { DataLayerCatalogEntry } from "$lib/tiles/data-layers-catalog";
+import { findLayerEntry, registerDynamicLayer } from "$lib/tiles/data-layer-registry.svelte";
+import { copernicusWmtsLayerToEntry } from "$lib/tiles/wmts-catalog-client";
 import {
 	dispatchSessionAction,
 	SessionActionType,
@@ -32,7 +34,7 @@ export interface ActiveLayerState {
 	attribution?: string;
 	visible: boolean;
 	/** Present only when the layer declares a time range (see
-	 *  DataLayerCatalogEntry.timeStart/timeEnd) — lets the UI show/enable a
+	 *  DataLayerCatalogEntry.timeStart/timeEnd) - lets the UI show/enable a
 	 *  time slider only for layers that actually support one. */
 	supportsTime: boolean;
 }
@@ -55,16 +57,16 @@ export class DataLayerManager {
 	}
 
 	/** Builds + inserts one layer at its catalog default opacity (no longer
-	 *  user-adjustable — the opacity slider UI was removed; every layer
+	 *  user-adjustable - the opacity slider UI was removed; every layer
 	 *  simply renders at entry.defaultOpacity, which is 1 for every current
-	 *  entry). Never persists — used by both addLayer (a live user action,
+	 *  entry). Never persists - used by both addLayer (a live user action,
 	 *  which does persist after calling this) and restoreLayers (which
 	 *  reconstructs from an already-persisted list and must not re-dispatch,
 	 *  same split as PathMeasureTool's persistFinished/restoreFinished).
 	 *  Returns whether a layer was added. */
 	private async instantiateLayer(catalogId: string, visible: boolean): Promise<boolean> {
 		if (this.layers.some((l) => l.id === catalogId)) return false; // already active
-		const entry = DATA_LAYERS.find((d) => d.id === catalogId);
+		const entry = findLayerEntry(catalogId);
 		if (!entry) return false;
 
 		let provider: Cesium.ImageryProvider;
@@ -111,8 +113,20 @@ export class DataLayerManager {
 		this.persist();
 	}
 
+	/** Flies the camera to the layer's own coverage - its real bbox for a
+	 *  regional live-search layer (Arctic/Baltic/...), or a sensible
+	 *  whole-earth view for a curated global entry (none of which carry a
+	 *  bbox today; see DataLayerCatalogEntry.bbox's doc comment). Doesn't
+	 *  touch visibility/order/persistence - a pure camera action. */
+	zoomToLayer(id: string): void {
+		const record = this.layers.find((l) => l.id === id);
+		if (!record) return;
+		const [west, south, east, north] = record.catalogEntry.bbox ?? [-180, -85, 180, 85];
+		this.viewer.camera.flyTo({ destination: Cesium.Rectangle.fromDegrees(west, south, east, north) });
+	}
+
 	/** Applies `isoDate` to every currently-active layer that declares a time
-	 *  range — a single shared slider, not a per-layer control (no product
+	 *  range - a single shared slider, not a per-layer control (no product
 	 *  need yet for independent dates per layer). Mutates the provider's
 	 *  `dimensions` in place rather than removing/re-adding the ImageryLayer,
 	 *  which Cesium's WebMapTileServiceImageryProvider documents as
@@ -130,7 +144,7 @@ export class DataLayerManager {
 	}
 
 	/** Moves the layer with `id` to `newIndex` within the active-layer stack
-	 *  (0 = bottom-most data layer, just above the basemap — this is
+	 *  (0 = bottom-most data layer, just above the basemap - this is
 	 *  `this.layers`' own index order, NOT the UI's top-first display order;
 	 *  see emitState()). Re-applies absolute Cesium indices for every layer
 	 *  whose position changed, not just the moved one, since a single
@@ -157,9 +171,17 @@ export class DataLayerManager {
 	}
 
 	/** Rebuilds the active-layer stack from a persisted session on startup.
-	 *  Does not dispatch a session action — the data being applied here IS
-	 *  what's already in localStorage. */
+	 *  Does not dispatch a session action - the data being applied here IS
+	 *  what's already in localStorage. A persisted entry from the picker's
+	 *  live Copernicus search carries its own `descriptor` (its id was never
+	 *  in the static catalog, so instantiateLayer's findLayerEntry lookup
+	 *  can't resolve it otherwise) - re-register every one of those into the
+	 *  dynamic registry BEFORE the instantiate loop below, not interleaved
+	 *  with it, since instantiateLayer only looks the id up once. */
 	async restoreLayers(persisted: PersistedActiveLayer[]): Promise<void> {
+		for (const p of persisted) {
+			if (p.descriptor) registerDynamicLayer(copernicusWmtsLayerToEntry(p.descriptor));
+		}
 		let restoredAny = false;
 		for (const p of persisted) {
 			const added = await this.instantiateLayer(p.id, p.visible);
@@ -178,13 +200,17 @@ export class DataLayerManager {
 	private persist(): void {
 		dispatchSessionAction({
 			type: SessionActionType.LayersChanged,
-			payload: this.layers.map((l) => ({ id: l.id, visible: l.visible })),
+			payload: this.layers.map((l) => ({
+				id: l.id,
+				visible: l.visible,
+				...(l.catalogEntry.restoreDescriptor ? { descriptor: l.catalogEntry.restoreDescriptor } : {}),
+			})),
 		});
 	}
 
 	/** Emits UI-facing state in top-of-stack-first order (matches every
 	 *  layer-panel convention: the row at the top of the list is the one
-	 *  rendered on top) — the reverse of `this.layers`' own bottom-to-top
+	 *  rendered on top) - the reverse of `this.layers`' own bottom-to-top
 	 *  order. ActiveLayersPanel's drag-reorder must convert its displayed
 	 *  index back before calling reorder(id, newIndex). */
 	private emitState(): void {

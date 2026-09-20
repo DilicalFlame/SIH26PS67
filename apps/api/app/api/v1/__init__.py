@@ -8,7 +8,7 @@ import asyncio
 
 from fastapi import APIRouter, Request, Response, status
 
-from app.api.v1 import auth, catalog, chat, fields, observations
+from app.api.v1 import auth, catalog, chat, fields, observations, wmts_catalog
 from app.core.health import check_database, check_storage
 
 router = APIRouter()
@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.get("/healthz", tags=["health"])
 async def healthz(request: Request, response: Response) -> dict[str, object]:
-    """Contracts §4.1 / issue #37. No auth dependency — used by compose
+    """Contracts §4.1 / issue #37. No auth dependency - used by compose
     healthchecks and whoever is debugging with no session at 2am.
     """
     settings = request.app.state.settings
@@ -33,6 +33,7 @@ async def healthz(request: Request, response: Response) -> dict[str, object]:
 
 
 router.include_router(catalog.router)
+router.include_router(wmts_catalog.router)
 router.include_router(fields.router)
 router.include_router(observations.router)
 router.include_router(auth.router)

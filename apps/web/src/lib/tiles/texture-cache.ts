@@ -3,13 +3,13 @@
  *
  * LRU cache of scalar-field `THREE.DataTexture`s (#45), keyed by the exact
  * resolved grid URL (which already encodes layer, variable, depth, and time
- * — see contracts §4.3) rather than a hand-assembled `layerId:depth:time`
+ * - see contracts §4.3) rather than a hand-assembled `layerId:depth:time`
  * triple. Keying on layerId/depth/time alone collides whenever two configs
  * share a layerId but differ in grid shape or URL template, silently
  * serving one layer's texture for another's request.
  *
  * Reuses TileLRUCache (tile-cache.ts) rather than reimplementing LRU
- * bookkeeping — mirroring that pattern is what the issue asks for, and it
+ * bookkeeping - mirroring that pattern is what the issue asks for, and it
  * comes with `isPinned` for free: the texture actually bound to a live
  * renderer is never evicted mid prefetch-burst.
  */
@@ -56,7 +56,7 @@ export class TextureCache {
 		return this.lru.size;
 	}
 
-	/** Disposes every cached texture, pinned or not — full teardown only. */
+	/** Disposes every cached texture, pinned or not - full teardown only. */
 	clear(): void {
 		for (const texture of this.lru.values()) texture.dispose();
 		this.pinned.clear();
@@ -65,7 +65,7 @@ export class TextureCache {
 }
 
 /** Shared across every ScalarFieldRenderer by default so revisiting a
- * depth/time — even from a different renderer instance — hits the cache.
+ * depth/time - even from a different renderer instance - hits the cache.
  * Tests inject their own instance instead (see scalar-field.test.ts) so
  * cached entries from one test can't leak into the next. */
 export const sharedTextureCache = new TextureCache();

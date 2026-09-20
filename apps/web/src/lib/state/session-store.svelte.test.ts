@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Named *.svelte.test.ts (even though nothing here renders a component) so
-// it runs under the "client" vitest project — real Chromium, real
-// localStorage — since $app/environment's `browser` flag (and therefore
+// it runs under the "client" vitest project - real Chromium, real
+// localStorage - since $app/environment's `browser` flag (and therefore
 // every code path in session-store.ts) is false under the Node test
 // project, making this module untestable there.
 import {
@@ -53,7 +53,7 @@ beforeEach(() => {
 	localStorage.clear();
 	// dispatchSessionAction merges onto a module-private in-memory cache
 	// that outlives any single test (it's meant to persist for the page's
-	// whole real lifetime) — without this, clearing localStorage alone
+	// whole real lifetime) - without this, clearing localStorage alone
 	// still leaves state leaking between test cases.
 	__resetSessionCacheForTests();
 });
@@ -248,7 +248,7 @@ describe('dispatchSessionAction: CameraChanged (debounced)', () => {
 			payload: { ...validCamera, height: 5000 }
 		});
 
-		// Nothing written yet — still within the debounce window.
+		// Nothing written yet - still within the debounce window.
 		expect(localStorage.getItem(KEY)).toBeNull();
 
 		vi.advanceTimersByTime(500);

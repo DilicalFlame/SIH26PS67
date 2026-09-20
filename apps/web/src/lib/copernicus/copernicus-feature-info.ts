@@ -1,7 +1,7 @@
 /**
  * copernicus-feature-info.ts
  *
- * Numeric point-sampling against Copernicus Marine's WMTS GetFeatureInfo —
+ * Numeric point-sampling against Copernicus Marine's WMTS GetFeatureInfo -
  * confirmed live, keyless, CORS-open this session (a real request at a
  * known point returned 28.42°C, correct order of magnitude for equatorial
  * Atlantic surface water). This is the ONLY data source the analysis
@@ -10,7 +10,7 @@
  * not queryable values.
  *
  * Every view on the analysis page (depth profile, 2D slice, 3D point
- * cloud) is just this module called at different point/depth/time grids —
+ * cloud) is just this module called at different point/depth/time grids -
  * deliberately NOT a bulk Zarr/raster pipeline. A keyless S3 Zarr path to
  * the same data exists too, but needs an unverified browser blosc-decode
  * pipeline; GetFeatureInfo alone covers every planned view at a resolution
@@ -23,7 +23,7 @@ import type { CopernicusWmtsInfo } from "$lib/tiles/data-layers-catalog";
 
 /** The 50 standard CMEMS/GLORYS depth levels (metres, negative = below
  *  surface), surface-first. Identical across the reanalysis and forecast
- *  catalog entries (verified live against both) — extracted once from
+ *  catalog entries (verified live against both) - extracted once from
  *  GetCapabilities' <Dimension> block rather than fetched at runtime (that
  *  document is ~65MB and not worth a client-side round trip). */
 export const STANDARD_DEPTHS_M: readonly number[] = [
@@ -45,7 +45,7 @@ export const STANDARD_DEPTHS_M: readonly number[] = [
 const TILE_SIZE = 256;
 // Deepest available level in the EPSG:4326 TileMatrixSet. GetFeatureInfo is
 // billed per point, not per tile, so the highest zoom only sharpens the
-// lon/lat -> pixel rounding — never costs an extra request.
+// lon/lat -> pixel rounding - never costs an extra request.
 const SAMPLE_LEVEL = 10;
 
 const tilingScheme = new Cesium.GeographicTilingScheme();
@@ -59,7 +59,7 @@ interface TilePixel {
 
 /** lon/lat -> the TILEROW/TILECOL/I/J a GetFeatureInfo request needs, reusing
  *  the same GeographicTilingScheme instance the imagery layers themselves
- *  are built with (this WMTS's EPSG:4326 TileMatrixSet matches it exactly —
+ *  are built with (this WMTS's EPSG:4326 TileMatrixSet matches it exactly -
  *  confirmed against the real <TileMatrixSet> definition in GetCapabilities). */
 function lonLatToTilePixel(lon: number, lat: number): TilePixel {
 	const cartographic = Cesium.Cartographic.fromDegrees(lon, lat);
@@ -76,9 +76,9 @@ function lonLatToTilePixel(lon: number, lat: number): TilePixel {
 }
 
 /** One real numeric sample at a point/depth/time, or `null` for genuine
- *  no-data (below seafloor, outside coverage) — confirmed a real response
+ *  no-data (below seafloor, outside coverage) - confirmed a real response
  *  shape from this service, not a failure case to special-case away.
- *  Throws only on an actual transport/HTTP failure — callers doing a batch
+ *  Throws only on an actual transport/HTTP failure - callers doing a batch
  *  fetch (see fetchGrid) decide how to handle that (retry/give up), a
  *  single caller can just let it propagate. */
 export async function fetchFeatureInfo(
@@ -126,12 +126,12 @@ export interface GridSample extends GridPoint {
 export interface FetchGridOptions {
 	/** Simultaneous in-flight requests. The research burst this was sized
 	 *  against saw no throttling at 20 concurrent, but that's not proof of
-	 *  no limit — stay well under it by default. */
+	 *  no limit - stay well under it by default. */
 	concurrency?: number;
 	signal?: AbortSignal;
 	onProgress?: (completed: number, total: number) => void;
 	/** Fired as each point resolves, in whatever order workers finish (not
-	 *  index order) — lets a 3D view render points as they arrive instead
+	 *  index order) - lets a 3D view render points as they arrive instead
 	 *  of blocking on the whole grid. */
 	onSample?: (sample: GridSample, index: number) => void;
 }
@@ -139,7 +139,7 @@ export interface FetchGridOptions {
 /** Bounded-concurrency batch fetch over `points`, all at the same
  *  time/depth. Retries a failed point up to 2 extra times with backoff
  *  before giving up on it (recorded as `value: null`, same shape as a
- *  genuine no-data response — a transport hiccup on one point shouldn't
+ *  genuine no-data response - a transport hiccup on one point shouldn't
  *  blank out an otherwise-good grid). */
 export async function fetchGrid(
 	wmts: CopernicusWmtsInfo,

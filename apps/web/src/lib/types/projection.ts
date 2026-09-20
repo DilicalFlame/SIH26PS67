@@ -7,7 +7,7 @@ export enum ProjectionType {
 	Equirectangular = 1,
 }
 
-/** Display metadata for each projection — used by the UI button group. */
+/** Display metadata for each projection - used by the UI button group. */
 export interface ProjectionMeta {
 	type: ProjectionType;
 	label: string;
