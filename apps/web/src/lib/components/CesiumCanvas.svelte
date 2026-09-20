@@ -27,6 +27,20 @@
     import BasemapPicker from "$lib/components/BasemapPicker.svelte";
     import Toolbar from "$lib/components/Toolbar.svelte";
     import ActiveLayersPanel from "$lib/components/ActiveLayersPanel.svelte";
+    import ShapeVisualiseButton, { type VisualiseTarget } from "$lib/components/ShapeVisualiseButton.svelte";
+    import VolumetricScene from "$lib/components/VolumetricScene.svelte";
+    import VolumeControlPanel from "$lib/components/VolumeControlPanel.svelte";
+    import { findVolumeLayerForShape, bboxOfPositions } from "$lib/measure/shape-layer-intersection";
+    import { findLayerEntry } from "$lib/tiles/data-layer-registry.svelte";
+    import { fetchVolumeGrid } from "$lib/render/volume-field";
+    import { isTimeCapable, resolveIsoTimeForEntry } from "$lib/tiles/data-layers-catalog";
+    import {
+        volumetricMode,
+        enterVolumetricMode,
+        exitVolumetricMode,
+        setVolumetricGrid,
+        setVolumetricError,
+    } from "$lib/state/volumetric-mode.svelte";
 
     interface Props {
         statusBar?: StatusBar;
@@ -61,6 +75,12 @@
     let containerEl: HTMLDivElement;
     let hasCrashed = $state(false);
     let headingControl: HeadingControl | undefined;
+    let shapeVisualiseButtons: ShapeVisualiseButton | undefined;
+    /** Camera to restore on exitVolumeView() - captured once, right before
+     *  the fly-in starts (same captureCurrentView() switchProjection's own
+     *  morph snap-back uses). Plain module-local, not $state, same reasoning
+     *  as morphSnapBackRemove below. */
+    let volumeReturnView: PersistedCameraView | undefined;
 
     let viewer: Cesium.Viewer;
     let gridLayer: Cesium.ImageryLayer | undefined;
@@ -89,6 +109,33 @@
     $effect(() => {
         onMeasurementsChange(measureState.finished);
     });
+
+    /** Every finished shape that has a data layer to pop into 3D - see
+     *  shape-layer-intersection.ts's gate. Recomputed whenever the finished
+     *  shapes or active layers change; centroid is a plain average of the
+     *  shape's own lon/lat vertices (not a geodesic centroid) - accurate
+     *  enough for anchoring a button, not used for any measurement. */
+    let volumeTargets = $derived<VisualiseTarget[]>(
+        measureState.finished.flatMap((m) => {
+            const layer = findVolumeLayerForShape(
+                m,
+                layerState.map((l) => l.id),
+                findLayerEntry,
+            );
+            if (!layer) return [];
+            let lonSum = 0;
+            let latSum = 0;
+            for (const [lon, lat] of m.positions) {
+                lonSum += lon;
+                latSum += lat;
+            }
+            const centroid = Cesium.Cartesian3.fromDegrees(
+                lonSum / m.positions.length,
+                latSum / m.positions.length,
+            );
+            return [{ id: m.id, centroid, layer }];
+        }),
+    );
     // Reactive so BasemapPicker can highlight the active skin; picking a new
     // one is the only thing that changes it, so a plain $state (not an
     // effect-driven derivation) is enough.
@@ -474,14 +521,69 @@
     function setMeasurementHighlighted(id: string, highlighted: boolean): void {
         measureTool?.setMeasurementHighlighted(id, highlighted);
     }
-    /** Opens the analysis page in a new tab for one finished measurement.
-     *  No payload is passed directly - the analysis route reads the same
-     *  localStorage session (loadSession()) on its own mount to find the
-     *  measurement by id and the currently active layers; this is a
-     *  same-origin, same-browser handoff, not a live link (the new tab
-     *  won't see edits made back here afterward). */
-    function openAnalysisTab(id: string): void {
-        window.open(`/analysis?measurement=${encodeURIComponent(id)}`, "_blank", "noopener");
+    // =========================================================================
+    // "Visualise Data" 3D popout - modal takeover, not composited with
+    // Cesium (see VolumetricScene.svelte's header comment for why). Cesium's
+    // own canvas/globe/render loop are hidden rather than torn down, so
+    // re-entering is cheap and nothing about the restored map state (base
+    // layer, graticule, measurements) needs rebuilding.
+    // =========================================================================
+    function hideCesiumForVolumeView(): void {
+        viewer.canvas.style.visibility = "hidden";
+        viewer.scene.globe.show = false;
+        viewer.useDefaultRenderLoop = false;
+    }
+
+    function showCesiumAfterVolumeView(): void {
+        viewer.scene.globe.show = true;
+        viewer.canvas.style.visibility = "visible";
+        viewer.useDefaultRenderLoop = true;
+    }
+
+    async function enterVolumeView(target: VisualiseTarget): Promise<void> {
+        const shape = measureState.finished.find((m) => m.id === target.id);
+        if (!shape || !target.layer.wmts) return;
+        const shapeBbox = bboxOfPositions(shape.positions);
+
+        volumeReturnView = captureCurrentView();
+        enterVolumetricMode(target.id, target.layer.id);
+
+        try {
+            await viewer.camera.flyTo({
+                destination: Cesium.Rectangle.fromDegrees(...shapeBbox),
+                orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
+                duration: 1.5,
+            });
+        } catch {
+            // flyTo's promise rejects if interrupted (e.g. another flight
+            // starts) - proceed with the takeover regardless, framing just
+            // won't be as clean.
+        }
+
+        hideCesiumForVolumeView();
+
+        try {
+            // layerTimeIso is the shared slider's raw value, which can sit
+            // outside this specific layer's own valid time window (e.g. a
+            // fresh session's wall-clock default) - resolve/clamp it first,
+            // same as every other GetFeatureInfo caller in this codebase
+            // (ActiveLayersPanel's hover sampling) already does. Sending
+            // the raw value straight through 400s on every point.
+            const isoTime = isTimeCapable(target.layer)
+                ? resolveIsoTimeForEntry(layerTimeIso, target.layer)
+                : layerTimeIso;
+            const grid = await fetchVolumeGrid(target.layer.wmts, shapeBbox, isoTime);
+            setVolumetricGrid(grid);
+        } catch (err) {
+            setVolumetricError(err instanceof Error ? err.message : "Failed to load depth data.");
+        }
+    }
+
+    function exitVolumeView(): void {
+        showCesiumAfterVolumeView();
+        if (volumeReturnView) applyRestoredCamera(volumeReturnView, true);
+        volumeReturnView = undefined;
+        exitVolumetricMode();
     }
 
     // =========================================================================
@@ -641,7 +743,13 @@
             headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
         }
 
-        headingControl?.setVisible(!isFlatMode());
+        // Also gated on volumetricMode.active - the compass has nothing
+        // sensible to rotate while Cesium's own canvas is hidden behind the
+        // 3D popout (see hideCesiumForVolumeView), and would otherwise keep
+        // floating on top of it.
+        headingControl?.setVisible(!isFlatMode() && !volumetricMode.active);
+
+        shapeVisualiseButtons?.updatePositions(viewer);
 
         if (now - lastStatusPushTime >= STATUS_PUSH_INTERVAL_MS) {
             lastStatusPushTime = now;
@@ -718,14 +826,13 @@
     onRemoveMeasurement={removeMeasurement}
     onZoomToMeasurement={flyToMeasurement}
     onHighlightMeasurement={setMeasurementHighlighted}
-    hasActiveLayers={layerState.length > 0}
-    onVisualiseData={openAnalysisTab}
     {shapeMode}
     onSelectShapeMode={selectShapeMode}
     {graticuleOn}
     onGraticuleToggle={toggleGraticule}
     {currentProjection}
     onProjectionChange={switchProjection}
+    hidden={volumetricMode.active}
 />
 
 <BasemapPicker basemaps={BASEMAPS} activeId={currentBasemapId} onSelect={switchBasemap} />
@@ -741,7 +848,21 @@
     onZoomTo={(id) => dataLayerManager?.zoomToLayer(id)}
     {layerTimeIso}
     onLayerTimeChange={setLayerTime}
+    hidden={volumetricMode.active}
 />
+
+<ShapeVisualiseButton
+    bind:this={shapeVisualiseButtons}
+    targets={volumeTargets}
+    onVisualise={enterVolumeView}
+/>
+
+{#if volumetricMode.active}
+    {@const shape = measureState.finished.find((m) => m.id === volumetricMode.measurementId)}
+    {@const activeLayerEntry = volumetricMode.layerId ? findLayerEntry(volumetricMode.layerId) : undefined}
+    <VolumetricScene shapePositions={shape?.positions ?? []} onExit={exitVolumeView} />
+    <VolumeControlPanel layerEntry={activeLayerEntry} onExit={exitVolumeView} />
+{/if}
 
 <style>
     .cesium-canvas {

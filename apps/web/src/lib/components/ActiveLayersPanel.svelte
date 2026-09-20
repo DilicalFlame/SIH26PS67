@@ -35,6 +35,11 @@
 		 *  per-layer - see DataLayerManager.setGlobalTime. */
 		layerTimeIso: string;
 		onLayerTimeChange: (isoDate: string) => void;
+		/** True while the "Visualise Data" 3D popout is active - the basemap/
+		 *  imagery layers this panel manages aren't rendered in that mode
+		 *  (see CesiumCanvas's enterVolumeView), so its "add layer"/opacity/
+		 *  reorder affordances have nothing to act on. */
+		hidden?: boolean;
 	}
 	const {
 		layers,
@@ -47,6 +52,7 @@
 		onZoomTo,
 		layerTimeIso,
 		onLayerTimeChange,
+		hidden = false,
 	}: Props = $props();
 
 	// The bounds shown are whichever active layer declares them first - a
@@ -280,7 +286,7 @@
      way to open <DataLayersCatalog> (see onAddLayer's doc comment above),
      so it can't disappear the moment the last layer is removed the way the
      old `{#if layers.length > 0}` gate would have left it. -->
-<div class="active-layers-panel" class:collapsed>
+<div class="active-layers-panel" class:collapsed class:hidden>
 	<div class="panel-header-row">
 		<button type="button" class="panel-toggle" onclick={onToggleCollapsed} aria-expanded={!collapsed}>
 			{@render layersIcon()}
@@ -473,6 +479,9 @@
 {/if}
 
 <style>
+	.active-layers-panel.hidden {
+		display: none;
+	}
 	.active-layers-panel {
 		position: fixed;
 		top: 1.25rem;
