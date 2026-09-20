@@ -37,7 +37,7 @@ def test_create_chat_node_streams_all_six_frozen_event_types() -> None:
 
 
 def test_ui_action_event_omits_unset_optional_fields() -> None:
-    """UiAction's optional fields (colormap, valueRange, ...) are TS `?:` —
+    """UiAction's optional fields (colormap, valueRange, ...) are TS `?:` -
     absent, not null. exclude_unset in the router must keep them absent."""
     client = TestClient(create_app())
     resp = client.post(

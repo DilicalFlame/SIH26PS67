@@ -31,7 +31,7 @@ class Profile(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
 
 
 class ProfileLevel(UUIDPrimaryKeyMixin, Base):
-    """No created_at/updated_at — contracts §3 lists this table without
+    """No created_at/updated_at - contracts §3 lists this table without
     either, unlike the blanket "every table gets ..." sentence."""
 
     __tablename__ = "profile_levels"

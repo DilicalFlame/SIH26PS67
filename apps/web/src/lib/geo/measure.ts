@@ -1,11 +1,11 @@
 /**
  * measure.ts
  *
- * Geodesic distance and spherical-excess polygon area — the math behind the
+ * Geodesic distance and spherical-excess polygon area - the math behind the
  * path/polygon measuring tool. Distance uses Cesium's own ellipsoidal
  * geodesic (accurate on the real WGS84 ellipsoid, not a flat-plane
  * approximation); area uses the spherical-excess algorithm from Chamberlain
- * & Duquette, "Some Algorithms for Polygons on a Sphere" (JPL, 2007) — the
+ * & Duquette, "Some Algorithms for Polygons on a Sphere" (JPL, 2007) - the
  * same method Turf.js and Leaflet.draw use for on-map area measurement, and
  * accurate to within a fraction of a percent for any polygon that isn't
  * absurdly large (WGS84's flattening is ~1/298, far below the precision
@@ -13,16 +13,19 @@
  */
 import * as Cesium from "cesium";
 
-/** Mean Earth radius (m) — matches the widely-used convention for this
- *  spherical-excess formula (Turf.js's default `earthRadius`). */
-const EARTH_RADIUS_M = 6371008.8;
+/** Mean Earth radius (m) - matches the widely-used convention for this
+ *  spherical-excess formula (Turf.js's default `earthRadius`). Exported for
+ *  path-measure-tool.ts's rectangle/ellipse drag tools, which need the same
+ *  constant for their own local flat-earth approximations (converting a
+ *  meter offset to a lon/lat delta near the shape's anchor point). */
+export const EARTH_RADIUS_M = 6371008.8;
 
 /** Geodesic surface distance (m) between two points on the WGS84 ellipsoid. */
 export function geodesicDistanceMeters(a: Cesium.Cartographic, b: Cesium.Cartographic): number {
 	return new Cesium.EllipsoidGeodesic(a, b).surfaceDistance;
 }
 
-/** Total length (m) of an open path — sum of consecutive geodesic segments. */
+/** Total length (m) of an open path - sum of consecutive geodesic segments. */
 export function pathLengthMeters(points: Cesium.Cartographic[]): number {
 	let total = 0;
 	for (let i = 1; i < points.length; i++) {
@@ -33,7 +36,7 @@ export function pathLengthMeters(points: Cesium.Cartographic[]): number {
 
 /**
  * Area (m²) of a closed polygon on the sphere. `points` are the ring's
- * vertices in order, WITHOUT repeating the first point at the end — the
+ * vertices in order, WITHOUT repeating the first point at the end - the
  * closing edge is implied.
  */
 export function polygonAreaSquareMeters(points: Cesium.Cartographic[]): number {

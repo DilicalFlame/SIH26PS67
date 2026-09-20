@@ -4,6 +4,13 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<!-- Warms the TCP+TLS handshake to Copernicus's WMTS host ahead of the
+		     first GetTile/GetFeatureInfo/GetLegend request, so that request only
+		     pays the actual round trip - a real, if modest, win for how
+		     responsive the very first hover-value sample and the first tiles
+		     feel (see ActiveLayersPanel.svelte's hover-sampling doc comment for
+		     the rest of that latency budget, which this can't shrink further). -->
+		<link rel="preconnect" href="https://wmts.marine.copernicus.eu" crossorigin="anonymous" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

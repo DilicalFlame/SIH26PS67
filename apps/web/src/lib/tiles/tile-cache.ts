@@ -16,7 +16,7 @@ export class TileLRUCache<V> {
 		private readonly isPinned?: (value: V) => boolean
 	) {}
 
-	/** Runtime-configurable cache budget (#45) — trims immediately if the new size is smaller. */
+	/** Runtime-configurable cache budget (#45) - trims immediately if the new size is smaller. */
 	setMaxSize(maxSize: number): void {
 		this.maxSize = maxSize;
 		this.trim();
@@ -56,12 +56,12 @@ export class TileLRUCache<V> {
 		}
 	}
 
-	/** Removes without invoking onEvict — the caller owns the value's disposal. */
+	/** Removes without invoking onEvict - the caller owns the value's disposal. */
 	delete(key: string): void {
 		this.map.delete(key);
 	}
 
-	/** Empties the cache, bypassing isPinned — the caller disposes values itself. */
+	/** Empties the cache, bypassing isPinned - the caller disposes values itself. */
 	clear(): void {
 		this.map.clear();
 	}

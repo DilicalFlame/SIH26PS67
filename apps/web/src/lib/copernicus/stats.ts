@@ -1,4 +1,4 @@
-/** Min/max/mean over whatever non-null samples a chart currently has —
+/** Min/max/mean over whatever non-null samples a chart currently has -
  *  each analysis-page chart computes its own (over what it's actually
  *  displaying), rather than one page-level panel blending three different
  *  sample sets together. */

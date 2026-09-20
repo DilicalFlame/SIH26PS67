@@ -1,5 +1,5 @@
 <!--
-  Sample screen for issue #85 — demonstrates the design tokens and base
+  Sample screen for issue #85 - demonstrates the design tokens and base
   styles (.panel, .btn, .input, .slider) defined in layout.css.
   Not part of the real app UI; a reference page only.
 -->

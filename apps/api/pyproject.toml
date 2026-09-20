@@ -25,5 +25,5 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-# app/ has no setup.py/editable install — tests otherwise can't `import app`.
+# app/ has no setup.py/editable install - tests otherwise can't `import app`.
 pythonpath = ["."]

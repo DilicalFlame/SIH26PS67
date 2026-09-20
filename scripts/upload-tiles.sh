@@ -12,7 +12,7 @@ FILE="${1:?usage: upload-tiles.sh <path/to/file.pmtiles> <layer-id>}"
 LAYER="${2:?usage: upload-tiles.sh <path/to/file.pmtiles> <layer-id>}"
 
 # Pick up MinIO settings from the repo-root .env (see .env.example) rather
-# than requiring the caller to export them by hand — without clobbering
+# than requiring the caller to export them by hand - without clobbering
 # anything already set in the calling shell's environment.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ -f "$REPO_ROOT/.env" ]]; then
@@ -24,7 +24,7 @@ fi
 
 MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://localhost:9000}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-thalassa}"
-MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is not set — copy .env.example to .env at the repo root}"
+MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is not set - copy .env.example to .env at the repo root}"
 MINIO_BUCKET="${MINIO_BUCKET:-tiles}"
 
 if [[ ! -f "$FILE" ]]; then

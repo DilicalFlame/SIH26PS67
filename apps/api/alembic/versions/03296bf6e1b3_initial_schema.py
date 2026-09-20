@@ -11,7 +11,7 @@ the schema's source of truth (contracts §3); app/models/ is kept matching
 it by hand.
 
 One migration creating every table, including the M4 ones (papers,
-paper_blocks, citations) — additive migrations later hurt far less than
+paper_blocks, citations) - additive migrations later hurt far less than
 rewrites once those tables are populated.
 """
 
@@ -28,7 +28,7 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 # Tables that get an updated_at column per contracts §3's per-table listing
-# (not every table — see e.g. profile_levels, which gets neither timestamp).
+# (not every table - see e.g. profile_levels, which gets neither timestamp).
 _TABLES_WITH_UPDATED_AT = ("users", "catalog_layers", "projects", "papers", "paper_blocks")
 
 
@@ -36,7 +36,7 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
 
-    # DEFAULT now() only fires on INSERT — it would never actually update.
+    # DEFAULT now() only fires on INSERT - it would never actually update.
     # This trigger is what makes updated_at correct for any writer (ORM,
     # raw SQL, admin tools), not just app/models/base.py's onupdate=func.now(),
     # which only covers writes made through that specific ORM session.
@@ -95,7 +95,7 @@ def upgrade() -> None:
     )
     # Geometry column added via PostGIS's own function rather than as a
     # plain op.create_table column, so this migration has no import-time
-    # dependency on geoalchemy2's Alembic integration — AddGeometryColumn is
+    # dependency on geoalchemy2's Alembic integration - AddGeometryColumn is
     # what keeps geometry_columns/the PostGIS catalog consistent.
     op.execute("SELECT AddGeometryColumn('catalog_layers', 'bbox', 4326, 'POLYGON', 2)")
 
@@ -152,7 +152,7 @@ def upgrade() -> None:
         "chat_nodes",
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("project_id", sa.dialects.postgresql.UUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False),
-        # NULL for root; self-FK is fine inline in one CREATE TABLE — every
+        # NULL for root; self-FK is fine inline in one CREATE TABLE - every
         # column, including this table's own id, is known within one statement.
         sa.Column("parent_id", sa.dialects.postgresql.UUID(as_uuid=True), sa.ForeignKey("chat_nodes.id", ondelete="CASCADE"), nullable=True),
         sa.Column("role", sa.Text(), nullable=False),

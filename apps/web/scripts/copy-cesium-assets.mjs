@@ -1,6 +1,6 @@
 // Copies CesiumJS's static runtime assets (Workers/Assets/Widgets/ThirdParty)
 // into static/cesium, where SvelteKit serves them as-is in both `vite dev`
-// and the production build — Cesium loads these via CESIUM_BASE_URL at
+// and the production build - Cesium loads these via CESIUM_BASE_URL at
 // runtime, so they can't be bundled as ES modules. Re-run after bumping the
 // `cesium` dependency version. Not committed to git (see static/.gitignore);
 // wired up as this package's `postinstall` so a fresh `pnpm install` always
@@ -14,7 +14,7 @@ const cesiumBuildDir = join(here, "..", "node_modules", "cesium", "Build", "Cesi
 const destDir = join(here, "..", "static", "cesium");
 
 if (!existsSync(cesiumBuildDir)) {
-    console.error(`[copy-cesium-assets] ${cesiumBuildDir} not found — is "cesium" installed?`);
+    console.error(`[copy-cesium-assets] ${cesiumBuildDir} not found - is "cesium" installed?`);
     process.exit(1);
 }
 

@@ -48,7 +48,7 @@ describe('pathLengthMeters', () => {
 describe('polygonAreaSquareMeters', () => {
 	it('agrees with a flat-plane approximation for a small square (curvature negligible at this scale)', () => {
 		// ~1.1km x 1.1km square near the equator, where lon/lat degrees are
-		// both ~111.32km — flat and geodesic area should agree closely.
+		// both ~111.32km - flat and geodesic area should agree closely.
 		const side = 0.01;
 		const ring = [carto(0, 0), carto(side, 0), carto(side, side), carto(0, side)];
 		const area = polygonAreaSquareMeters(ring);
@@ -71,7 +71,7 @@ describe('polygonAreaSquareMeters', () => {
 	});
 
 	it('still tracks the flat approximation reasonably at a full-degree scale', () => {
-		// 1° x 1° box at the equator — curvature effects are still small here
+		// 1° x 1° box at the equator - curvature effects are still small here
 		// (well under 1%), so this is a meaningful cross-check at a scale
 		// 100x larger than the tiny-square test above.
 		const ring = [carto(0, 0), carto(1, 0), carto(1, 1), carto(0, 1)];

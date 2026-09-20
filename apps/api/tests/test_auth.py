@@ -26,7 +26,7 @@ def test_login_with_wrong_email_is_unauthorized() -> None:
 
 
 def test_login_with_seeded_email_sets_session_cookie_and_returns_user() -> None:
-    """Sprint 0: password check is a stub (contracts §4.5) — any password works."""
+    """Sprint 0: password check is a stub (contracts §4.5) - any password works."""
     client = TestClient(create_app())
     resp = client.post("/api/v1/auth/login", json={"email": SEEDED_EMAIL, "password": "anything"})
 

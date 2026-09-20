@@ -27,7 +27,7 @@ async def list_platforms(
     limit: int = 500,
 ) -> PlatformFeatureCollection:
     """Stub (#38): bbox/start/end/type/limit are accepted for shape
-    compatibility with contracts §4.4 and ignored — real filtering against
+    compatibility with contracts §4.4 and ignored - real filtering against
     Postgres lands in #63."""
     return PlatformFeatureCollection.model_validate(load_fixture("observations/platforms.json"))
 
@@ -57,7 +57,7 @@ async def list_platform_profiles(
 @router.get("/profiles/{profile_id}", response_model=Profile, responses=NOT_FOUND_RESPONSE)
 async def get_profile(profile_id: str) -> Profile:
     # profiles_by_id.json is a lookup table keyed by profileId, not a
-    # response body itself — unlike every other fixture in fixtures/.
+    # response body itself - unlike every other fixture in fixtures/.
     profiles = load_fixture("observations/profiles_by_id.json")
     if profile_id not in profiles:
         raise ApiError("not_found", f"Profile '{profile_id}' does not exist")

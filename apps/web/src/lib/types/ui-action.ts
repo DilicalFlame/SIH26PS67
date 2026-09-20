@@ -1,5 +1,5 @@
 /** The three actions chat, UI controls, and future plugins can all trigger
- *  on the map, per contracts §4.7 / §5.4. Frozen shape — do not add a
+ *  on the map, per contracts §4.7 / §5.4. Frozen shape - do not add a
  *  fourth variant without updating the contracts doc first. */
 export type UiAction =
 	| {

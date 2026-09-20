@@ -2,7 +2,7 @@
  * sample-grid.ts
  *
  * Turns a measurement's raw [lon, lat] vertices into the point grids
- * copernicus-feature-info.ts's fetchGrid() samples — centroid for a single
+ * copernicus-feature-info.ts's fetchGrid() samples - centroid for a single
  * depth-profile point, evenly-spaced points along a path for a transect,
  * and an evenly-spaced grid within a polygon's bounding box for an areal
  * slice/point cloud. Plain geometry, no Cesium dependency (these work in
@@ -11,7 +11,7 @@
 
 export type LonLat = [number, number];
 
-/** Un-weighted mean of the vertices — good enough for "a representative
+/** Un-weighted mean of the vertices - good enough for "a representative
  *  point," not a true geodesic/area centroid (matches what the existing
  *  on-map label centroid in path-measure-tool.ts already does). */
 export function centroidOf(positions: LonLat[]): LonLat {
@@ -49,14 +49,14 @@ export interface TransectPoint {
 	lon: number;
 	lat: number;
 	/** Cumulative straight-line distance from the first vertex, in the same
-	 *  degree units as the input — a plotting axis, not a geodesic distance
+	 *  degree units as the input - a plotting axis, not a geodesic distance
 	 *  (the depth/slice views don't need true metres, just a consistent
 	 *  along-line ordering). */
 	distanceDeg: number;
 }
 
 /** `count` evenly-spaced points along an open path (straight-line
- *  interpolation between consecutive vertices — the same simplification
+ *  interpolation between consecutive vertices - the same simplification
  *  the rest of this app's line-drawing already renders as, so a transect
  *  sampled this way matches what the user actually drew). */
 export function pointsAlongLine(positions: LonLat[], count: number): TransectPoint[] {
@@ -101,7 +101,7 @@ export function pointsAlongLine(positions: LonLat[], count: number): TransectPoi
 }
 
 /** An `nx` x `ny` evenly-spaced grid of points covering `bbox`, inset half
- *  a cell from each edge (cell-center sampling, not the edges themselves —
+ *  a cell from each edge (cell-center sampling, not the edges themselves -
  *  avoids every corner sample landing exactly on the polygon's own
  *  boundary, which is more likely to be a coastline/no-data edge case). */
 export function gridWithinBBox(bbox: BBox, nx: number, ny: number): LonLat[] {

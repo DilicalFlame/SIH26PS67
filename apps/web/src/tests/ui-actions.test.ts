@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { UiAction } from '$lib/types/ui-action';
 
-// flush() batches to requestAnimationFrame — capture and drive callbacks by
+// flush() batches to requestAnimationFrame - capture and drive callbacks by
 // hand instead of waiting on a real frame. Each test re-imports the module
 // fresh (vi.resetModules) so module-level `pendingActions`/`flushScheduled`
 // from one test can't leak into the next.

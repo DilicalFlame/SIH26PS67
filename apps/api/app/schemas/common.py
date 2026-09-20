@@ -22,7 +22,7 @@ _STATUS_FOR_CODE: dict[ErrorCode, int] = {
 
 
 class CamelModel(BaseModel):
-    """Every wire model: Python fields stay snake_case, JSON is camelCase —
+    """Every wire model: Python fields stay snake_case, JSON is camelCase -
     matching the TypeScript interfaces in contracts §4/§5 exactly."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
@@ -47,7 +47,7 @@ class ApiError(Exception):
 
 
 # For a route's `responses=` kwarg, so /docs and openapi.json document the
-# error shape too — not just the 2xx one (contracts §4.5's `-> 200 | 401`
+# error shape too - not just the 2xx one (contracts §4.5's `-> 200 | 401`
 # and every by-id lookup's implicit 404 are part of the frozen signature).
 NOT_FOUND_RESPONSE: dict[int | str, dict[str, type[BaseModel]]] = {404: {"model": ErrorResponse}}
 UNAUTHORIZED_RESPONSE: dict[int | str, dict[str, type[BaseModel]]] = {401: {"model": ErrorResponse}}
@@ -56,7 +56,7 @@ UNAUTHORIZED_RESPONSE: dict[int | str, dict[str, type[BaseModel]]] = {401: {"mod
 async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Signature is (Request, Exception), not (Request, ApiError), only
     because Starlette's add_exception_handler is typed invariantly on the
-    exception class — it is only ever registered for ApiError."""
+    exception class - it is only ever registered for ApiError."""
     assert isinstance(exc, ApiError)
     return JSONResponse(
         status_code=_STATUS_FOR_CODE[exc.code],

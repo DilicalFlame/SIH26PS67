@@ -10,7 +10,7 @@ from app.models.base import Base, CreatedAtMixin, UpdatedAtMixin, UUIDPrimaryKey
 
 
 class CatalogLayer(UUIDPrimaryKeyMixin, CreatedAtMixin, UpdatedAtMixin, Base):
-    """The "what data do I have, and where" table — the agent's world model
+    """The "what data do I have, and where" table - the agent's world model
     (contracts §3), not optional plumbing. Populate it properly from day 1."""
 
     __tablename__ = "catalog_layers"

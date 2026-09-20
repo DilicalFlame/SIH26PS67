@@ -10,7 +10,7 @@
 	}
 
 	interface Props {
-		/** Where the triggering click happened (clientX/clientY) — the menu
+		/** Where the triggering click happened (clientX/clientY) - the menu
 		 *  positions itself relative to this, then clamps/flips to stay on
 		 *  screen once its real size is known (see $effect below). */
 		x: number;
@@ -25,10 +25,10 @@
 	let top = $state(0);
 	// Rendered off-screen-invisible until positioned, so the unclamped
 	// first-frame placement (which can overflow the viewport) is never
-	// visible — a menu "knowing where to open" means it never flashes in
+	// visible - a menu "knowing where to open" means it never flashes in
 	// the wrong spot before correcting itself.
 	let ready = $state(false);
-	// The right-click that OPENS the menu is (empirically — this was not
+	// The right-click that OPENS the menu is (empirically - this was not
 	// what the DOM spec's synchronous-bubbling model would suggest, but
 	// it's what actually happens here) still able to reach this
 	// component's own window-level onclick/oncontextmenu the moment they
@@ -40,7 +40,7 @@
 	let armed = $state(false);
 
 	$effect(() => {
-		// Re-run for every fresh open (x/y change on each right-click) —
+		// Re-run for every fresh open (x/y change on each right-click) -
 		// referencing the props here (not just at declaration time) is what
 		// makes this effect re-fire when a still-mounted ContextMenu gets
 		// reused for a different click.

@@ -5,7 +5,7 @@
  *   1. Computes the visible lon/lat bbox + target zoom from camera state.
  *   2. Requests any missing tiles from the worker pool (dedup'd via cache).
  *   3. Adds newly-ready tiles to the scene.
- *   4. Retires tiles that fell out of view — except any ancestor of a tile
+ *   4. Retires tiles that fell out of view - except any ancestor of a tile
  *      that hasn't finished loading, which stays put so no hole opens up.
  *
  * Fills are opaque and composited by painter's algorithm: style order first
@@ -65,15 +65,15 @@ export interface WheelVelocityParams {
 	velocityPxPerMs: number; // signed: positive = zooming in
 }
 
-/** Diagnostic snapshot for TileDebugOverlay — see getDebugInfo(). */
+/** Diagnostic snapshot for TileDebugOverlay - see getDebugInfo(). */
 export interface TileDebugInfo {
 	layerId: string;
 	/** The zoom actually used to build `desired` this frame, i.e. after the
-	 *  MAX_TILES_PER_LAYER budget backoff — not the raw zoomForScale(), which
+	 *  MAX_TILES_PER_LAYER budget backoff - not the raw zoomForScale(), which
 	 *  can disagree with what's actually rendering on a wide/polar view. */
 	effectiveZoom: number;
 	/** Count of cache entries currently in the scene, keyed by their own zoom
-	 *  (not `effectiveZoom`) — the direct evidence of whether a stale or
+	 *  (not `effectiveZoom`) - the direct evidence of whether a stale or
 	 *  wrong-zoom tile is still resident. */
 	tileCountsByZoom: Record<number, number>;
 }
@@ -84,7 +84,7 @@ export class TileManager {
 	private caches = new Map<string, TileLRUCache<TileEntry>>();
 	private scene!: THREE.Scene;
 	private baseMaterial!: THREE.ShaderMaterial;
-	/** One material per (tileset, style) — all tiles of a layer share a colour. */
+	/** One material per (tileset, style) - all tiles of a layer share a colour. */
 	private materials = new Map<string, THREE.ShaderMaterial>();
 	/** Failure counts per tile key, kept outside the entry so retries can't reset them. */
 	private failures = new Map<string, number>();
@@ -204,7 +204,7 @@ export class TileManager {
 
 	/**
 	 * Toggles a layer's tiles on/off (#57). Hides meshes rather than disposing
-	 * or evicting their cache entries — re-showing must not refetch or
+	 * or evicting their cache entries - re-showing must not refetch or
 	 * re-decode, only flip `mesh.visible` back on.
 	 */
 	setLayerVisibility(layerId: string, visible: boolean): void {
@@ -220,7 +220,7 @@ export class TileManager {
 	 * Sets opacity for every style in a layer (#57), uniform-only. The fill
 	 * material defaults to `NoBlending` (see makeFillMat() in GlobeCanvas.svelte)
 	 * because real alpha blending double-composites the sub-pixel overlap
-	 * between adjacent tiles' buffers, showing as a seam — but with blending
+	 * between adjacent tiles' buffers, showing as a seam - but with blending
 	 * off, `u_opacity` never reaches the framebuffer at all. Switching to
 	 * `NormalBlending` only while a layer is actually faded keeps full-opacity
 	 * rendering seam-free (the common case) and trades a faint seam for an
@@ -388,7 +388,7 @@ export class TileManager {
 			// entry so a later frame re-requests it, giving up after a few
 			// attempts so a genuinely bad tile doesn't spin. The counter is
 			// keyed by tile rather than stored on the entry, which is recreated
-			// by the retry and would otherwise reset it — retrying forever and
+			// by the retry and would otherwise reset it - retrying forever and
 			// swallowing the error.
 			const attempts = (this.failures.get(entry.key) ?? 0) + 1;
 			this.failures.set(entry.key, attempts);
@@ -410,7 +410,7 @@ export class TileManager {
 		const lon = new THREE.Vector2((lonMinR + lonMaxR) / 2, (lonMaxR - lonMinR) / 2);
 
 		// Normalized Mercator Y (0 = north pole edge, 1 = south), which is what
-		// the tile's local Y axis is actually linear in — see fill.vert.glsl.
+		// the tile's local Y axis is actually linear in - see fill.vert.glsl.
 		const n = 2 ** entry.z;
 		const mercTop = entry.y / n;
 		const mercBottom = (entry.y + 1) / n;
@@ -418,7 +418,7 @@ export class TileManager {
 
 		for (const mesh of result.layers) {
 			const style = layer.config.styles.find((s) => s.name === mesh.name);
-			if (!style) continue; // unstyled layer in the tileset — skip rather than guess
+			if (!style) continue; // unstyled layer in the tileset - skip rather than guess
 			const material = this.materials.get(this.styleKey(layer, style));
 			if (!material) continue;
 

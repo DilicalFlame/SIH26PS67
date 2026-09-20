@@ -1,25 +1,12 @@
 <script lang="ts">
 	import type { BasemapConfig } from "$lib/tiles/basemaps";
-	import { ProjectionType, PROJECTIONS } from "$lib/types/projection";
 
 	interface Props {
 		basemaps: BasemapConfig[];
 		activeId: string;
 		onSelect: (id: string) => void;
-		currentProjection: ProjectionType;
-		onProjectionChange: (p: ProjectionType) => void;
-		graticuleOn: boolean;
-		onGraticuleToggle: () => void;
 	}
-	const {
-		basemaps,
-		activeId,
-		onSelect,
-		currentProjection,
-		onProjectionChange,
-		graticuleOn,
-		onGraticuleToggle,
-	}: Props = $props();
+	const { basemaps, activeId, onSelect }: Props = $props();
 
 	let open = $state(false);
 	const active = $derived(basemaps.find((b) => b.id === activeId) ?? basemaps[0]);
@@ -47,42 +34,9 @@
 <div class="basemap-picker" onclick={(e) => e.stopPropagation()} role="presentation">
 	{#if open}
 		<div class="panel">
-			<!-- View controls: projection morph + graticule, grouped above the
-			     basemap skins since both are "how the map looks" settings, same
-			     as the skins below. Previously two separate floating controls
-			     (a bottom-center pill bar and a bottom-right button) — folded in
-			     here so there's one control cluster instead of three. -->
-			<div class="view-section">
-				<div class="segmented" role="group" aria-label="Map projection">
-					{#each PROJECTIONS as proj (proj.type)}
-						<button
-							type="button"
-							class="segment"
-							class:active={currentProjection === proj.type}
-							aria-pressed={currentProjection === proj.type}
-							onclick={() => onProjectionChange(proj.type)}
-							title={proj.description}
-						>
-							{proj.label}
-						</button>
-					{/each}
-				</div>
-
-				<button
-					type="button"
-					class="grid-row"
-					class:active={graticuleOn}
-					aria-pressed={graticuleOn}
-					onclick={onGraticuleToggle}
-				>
-					<span class="grid-icon" aria-hidden="true">⌗</span>
-					<span class="grid-row-label">Grid</span>
-					<span class="grid-row-state">{graticuleOn ? "On" : "Off"}</span>
-				</button>
-			</div>
-
-			<div class="divider"></div>
-
+			<!-- Basemap skins only - grid + projection moved to the bottom
+			     tool-bar's second button (see Toolbar.svelte), which is where
+			     they now live. -->
 			<div class="skin-list" role="listbox" aria-label="Basemap style">
 				{#each basemaps as basemap (basemap.id)}
 					<button
@@ -233,109 +187,6 @@
 		max-height: 80vh;
 		overflow-y: auto;
 		width: 9.2rem;
-	}
-
-	.view-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-
-	.segmented {
-		display: flex;
-		background: rgba(255, 255, 255, 0.06);
-		border-radius: 8px;
-		padding: 0.15rem;
-		gap: 0.15rem;
-	}
-
-	.segment {
-		flex: 1;
-		padding: 0.35rem 0;
-		background: transparent;
-		border: none;
-		border-radius: 6px;
-		color: rgba(255, 255, 255, 0.6);
-		font-family: inherit;
-		font-size: 0.72rem;
-		font-weight: 500;
-		letter-spacing: 0.02em;
-		cursor: pointer;
-		transition:
-			background 150ms ease,
-			color 150ms ease;
-	}
-
-	.segment:hover {
-		color: rgba(255, 255, 255, 0.9);
-	}
-
-	.segment.active {
-		background: rgba(59, 130, 246, 0.35);
-		color: #ffffff;
-		font-weight: 600;
-	}
-
-	.grid-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.35rem 0.5rem;
-		background: transparent;
-		border: none;
-		border-radius: 8px;
-		cursor: pointer;
-		font-family: inherit;
-		transition: background 150ms ease;
-	}
-
-	.grid-row:hover {
-		background: rgba(255, 255, 255, 0.08);
-	}
-
-	.grid-row.active {
-		background: rgba(59, 130, 246, 0.15);
-	}
-
-	.grid-icon {
-		font-size: 0.9rem;
-		color: rgba(255, 255, 255, 0.6);
-		line-height: 1;
-	}
-
-	.grid-row.active .grid-icon {
-		color: #ffffff;
-	}
-
-	.grid-row-label {
-		flex: 1;
-		text-align: left;
-		font-size: 0.78rem;
-		font-weight: 500;
-		color: rgba(255, 255, 255, 0.7);
-	}
-
-	.grid-row.active .grid-row-label {
-		color: #ffffff;
-		font-weight: 600;
-	}
-
-	.grid-row-state {
-		font-size: 0.66rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: rgba(255, 255, 255, 0.4);
-	}
-
-	.grid-row.active .grid-row-state {
-		color: #7fb0ff;
-	}
-
-	.divider {
-		height: 1px;
-		background: rgba(255, 255, 255, 0.1);
-		margin: 0 0.1rem;
 	}
 
 	.skin-list {

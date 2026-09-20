@@ -1,5 +1,5 @@
 /**
- * fill.vert.glsl — polygon fills for one tile of one layer.
+ * fill.vert.glsl - polygon fills for one tile of one layer.
  *
  * Dequantizes tile-local Int16 positions back to lon/lat, then runs the shared
  * projection pipeline.
@@ -41,7 +41,7 @@ void main() {
     float lon = u_tileLon.x + a_quantCoord.x * u_tileLon.y;
 
     // +1 in quantized Y is the tile's north edge, which is the LOW end of
-    // normalized Mercator Y — hence the subtraction.
+    // normalized Mercator Y - hence the subtraction.
     float mercY = u_tileMercY.x - a_quantCoord.y * u_tileMercY.y;
     float t = PROJ_PI * (1.0 - 2.0 * mercY);
     float lat = atan((exp(t) - exp(-t)) * 0.5); // atan(sinh(t)); GLSL ES 1.0 has no sinh

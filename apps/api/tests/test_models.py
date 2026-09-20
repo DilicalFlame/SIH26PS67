@@ -1,5 +1,5 @@
 """Sanity checks that app/models/ matches contracts §3's table list. Doesn't
-touch a database — these models are kept matching the hand-written migration
+touch a database - these models are kept matching the hand-written migration
 by hand (see that migration's docstring), so this is what catches the two
 from silently drifting apart."""
 
@@ -29,7 +29,7 @@ def test_every_contract_table_has_a_model() -> None:
 
 def test_profile_levels_has_no_timestamp_columns() -> None:
     """Contracts §3 lists this table without created_at/updated_at, unlike
-    the blanket "every table gets ..." sentence — the one table it's easiest
+    the blanket "every table gets ..." sentence - the one table it's easiest
     to get wrong by applying that sentence uniformly."""
     columns = set(Base.metadata.tables["profile_levels"].columns.keys())
     assert "created_at" not in columns

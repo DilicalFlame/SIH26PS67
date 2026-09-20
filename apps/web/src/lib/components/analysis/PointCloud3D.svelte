@@ -3,11 +3,11 @@
 	 * PointCloud3D.svelte
 	 *
 	 * A 3D scatter of samples across the polygon's bounding box at a coarse
-	 * set of depths — ~8x8 spatial x ~6 depths, fetched with bounded
+	 * set of depths - ~8x8 spatial x ~6 depths, fetched with bounded
 	 * concurrency and rendered progressively as batches resolve (the full
 	 * grid can take tens of seconds; showing points as they arrive is what
 	 * keeps that from reading as a frozen tab). Null samples (below
-	 * seafloor / no coverage) are filtered out before plotting — scatter3d
+	 * seafloor / no coverage) are filtered out before plotting - scatter3d
 	 * doesn't handle a null z predictably the way heatmap/scatter do.
 	 */
 	import type { Data } from "plotly.js";
@@ -28,7 +28,7 @@
 	}
 	const { wmts, positions, isoTime, units, valueMin, valueMax, onPointClick }: Props = $props();
 
-	// Lower than the plan's original 8x8x6 (=384) budget — live testing under
+	// Lower than the plan's original 8x8x6 (=384) budget - live testing under
 	// this session's sustained request volume showed Copernicus's WMTS
 	// effectively serializing concurrent requests, and this panel competes
 	// with the depth-profile and 2D-slice panels' own simultaneous fetches
@@ -73,7 +73,7 @@
 					collected.push({ lon: sample.lon, lat: sample.lat, depth, value: sample.value });
 					// Progressive render: reassigning `points` on every sample
 					// would be excessive re-render churn for ~380 points, so
-					// this batches by depth level instead — one redraw per
+					// this batches by depth level instead - one redraw per
 					// completed depth "layer", which is still visibly
 					// incremental without hammering Plotly.react.
 				},
@@ -91,7 +91,7 @@
 				mode: "markers",
 				x: points.map((p) => p.lon),
 				y: points.map((p) => p.lat),
-				// Depths are negative-down already — using them directly as z
+				// Depths are negative-down already - using them directly as z
 				// puts the surface near 0 and deep water below it, matching
 				// the natural reading of a 3D ocean scene.
 				z: points.map((p) => p.depth),

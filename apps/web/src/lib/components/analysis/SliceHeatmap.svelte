@@ -7,11 +7,12 @@
 	 * (Plotly's 3D scenes don't support in-viewport drag manipulation, and
 	 * the request was itself phrased as slider-driven).
 	 *
-	 * Path measurements: a transect — evenly-spaced points along the drawn
+	 * Path measurements: a transect - evenly-spaced points along the drawn
 	 * line (x = distance) sampled across a coarse set of depths (y = depth).
-	 * Polygon measurements: an areal slice — a lon/lat grid over the
-	 * polygon's bounding box (x = lon, y = lat), sampled at ONE depth,
-	 * chosen by this component's own depth slider.
+	 * Everything else (polygon, rectangle, ellipse - any closed shape, see
+	 * path-measure-tool.ts's header comment) gets an areal slice instead: a
+	 * lon/lat grid over the shape's bounding box (x = lon, y = lat), sampled
+	 * at ONE depth, chosen by this component's own depth slider.
 	 *
 	 * Both cases share the same request-budget discipline: the depth slider
 	 * commits on release (not on every drag tick), an in-flight grid is
@@ -29,7 +30,7 @@
 	interface Props {
 		wmts: CopernicusWmtsInfo;
 		positions: [number, number][];
-		measurementType: "path" | "polygon";
+		measurementType: "path" | "polygon" | "rectangle" | "ellipse";
 		isoTime: string;
 		units?: string;
 		onPointClick?: (lon: number, lat: number) => void;
@@ -37,7 +38,7 @@
 	const { wmts, positions, measurementType, isoTime, units, onPointClick }: Props = $props();
 
 	// A coarser subset of the 50 standard depths for the transect's y-axis
-	// and the polygon slider's steps — 12 evenly-spaced indices from
+	// and the polygon slider's steps - 12 evenly-spaced indices from
 	// surface to the deepest level.
 	const SLICE_DEPTH_INDICES = Array.from({ length: 12 }, (_, i) =>
 		Math.round((i * (STANDARD_DEPTHS_M.length - 1)) / 11),
@@ -58,7 +59,7 @@
 
 	$effect(() => {
 		// Re-run when the measurement, time, or (polygon mode) chosen depth
-		// changes. Referencing depthIndex here even in path mode is harmless —
+		// changes. Referencing depthIndex here even in path mode is harmless -
 		// path mode just never changes it.
 		void positions;
 		void isoTime;
@@ -73,7 +74,7 @@
 		abortController = controller;
 
 		const cacheKey =
-			measurementType === "polygon" ? `${isoTime}:${SLICE_DEPTHS[depthIndex]}` : isoTime;
+			measurementType !== "path" ? `${isoTime}:${SLICE_DEPTHS[depthIndex]}` : isoTime;
 		const cached = gridCache.get(cacheKey);
 		if (cached) {
 			grid = cached;
@@ -87,7 +88,7 @@
 			const transect = pointsAlongLine(positions, 30);
 			// fetchGrid samples one time/depth per call, so depth is threaded
 			// through by calling it once per depth level (a row of the
-			// heatmap) rather than in one big call — same total request
+			// heatmap) rather than in one big call - same total request
 			// count, just organized so progress reflects whole rows completing.
 			progressTotal = transect.length * SLICE_DEPTHS.length;
 			const z: (number | null)[][] = [];
@@ -118,7 +119,7 @@
 			grid = result;
 		} else {
 			const bbox = bboxOf(positions);
-			// Lower than the plan's original 12x12 budget — live testing under
+			// Lower than the plan's original 12x12 budget - live testing under
 			// this session's sustained request volume showed Copernicus's WMTS
 			// effectively serializing concurrent requests at roughly one every
 			// ~0.25-1s regardless of client-side concurrency, and this panel
@@ -170,7 +171,7 @@
 	});
 
 	function handleClick(point: { x: unknown; y: unknown }): void {
-		if (measurementType !== "polygon" || !onPointClick) return;
+		if (measurementType === "path" || !onPointClick) return;
 		if (typeof point.x === "number" && typeof point.y === "number") {
 			onPointClick(point.x, point.y);
 		}
@@ -216,7 +217,7 @@
 			}}
 		/>
 	</div>
-	{#if measurementType === "polygon"}
+	{#if measurementType !== "path"}
 		<div class="depth-slider-row">
 			<span>Depth</span>
 			<input

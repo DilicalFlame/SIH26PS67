@@ -2,12 +2,12 @@
 	/**
 	 * SidePanel.svelte
 	 *
-	 * Reusable top-right floating panel shell — dark rounded card with a
+	 * Reusable top-right floating panel shell - dark rounded card with a
 	 * header (leading icon, title, optional help/undo actions, close button),
 	 * a scrollable body, and an optional footer. Modeled on Google Earth's
 	 * "Path or polygon" panel; the path/polygon tool (Toolbar.svelte) is its
 	 * first consumer, but the shell itself carries no measure-tool-specific
-	 * content — it's meant to be reused as-is for the future data-layers
+	 * content - it's meant to be reused as-is for the future data-layers
 	 * panel and the 3D/terrain/elevation plots panel (minimaps, expand to
 	 * fullscreen, export) without changes to this file.
 	 */
@@ -87,7 +87,7 @@
 		max-width: calc(100vw - 1.5rem);
 		/* Bounded to the viewport so a long measurement list scrolls inside
 		   .side-panel-body instead of pushing the footer (Done) off-screen or
-		   growing the panel past the window — see .side-panel-body below. */
+		   growing the panel past the window - see .side-panel-body below. */
 		max-height: calc(100dvh - 2.5rem);
 		display: flex;
 		flex-direction: column;
@@ -175,7 +175,7 @@
 		flex-direction: column;
 		gap: 0.6rem;
 		/* Natural-height content (hint/fields) plus a scrollable list both
-		   live in here via `children` — min-height: 0 is what lets this flex
+		   live in here via `children` - min-height: 0 is what lets this flex
 		   child actually shrink below its content height so the inner list
 		   region (flex: 1; min-height: 0; overflow-y: auto) is the thing that
 		   scrolls, rather than the whole panel growing past the viewport. */

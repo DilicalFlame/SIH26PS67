@@ -1,20 +1,26 @@
 <script lang="ts">
 	/**
-	 * /analysis — the "Visualise Data" page, opened in a new tab from a
+	 * /analysis - the "Visualise Data" page, opened in a new tab from a
 	 * finished measurement's accordion row. Reads the SAME localStorage
 	 * session the main tab writes (loadSession()) to find the measurement
-	 * (by the `?measurement=` id) and the currently active data layers — a
+	 * (by the `?measurement=` id) and the currently active data layers - a
 	 * same-origin snapshot handoff, not a live link back to the main tab
 	 * (see CesiumCanvas.svelte's openAnalysisTab for the other half of this).
 	 *
 	 * Every plotted value on this page comes from Copernicus Marine's WMTS
-	 * GetFeatureInfo (copernicus-feature-info.ts) — real, live point samples,
+	 * GetFeatureInfo (copernicus-feature-info.ts) - real, live point samples,
 	 * not a mock/synthetic dataset. See that module's header comment for why
 	 * (a bulk raster path exists too but needs an unverified browser decode
 	 * pipeline; this is the one that's actually built and verified).
 	 */
-	import { loadSession } from "$lib/state/session-store";
-	import { DATA_LAYERS, type DataLayerCatalogEntry } from "$lib/tiles/data-layers-catalog";
+	import { loadSession, type PersistedMeasurementRecord } from "$lib/state/session-store";
+	import {
+		DATA_LAYERS,
+		isTimeCapable,
+		resolveIsoTimeForEntry,
+		type AnalysableLayerEntry,
+	} from "$lib/tiles/data-layers-catalog";
+	import { copernicusWmtsLayerToEntry } from "$lib/tiles/wmts-catalog-client";
 	import { centroidOf } from "$lib/geo/sample-grid";
 	import DepthProfileChart from "$lib/components/analysis/DepthProfileChart.svelte";
 	import SliceHeatmap from "$lib/components/analysis/SliceHeatmap.svelte";
@@ -25,39 +31,62 @@
 	const measurementId = new URLSearchParams(window.location.search).get("measurement");
 	const measurement = session.measurements?.find((m) => m.id === measurementId);
 
-	const activeEntries: DataLayerCatalogEntry[] = (session.layers ?? [])
-		.map((l) => DATA_LAYERS.find((d) => d.id === l.id))
-		.filter((e): e is DataLayerCatalogEntry => Boolean(e?.wmts));
+	// A rectangle/ellipse is geometrically a closed ring, exactly like a
+	// hand-drawn polygon (see path-measure-tool.ts's header comment) - every
+	// "polygon vs. path" branch below (areal analysis vs. line transect)
+	// really means "closed shape vs. open line", so rectangle/ellipse take
+	// the same branch a polygon already does.
+	const MEASUREMENT_TYPE_LABEL: Record<PersistedMeasurementRecord["type"], string> = {
+		path: "Path",
+		polygon: "Polygon",
+		rectangle: "Rectangle",
+		ellipse: "Ellipse",
+	};
+
+	// A layer added via the picker's live Copernicus search was never in the
+	// static DATA_LAYERS array - this page opens in a separate tab/heap via
+	// window.open, so the main tab's in-memory dynamic registry
+	// (data-layer-registry.svelte.ts) isn't reachable here regardless. Its
+	// persisted `descriptor` (see session-store.ts's PersistedActiveLayer)
+	// is what makes it resolvable here too: reconstruct the same
+	// DataLayerCatalogEntry from that JSON, the same way DataLayerManager's
+	// own restoreLayers() does on a page reload of the main tab.
+	// Any WMTS-backed layer is analysable, whether or not it has a time axis
+	// at all - see AnalysableLayerEntry's doc comment. isTimeCapable only
+	// gates whether the Time row/TimeSlider below is shown, never whether a
+	// layer's plots exist in the first place.
+	const activeEntries: AnalysableLayerEntry[] = (session.layers ?? [])
+		.map((l) => (l.descriptor ? copernicusWmtsLayerToEntry(l.descriptor) : DATA_LAYERS.find((d) => d.id === l.id)))
+		.filter((e): e is AnalysableLayerEntry => Boolean(e?.wmts));
 
 	let selectedLayerId = $state(activeEntries[0]?.id);
 	const selectedEntry = $derived(
 		activeEntries.find((e) => e.id === selectedLayerId) ?? activeEntries[0],
 	);
 
-	function clampIso(iso: string, entry: DataLayerCatalogEntry): string {
-		const t = new Date(iso).getTime();
-		const start = new Date(entry.timeStart).getTime();
-		const end = new Date(entry.timeEnd).getTime();
-		if (Number.isNaN(t) || t < start) return entry.timeStart;
-		if (t > end) return entry.timeEnd;
-		return iso;
-	}
-
 	// Computed synchronously (not via $derived/$effect) against
-	// activeEntries[0] — a plain array read, not a reactive one — so isoTime
+	// activeEntries[0] - a plain array read, not a reactive one - so isoTime
 	// is a valid ISO string from its very first render. Feeding an empty
 	// string through to TimeSlider even for one initial tick would throw
 	// (new Date("").toISOString() is "Invalid time value"), since
 	// $derived values recompute synchronously, ahead of any $effect that
-	// might otherwise "fix it up after the fact."
+	// might otherwise "fix it up after the fact." resolveIsoTimeForEntry
+	// snaps whatever raw candidate it's given into a time the entry actually
+	// has, continuous or discrete, so "now" is a safe universal starting
+	// guess even though it's rarely a value any layer declares directly.
 	let isoTime = $state(
-		activeEntries[0] ? clampIso(session.layerTimeIso ?? activeEntries[0].timeEnd, activeEntries[0]) : "",
+		activeEntries[0] && isTimeCapable(activeEntries[0])
+			? resolveIsoTimeForEntry(session.layerTimeIso ?? new Date().toISOString(), activeEntries[0])
+			: new Date().toISOString(),
 	);
-	// Re-clamp whenever the selected layer changes (e.g. switching to a
+	// Re-resolve whenever the selected layer changes (e.g. switching to a
 	// forecast-style layer with a shorter time window than the one isoTime
-	// was picked against).
+	// was picked against, or from a continuous layer to a discrete one). A
+	// genuinely static layer (no time dimension at all) has nothing to
+	// resolve into - isoTime just carries over unchanged, and is never read
+	// by GetFeatureInfo in any way that matters for such a layer anyway.
 	$effect(() => {
-		if (selectedEntry) isoTime = clampIso(isoTime, selectedEntry);
+		if (selectedEntry && isTimeCapable(selectedEntry)) isoTime = resolveIsoTimeForEntry(isoTime, selectedEntry);
 	});
 
 	const initialCentroid = measurement ? centroidOf(measurement.positions) : ([0, 0] as const);
@@ -72,7 +101,7 @@
 </script>
 
 <svelte:head>
-	<title>{measurement ? `Visualise — ${measurement.label}` : "Visualise Data"}</title>
+	<title>{measurement ? `Visualise - ${measurement.label}` : "Visualise Data"}</title>
 </svelte:head>
 
 <div class="analysis-page">
@@ -81,17 +110,17 @@
 			<h1>Nothing to visualise</h1>
 			<p>
 				{#if !measurement}
-					No measurement was found for this link — open this page from the "Visualise Data"
+					No measurement was found for this link - open this page from the "Visualise Data"
 					button on a finished path or polygon instead.
 				{:else}
-					No active data layer was found — add one from the layers panel first.
+					No active data layer was found - add one from the layers panel first.
 				{/if}
 			</p>
 		</div>
 	{:else if selectedEntry}
 		<header class="page-header">
 			<div class="title-block">
-				<span class="measurement-type">{measurement.type === "path" ? "Path" : "Polygon"}</span>
+				<span class="measurement-type">{MEASUREMENT_TYPE_LABEL[measurement.type]}</span>
 				<h1>{measurement.label}</h1>
 			</div>
 
@@ -117,19 +146,24 @@
 				{#if selectedEntry.attribution}<span class="attribution">{selectedEntry.attribution}</span>{/if}
 			</div>
 
-			<div class="time-row">
-				<span class="time-label">Time</span>
-				<TimeSlider
-					timeStart={selectedEntry.timeStart}
-					timeEnd={selectedEntry.timeEnd}
-					timeStepSeconds={selectedEntry.timeStepSeconds}
-					value={isoTime}
-					onChange={(next) => (isoTime = next)}
-				/>
-			</div>
+			{#if isTimeCapable(selectedEntry)}
+				<div class="time-row">
+					<span class="time-label">Time</span>
+					<TimeSlider
+						timeStart={"timeStart" in selectedEntry ? selectedEntry.timeStart : undefined}
+						timeEnd={"timeStart" in selectedEntry ? selectedEntry.timeEnd : undefined}
+						timeStepSeconds={"timeStart" in selectedEntry ? selectedEntry.timeStepSeconds : undefined}
+						values={"timeValues" in selectedEntry ? selectedEntry.timeValues : undefined}
+						value={isoTime}
+						onChange={(next) => (isoTime = next)}
+					/>
+				</div>
+			{:else}
+				<p class="time-row static-note">This layer has no time dimension - it's a single static field.</p>
+			{/if}
 		</header>
 
-		<div class="panel-grid" class:has-volume={measurement.type === "polygon"}>
+		<div class="panel-grid" class:has-volume={measurement.type !== "path"}>
 			<section class="panel">
 				<div class="panel-header">
 					<h2>Depth profile</h2>
@@ -138,14 +172,14 @@
 					</button>
 				</div>
 				<p class="panel-subtitle">
-					{selectedPoint.lon.toFixed(3)}°, {selectedPoint.lat.toFixed(3)}° — click the slice{measurement.type ===
-					"polygon"
+					{selectedPoint.lon.toFixed(3)}°, {selectedPoint.lat.toFixed(3)}° - click the slice{measurement.type !==
+					"path"
 						? " or point cloud"
 						: ""} to resample elsewhere.
 				</p>
 				<DepthProfileChart
 					bind:this={depthChart}
-					wmts={selectedEntry.wmts!}
+					wmts={selectedEntry.wmts}
 					lon={selectedPoint.lon}
 					lat={selectedPoint.lat}
 					{isoTime}
@@ -162,14 +196,14 @@
 				</div>
 				<p class="panel-subtitle">
 					{#if measurement.type === "path"}
-						Cross-section along the drawn line — distance vs. depth.
+						Cross-section along the drawn line - distance vs. depth.
 					{:else}
 						Areal slice at a single depth within the drawn area.
 					{/if}
 				</p>
 				<SliceHeatmap
 					bind:this={sliceChart}
-					wmts={selectedEntry.wmts!}
+					wmts={selectedEntry.wmts}
 					positions={measurement.positions}
 					measurementType={measurement.type}
 					{isoTime}
@@ -178,7 +212,7 @@
 				/>
 			</section>
 
-			{#if measurement.type === "polygon"}
+			{#if measurement.type !== "path"}
 				<section class="panel">
 					<div class="panel-header">
 						<h2>3D point cloud</h2>
@@ -189,7 +223,7 @@
 					<p class="panel-subtitle">Drag to orbit. Points colour by value; z is depth.</p>
 					<PointCloud3D
 						bind:this={volumeChart}
-						wmts={selectedEntry.wmts!}
+						wmts={selectedEntry.wmts}
 						positions={measurement.positions}
 						{isoTime}
 						units={selectedEntry.units}
@@ -311,6 +345,12 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
+	}
+	.time-row.static-note {
+		margin: 0;
+		font-size: 0.78rem;
+		font-style: italic;
+		color: rgba(255, 255, 255, 0.45);
 	}
 	.time-label {
 		flex-shrink: 0;

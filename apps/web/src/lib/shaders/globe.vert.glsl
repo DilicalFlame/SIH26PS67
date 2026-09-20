@@ -1,5 +1,5 @@
 /**
- * globe.vert.glsl — line geometry (the graticule) through the shared
+ * globe.vert.glsl - line geometry (the graticule) through the shared
  * projection pipeline.
  *
  * Each vertex carries its segment partner (a_quantCoordNext) so the discard

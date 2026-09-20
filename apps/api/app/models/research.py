@@ -27,8 +27,8 @@ class ChatNode(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     project_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
-    # NULL for root; self-FK, fine inline in one CREATE TABLE (all columns —
-    # including this table's own `id` — are known within a single statement).
+    # NULL for root; self-FK, fine inline in one CREATE TABLE (all columns -
+    # including this table's own `id` - are known within a single statement).
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("chat_nodes.id", ondelete="CASCADE"), nullable=True
     )
@@ -40,7 +40,7 @@ class ChatNode(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
 
 class Activity(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     """The atomic unit that gets dragged into a paper. `payload` must contain
-    enough state to re-render the activity standalone (contracts §3) — a
+    enough state to re-render the activity standalone (contracts §3) - a
     plot activity storing only an image URL would make living papers (M4)
     impossible."""
 

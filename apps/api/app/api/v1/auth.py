@@ -24,7 +24,7 @@ def _seeded_user() -> User:
 
 @router.post("/login", response_model=UserResponse, responses=UNAUTHORIZED_RESPONSE)
 async def login(credentials: LoginRequest, response: Response) -> UserResponse:
-    """Sprint 0: password check is a stub (contracts §4.5) — any password
+    """Sprint 0: password check is a stub (contracts §4.5) - any password
     for the one seeded user succeeds; any other email is unauthorized."""
     user = _seeded_user()
     if credentials.email != user.email:

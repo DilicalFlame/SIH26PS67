@@ -10,14 +10,14 @@
 
 import * as THREE from 'three';
 
-/** `{d}`/`{t}` substitute array indices, not values (§4.3) — `gridUrlTemplate`
+/** `{d}`/`{t}` substitute array indices, not values (§4.3) - `gridUrlTemplate`
  * must already have `{tilesBase}` resolved before this is called. */
 export function buildGridUrl(resolvedGridUrlTemplate: string, depthIndex: number, timeIndex: number): string {
 	return resolvedGridUrlTemplate.replace('{d}', String(depthIndex)).replace('{t}', String(timeIndex));
 }
 
 /**
- * Resolves to `null` — not a rejection — when `signal` was aborted either
+ * Resolves to `null` - not a rejection - when `signal` was aborted either
  * before the fetch settled or while the response body was still arriving.
  * Callers must treat `null` as "superseded, nothing to bind", exactly like
  * scalar-field.ts's loadGrid() already did before this was extracted (#48).

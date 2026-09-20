@@ -19,7 +19,7 @@
 		class="info-dialog"
 		role="dialog"
 		aria-modal="true"
-		aria-label={`${layer.title} — layer information`}
+		aria-label={`${layer.title} - layer information`}
 		tabindex="-1"
 		onclick={(e) => e.stopPropagation()}
 		onkeydown={(e) => {

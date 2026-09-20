@@ -1,7 +1,7 @@
 """Async SQLAlchemy engine/session setup.
 
 Alembic migrations use a separate, synchronous connection (see
-alembic/env.py) — this module is for the running application only.
+alembic/env.py) - this module is for the running application only.
 """
 
 from __future__ import annotations
@@ -27,13 +27,13 @@ SLOW_QUERY_THRESHOLD_MS = 500.0
 
 
 def get_database_url() -> URL:
-    """DATABASE_URL (contracts §1) if set — otherwise built from the
+    """DATABASE_URL (contracts §1) if set - otherwise built from the
     individual POSTGRES_* variables (also §1).
 
     The individual-variable path exists because compose.yml can't safely
     string-interpolate a DATABASE_URL: with the documented default password
     admin@123, `...://user:${POSTGRES_PASSWORD}@host...` embeds a second,
-    unescaped '@' that's ambiguous with the userinfo/host delimiter — psycopg
+    unescaped '@' that's ambiguous with the userinfo/host delimiter - psycopg
     parsed the resulting URL as host "123" (confirmed empirically). URL.create()
     percent-encodes each component, so this can't happen regardless of what
     the password contains. compose.yml's api service relies on this: it sets
@@ -45,7 +45,7 @@ def get_database_url() -> URL:
 
     missing = [v for v in ("POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB") if not os.environ.get(v)]
     if missing:
-        raise RuntimeError(f"Set DATABASE_URL, or {', '.join(missing)} — see .env.example at the repo root")
+        raise RuntimeError(f"Set DATABASE_URL, or {', '.join(missing)} - see .env.example at the repo root")
     return URL.create(
         "postgresql+asyncpg",
         username=os.environ["POSTGRES_USER"],
@@ -58,7 +58,7 @@ def get_database_url() -> URL:
 
 def _register_slow_query_logging(engine: AsyncEngine) -> None:
     """Logs any query (issue #34) taking longer than SLOW_QUERY_THRESHOLD_MS.
-    Logs the statement, not bound parameters — those may carry user-entered
+    Logs the statement, not bound parameters - those may carry user-entered
     content (e.g. once chat persistence lands).
     """
     sync_engine = engine.sync_engine

@@ -1,5 +1,5 @@
 /**
- * fill.frag.glsl — flat colour for a polygon fill, with two clips.
+ * fill.frag.glsl - flat colour for a polygon fill, with two clips.
  *
  * Both are done per fragment rather than per vertex: fills are triangles
  * spanning real area, so a per-vertex verdict would drop or keep whole
@@ -19,7 +19,7 @@ varying vec3 v_sphere;
 
 void main() {
     // 1. Tile bounds. MVT geometry runs past the tile edge (the buffer), so
-    //    without this every tile overdraws its neighbours — which doubles up
+    //    without this every tile overdraws its neighbours - which doubles up
     //    wherever a retained parent tile is still under its children. The
     //    epsilon lets neighbours overlap by a hair, closing the sub-pixel
     //    seams an exact cut would leave between adjacent tiles.

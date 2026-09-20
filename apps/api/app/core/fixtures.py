@@ -22,7 +22,7 @@ def fixtures_dir() -> Path:
         candidate = parent / "fixtures"
         if candidate.is_dir():
             return candidate
-    raise RuntimeError(f"No fixtures/ directory found above {here} — is the repo checked out whole?")
+    raise RuntimeError(f"No fixtures/ directory found above {here} - is the repo checked out whole?")
 
 
 def fixture_path(relative_path: str) -> Path:

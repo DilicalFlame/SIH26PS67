@@ -6,7 +6,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import glsl from 'vite-plugin-glsl';
 
 // CesiumJS ships its Workers/Assets/Widgets/ThirdParty as static files it
-// loads at runtime via CESIUM_BASE_URL, not as ES modules — they can't be
+// loads at runtime via CESIUM_BASE_URL, not as ES modules - they can't be
 // bundled. scripts/copy-cesium-assets.mjs (run via postinstall) vendors them
 // into static/cesium, which SvelteKit serves as-is at this path in both dev
 // and the production build.

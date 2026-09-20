@@ -2,7 +2,7 @@
 	/**
 	 * DepthProfileChart.svelte
 	 *
-	 * Value vs. depth at one point — ≤50 GetFeatureInfo requests (one per
+	 * Value vs. depth at one point - ≤50 GetFeatureInfo requests (one per
 	 * standard CMEMS/GLORYS depth level), cancelled and re-issued whenever
 	 * `lon`/`lat`/`isoTime` change (a new point/time invalidates every
 	 * in-flight sample from the previous one).
@@ -69,7 +69,7 @@
 				x: withValues.map((s) => s.value as number),
 				// STANDARD_DEPTHS_M is negative-down (ELEVATION convention); flip
 				// to positive metres so "reversed" below reads as an intuitive
-				// depth axis — 0 (surface) at the top, deepest at the bottom.
+				// depth axis - 0 (surface) at the top, deepest at the bottom.
 				y: withValues.map((s) => Math.abs(s.depth)),
 				line: { color: "#3b82f6" },
 				marker: { size: 5, color: "#3b82f6" },
