@@ -46,11 +46,31 @@
 
 	let volumeGroup: THREE.Group | undefined;
 	let volumeMesh: THREE.Mesh | undefined;
+	let wireframeMesh: THREE.LineSegments | undefined;
 	let materialHandle: VolumeMaterialHandle | undefined;
 	let volumeTexture: THREE.Data3DTexture | undefined;
 	let builtForGrid: unknown = null; // identity-compares volumetricMode.grid so a re-entrant grid only builds once
 	/** Floor for syncCameraToCesium's per-frame near/far - see rebuildVolume. */
 	let sceneMaxDim = 100_000;
+	/** Set alongside the mesh in rebuildVolume, read every frame by
+	 *  updateDepthLabels - plain (not $state), since it's never read from
+	 *  the template, only from the animate() loop. */
+	let boxDims = { width: 0, height: 0, depthTotal: 0 };
+
+	/** DOM depth-axis labels (image-7-style ruler along the box's west-north
+	 *  edge) - one per fetched depth level, positioned every frame by
+	 *  projecting their 3D world point through the (also per-frame-synced)
+	 *  camera, same imperative-DOM-write pattern as ShapeVisualiseButton's
+	 *  updatePositions. */
+	const depthLabelEls = new Map<number, HTMLDivElement>();
+	function registerDepthLabel(node: HTMLDivElement, index: number) {
+		depthLabelEls.set(index, node);
+		return {
+			destroy() {
+				depthLabelEls.delete(index);
+			},
+		};
+	}
 
 	const DEG2RAD = Math.PI / 180;
 
@@ -68,6 +88,13 @@
 			x: (lon - centerLon) * DEG2RAD * metersPerLon,
 			z: -(lat - centerLat) * DEG2RAD * EARTH_RADIUS_M,
 		};
+	}
+
+	/** "-0 m" reads oddly for the barely-below-surface first standard depth
+	 *  (-0.49m) - round to the nearest metre and normalize -0 to 0. */
+	function formatDepthLabel(depthMeters: number): string {
+		const rounded = Math.round(depthMeters);
+		return `${rounded === 0 ? 0 : rounded} m`;
 	}
 
 	function bboxOfShapePositions(positions: [number, number][]): [number, number, number, number] {
@@ -100,6 +127,12 @@
 			volumeGroup?.remove(volumeMesh);
 			volumeMesh = undefined;
 		}
+		if (wireframeMesh) {
+			wireframeMesh.geometry.dispose();
+			(wireframeMesh.material as THREE.Material).dispose();
+			volumeGroup?.remove(wireframeMesh);
+			wireframeMesh = undefined;
+		}
 		materialHandle?.material.dispose();
 		materialHandle = undefined;
 		volumeTexture?.dispose();
@@ -123,8 +156,21 @@
 		const deepest = grid.depths[grid.depths.length - 1] ?? shallow;
 		const depthTotalM = Math.max(1, Math.abs(deepest - shallow));
 
+		// Same (centerLon, centerLat) origin the mesh itself is built
+		// around - required, not incidental (see CesiumCanvas's own note on
+		// volumeTargets' centroid: mesh and shape-clip must share one origin).
+		const polygonLocalXZ: [number, number][] = shapePositions.map(([lon, lat]) => {
+			const { x, z } = toLocalMeters(lon, lat, centerLon, centerLat);
+			return [x, z];
+		});
+
 		volumeTexture = buildData3DTexture(grid);
-		materialHandle = createVolumeMaterial(volumeTexture, toLUTTexture(volumeControls.colormap), volumeControls.opacity);
+		materialHandle = createVolumeMaterial(
+			volumeTexture,
+			toLUTTexture(volumeControls.colormap),
+			volumeControls.opacity,
+			polygonLocalXZ,
+		);
 		volumeMesh = createVolumeMesh(widthM, depthTotalM, heightM, materialHandle);
 		// Anchors the shallow (top) face at local y=0 regardless of the
 		// group's vertical-exaggeration scale - see the header comment on
@@ -132,6 +178,20 @@
 		// scale, not a mesh-level one.
 		volumeMesh.position.y = -depthTotalM / 2;
 		volumeGroup.add(volumeMesh);
+
+		// A "coordinate system" reference frame around the (now
+		// shape-clipped) data - the box's bounding edges, exaggerated in
+		// lockstep with the volume itself since it's added to the same
+		// group. Depth-axis text labels are separate DOM elements (see
+		// updateDepthLabels), not part of this mesh.
+		wireframeMesh = new THREE.LineSegments(
+			new THREE.EdgesGeometry(volumeMesh.geometry),
+			new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }),
+		);
+		wireframeMesh.position.copy(volumeMesh.position);
+		volumeGroup.add(wireframeMesh);
+
+		boxDims = { width: widthM, height: heightM, depthTotal: depthTotalM };
 		applyVerticalExaggeration();
 
 		// Only a floor for syncCameraToCesium's dynamic near/far (see
@@ -155,6 +215,40 @@
 	 *  offset is itself subject to (and cancels out under) the same scale. */
 	function applyVerticalExaggeration(): void {
 		if (volumeGroup) volumeGroup.scale.y = volumeControls.verticalExaggeration;
+	}
+
+	const scratchLabelPos = new THREE.Vector3();
+
+	/** Projects each depth level's ruler position (west-north top edge of
+	 *  the box, at that depth) through the camera into screen pixels -
+	 *  called every frame (camera + exaggeration both change live), same
+	 *  imperative-DOM-write pattern as ShapeVisualiseButton. */
+	function updateDepthLabels(): void {
+		const grid = volumetricMode.grid;
+		if (!camera || !renderer || !grid || boxDims.depthTotal <= 0) return;
+		const shallow = grid.depths[0] ?? 0;
+		const deepest = grid.depths[grid.depths.length - 1] ?? shallow;
+		const depthSpan = deepest - shallow || 1;
+		const { clientWidth, clientHeight } = renderer.domElement;
+
+		for (let i = 0; i < grid.depths.length; i++) {
+			const el = depthLabelEls.get(i);
+			if (!el) continue;
+			const fraction = (grid.depths[i] - shallow) / depthSpan; // 0 at shallow, 1 at deepest
+			const worldY = -fraction * boxDims.depthTotal * volumeControls.verticalExaggeration;
+			scratchLabelPos.set(-boxDims.width / 2, worldY, -boxDims.height / 2); // west-north edge
+			scratchLabelPos.project(camera);
+
+			if (scratchLabelPos.z > 1) {
+				el.style.display = "none";
+				continue;
+			}
+			const x = ((scratchLabelPos.x + 1) / 2) * clientWidth;
+			const y = ((1 - scratchLabelPos.y) / 2) * clientHeight;
+			el.style.display = "block";
+			el.style.left = `${x}px`;
+			el.style.top = `${y}px`;
+		}
 	}
 
 	/** Mirrors Cesium's current camera into this scene's camera - called
@@ -194,6 +288,7 @@
 	function animate(): void {
 		rafId = requestAnimationFrame(animate);
 		syncCameraToCesium();
+		updateDepthLabels();
 		if (renderer && scene && camera) renderer.render(scene, camera);
 	}
 
@@ -277,6 +372,12 @@
 
 <div class="volumetric-scene" bind:this={containerEl}></div>
 
+{#if volumetricMode.grid}
+	{#each volumetricMode.grid.depths as depth, i (i)}
+		<div class="depth-label" use:registerDepthLabel={i}>{formatDepthLabel(depth)}</div>
+	{/each}
+{/if}
+
 {#if volumetricMode.error}
 	<div class="error-banner">
 		<p>{volumetricMode.error}</p>
@@ -299,6 +400,23 @@
 	}
 	.volumetric-scene :global(canvas) {
 		display: block;
+	}
+	.depth-label {
+		position: fixed;
+		left: 0;
+		top: 0;
+		transform: translate(-100%, -50%);
+		display: none;
+		padding: 0.1rem 0.4rem;
+		margin-right: 0.4rem;
+		border-radius: 4px;
+		background: rgba(10, 12, 16, 0.65);
+		color: rgba(255, 255, 255, 0.85);
+		font-size: 0.7rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		pointer-events: none;
+		z-index: 17;
 	}
 	.error-banner {
 		position: fixed;

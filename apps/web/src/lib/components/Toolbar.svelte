@@ -26,11 +26,12 @@
 		onGraticuleToggle: () => void;
 		currentProjection: ProjectionType;
 		onProjectionChange: (p: ProjectionType) => void;
-		/** True while the "Visualise Data" 3D popout is active - the
-		 *  measure/draw toolbar has nothing useful to do over an in-scene
-		 *  volumetric view (see VolumeBottomToolbar for that mode's own
-		 *  tools), so it's hidden entirely rather than left floating on top. */
-		hidden?: boolean;
+		/** True while the "Visualise Data" 3D popout is active - drawing a
+		 *  new shape over an in-scene volumetric view doesn't make sense
+		 *  (there's no ground to click on), so just the shape tool button
+		 *  is disabled; the rest of the toolbar (grid/projection) and the
+		 *  active-layers panel stay fully usable. */
+		shapeToolDisabled?: boolean;
 	}
 	const {
 		measureState,
@@ -48,7 +49,7 @@
 		onGraticuleToggle,
 		currentProjection,
 		onProjectionChange,
-		hidden = false,
+		shapeToolDisabled = false,
 	}: Props = $props();
 
 	// One glyph (viewBox 0 0 24 24 path/shape data) + label + tooltip per
@@ -160,7 +161,6 @@
 
 <svelte:window onclick={closeAllMenus} />
 
-{#if !hidden}
 <div class="toolbar-stack">
 	<nav class="bottom-bar" aria-label="Map tools">
 		<div class="tool-cluster" onclick={(e) => e.stopPropagation()} role="presentation">
@@ -169,12 +169,14 @@
 			     draws whichever mode the dropdown last selected; picking a
 			     different one from the dropdown switches it (and starts the
 			     tool if it wasn't already active) without needing a separate
-			     toggle-on click. -->
+			     toggle-on click. Disabled (not hidden) while the 3D popout is
+			     active - see shapeToolDisabled's doc comment. -->
 			<div class="tool-group">
 				<button
 					type="button"
 					class="tool-btn"
 					class:active={measureState.active}
+					disabled={shapeToolDisabled}
 					onclick={onTogglePathTool}
 					aria-pressed={measureState.active}
 				>
@@ -185,6 +187,7 @@
 					type="button"
 					class="caret-btn"
 					class:active={shapeMenuOpen}
+					disabled={shapeToolDisabled}
 					onclick={toggleShapeMenu}
 					aria-haspopup="menu"
 					aria-expanded={shapeMenuOpen}
@@ -192,7 +195,7 @@
 				>
 					{@render caretIcon()}
 				</button>
-				{#if shapeMenuOpen}
+				{#if shapeMenuOpen && !shapeToolDisabled}
 					<div class="tool-dropdown">
 						{#each SHAPE_MODES as mode (mode)}
 							<button
@@ -289,7 +292,6 @@
 		</div>
 	</nav>
 </div>
-{/if}
 
 {#if measureState.active}
 	<SidePanel
@@ -502,7 +504,7 @@
 		cursor: pointer;
 		transition: color 150ms ease;
 	}
-	.caret-btn:hover,
+	.caret-btn:hover:not(:disabled),
 	.caret-btn.active {
 		color: rgba(255, 255, 255, 0.9);
 	}
@@ -623,7 +625,7 @@
 		-webkit-tap-highlight-color: transparent;
 	}
 
-	.tool-btn:hover {
+	.tool-btn:hover:not(:disabled) {
 		background: rgba(255, 255, 255, 0.1);
 		color: #ffffff;
 	}
@@ -631,6 +633,12 @@
 	.tool-btn.active {
 		background: rgba(59, 130, 246, 0.35);
 		color: #ffffff;
+	}
+
+	.tool-btn:disabled,
+	.caret-btn:disabled {
+		color: rgba(255, 255, 255, 0.25);
+		cursor: default;
 	}
 
 	.tool-btn svg {
