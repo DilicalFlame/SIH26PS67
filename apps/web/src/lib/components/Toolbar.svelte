@@ -13,11 +13,6 @@
 		onRemoveMeasurement: (id: string) => void;
 		onZoomToMeasurement: (id: string) => void;
 		onHighlightMeasurement: (id: string, highlighted: boolean) => void;
-		/** "Visualise Data" only makes sense once there's data to visualise -
-		 *  hidden entirely rather than shown-disabled when no data layer is
-		 *  active. */
-		hasActiveLayers: boolean;
-		onVisualiseData: (id: string) => void;
 		/** Which shape the tool button draws - see path-measure-tool.ts's
 		 *  ShapeMode doc comment. Drives the main button's own icon/tooltip
 		 *  (not just the dropdown's active-item highlight), so it's always
@@ -31,6 +26,11 @@
 		onGraticuleToggle: () => void;
 		currentProjection: ProjectionType;
 		onProjectionChange: (p: ProjectionType) => void;
+		/** True while the "Visualise Data" 3D popout is active - the
+		 *  measure/draw toolbar has nothing useful to do over an in-scene
+		 *  volumetric view (see VolumeBottomToolbar for that mode's own
+		 *  tools), so it's hidden entirely rather than left floating on top. */
+		hidden?: boolean;
 	}
 	const {
 		measureState,
@@ -42,14 +42,13 @@
 		onRemoveMeasurement,
 		onZoomToMeasurement,
 		onHighlightMeasurement,
-		hasActiveLayers,
-		onVisualiseData,
 		shapeMode,
 		onSelectShapeMode,
 		graticuleOn,
 		onGraticuleToggle,
 		currentProjection,
 		onProjectionChange,
+		hidden = false,
 	}: Props = $props();
 
 	// One glyph (viewBox 0 0 24 24 path/shape data) + label + tooltip per
@@ -161,6 +160,7 @@
 
 <svelte:window onclick={closeAllMenus} />
 
+{#if !hidden}
 <div class="toolbar-stack">
 	<nav class="bottom-bar" aria-label="Map tools">
 		<div class="tool-cluster" onclick={(e) => e.stopPropagation()} role="presentation">
@@ -289,6 +289,7 @@
 		</div>
 	</nav>
 </div>
+{/if}
 
 {#if measureState.active}
 	<SidePanel
@@ -428,11 +429,6 @@
 										</div>
 										<div class="measurement-actions">
 											<button type="button" onclick={() => onZoomToMeasurement(m.id)}>Zoom to</button>
-											{#if hasActiveLayers}
-												<button type="button" onclick={() => onVisualiseData(m.id)}>
-													Visualise Data
-												</button>
-											{/if}
 											<button type="button" class="danger" onclick={() => onRemoveMeasurement(m.id)}>Delete</button>
 										</div>
 									</div>
