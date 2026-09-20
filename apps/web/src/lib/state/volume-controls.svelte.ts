@@ -18,7 +18,12 @@ export interface VolumeControlsState {
 const DEFAULTS: VolumeControlsState = {
 	opacity: 0.85,
 	colormap: "turbo" in COLORMAPS ? "turbo" : "thermal",
-	verticalExaggeration: 3,
+	// Ocean depth is genuinely tiny next to a drawn shape's horizontal
+	// extent (a few km deep vs. tens-to-hundreds of km wide) - even 3x
+	// reads as visually flat. Defaulting much higher gets a recognizable
+	// "block" shape out of the box; the slider still goes higher still for
+	// a deliberately dramatic look.
+	verticalExaggeration: 12,
 };
 
 export const volumeControls = $state<VolumeControlsState>({ ...DEFAULTS });

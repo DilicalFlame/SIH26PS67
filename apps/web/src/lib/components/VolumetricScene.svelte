@@ -3,14 +3,20 @@
 	 * VolumetricScene.svelte
 	 *
 	 * The "Visualise Data" 3D popout's own canvas + three.js renderer/camera/
-	 * OrbitControls - a full modal takeover, not composited with Cesium (see
-	 * the plan this was built from for why: nothing in this codebase
-	 * currently syncs a three.js camera to Cesium's per-frame, and building
-	 * that bridge is a much bigger undertaking than an independent second
-	 * canvas the caller hides Cesium's own canvas behind). CesiumCanvas
-	 * mounts this only while volumetricMode.active is true and unmounts it
-	 * (see onDestroy's explicit disposal) the moment the user exits, so
-	 * repeated open/close cycles never leak a WebGL context.
+	 * OrbitControls, layered transparently on top of Cesium's own canvas
+	 * (which stays live underneath - see CesiumCanvas.svelte's
+	 * enterVolumeView and PolygonDimOverlay.svelte, which dims everywhere
+	 * except the shape itself so the globe/graticule still read as "the
+	 * ground this volume is standing on" instead of being replaced by a
+	 * separate scene). The three.js camera is one-time-synced to wherever
+	 * Cesium's own camera was framing the shape (see
+	 * cesium-local-frame.ts) so the volume visually grows out of the right
+	 * spot on screen; from then on OrbitControls owns it independently -
+	 * Cesium's camera inputs are disabled for the duration (see
+	 * CesiumCanvas), so the two never fight over the same drag gesture.
+	 * CesiumCanvas mounts this only while volumetricMode.active is true and
+	 * unmounts it (see onDestroy's explicit disposal) the moment the user
+	 * exits, so repeated open/close cycles never leak a WebGL context.
 	 */
 	import { onMount, onDestroy } from "svelte";
 	import * as THREE from "three";
@@ -21,15 +27,20 @@
 	import { toLUTTexture } from "$lib/render/colormaps";
 	import { createVolumeMaterial, createVolumeMesh, type VolumeMaterialHandle } from "$lib/render/volume-raymarch";
 	import { EARTH_RADIUS_M } from "$lib/geo/measure";
+	import type { LocalFrameCameraSnapshot } from "$lib/geo/cesium-local-frame";
 
 	interface Props {
 		/** [longitude, latitude] positions of the shape this popout belongs
 		 *  to - drawn as a ground-level outline so the volume stays anchored
 		 *  to something recognisable rather than floating in empty space. */
 		shapePositions: [number, number][];
+		/** Where Cesium's own camera was looking when the popout opened -
+		 *  null falls back to a top-down heuristic framing (see
+		 *  rebuildVolume) rather than failing outright. */
+		cameraSnapshot: LocalFrameCameraSnapshot | null;
 		onExit: () => void;
 	}
-	const { shapePositions, onExit }: Props = $props();
+	const { shapePositions, cameraSnapshot, onExit }: Props = $props();
 
 	let containerEl: HTMLDivElement;
 	let renderer: THREE.WebGLRenderer | undefined;
@@ -107,14 +118,17 @@
 		volumeGroup.add(volumeMesh);
 		applyVerticalExaggeration();
 
-		if (camera && controls) {
+		// Near/far only - camera position/target were already set once at
+		// mount (from cameraSnapshot, or the top-down fallback below) and
+		// must NOT be reset here: the grid usually finishes loading well
+		// after the scene mounts, and resetting the camera on arrival would
+		// yank it away from wherever Cesium's own camera (or the user, via
+		// OrbitControls) had it framed.
+		if (camera) {
 			const maxDim = Math.max(widthM, heightM, depthTotalM * volumeControls.verticalExaggeration);
-			camera.position.set(0, maxDim * 1.7, maxDim * 0.35);
-			controls.target.set(0, 0, 0);
 			camera.near = Math.max(0.1, maxDim / 1000);
 			camera.far = maxDim * 20;
 			camera.updateProjectionMatrix();
-			controls.update();
 		}
 	}
 
@@ -147,11 +161,16 @@
 
 	onMount(() => {
 		scene = new THREE.Scene();
-		scene.background = new THREE.Color(0x05070c);
+		// Transparent - Cesium's own canvas (dimmed outside the shape by
+		// PolygonDimOverlay, full brightness inside it) shows through
+		// everywhere this scene doesn't paint an opaque pixel, instead of
+		// this canvas replacing the view entirely.
+		scene.background = null;
 
 		camera = new THREE.PerspectiveCamera(50, containerEl.clientWidth / containerEl.clientHeight, 0.1, 100000);
 
-		renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+		renderer.setClearColor(0x000000, 0);
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 		renderer.setSize(containerEl.clientWidth, containerEl.clientHeight);
 		containerEl.appendChild(renderer.domElement);
@@ -171,6 +190,25 @@
 		const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 		dirLight.position.set(1, 2, 1);
 		scene.add(dirLight);
+
+		if (cameraSnapshot) {
+			camera.position.set(...cameraSnapshot.position);
+			controls.target.set(...cameraSnapshot.target);
+			camera.fov = cameraSnapshot.fovDeg;
+		} else {
+			// Fallback: a top-down-ish framing sized off the shape's own
+			// bbox (grid.bbox isn't known yet at mount time) - only reached
+			// if Cesium's frustum wasn't a PerspectiveFrustum, which
+			// shouldn't happen in practice (see captureLocalCameraSnapshot).
+			const metersPerLon = EARTH_RADIUS_M * Math.max(Math.cos(((south + north) / 2) * DEG2RAD), 0.01);
+			const widthM = Math.max(1, (east - west) * DEG2RAD * metersPerLon);
+			const heightM = Math.max(1, (north - south) * DEG2RAD * EARTH_RADIUS_M);
+			const maxDim = Math.max(widthM, heightM);
+			camera.position.set(0, maxDim * 1.7, maxDim * 0.35);
+			controls.target.set(0, 0, 0);
+		}
+		camera.updateProjectionMatrix();
+		controls.update();
 
 		rebuildVolume();
 		window.addEventListener("resize", handleResize);
@@ -237,15 +275,21 @@
 			<button type="button" onclick={onExit}>Close</button>
 		</div>
 	{/if}
-	<button type="button" class="exit-button" onclick={onExit} aria-label="Exit 3D view">✕</button>
 </div>
 
 <style>
 	.volumetric-scene {
 		position: fixed;
 		inset: 0;
-		z-index: 40;
-		background: #05070c;
+		/* Above Cesium's canvas + PolygonDimOverlay (z-index 12), below the
+		   right control panel (SidePanel, z-index 20) - see
+		   VolumeControlPanel.svelte's header comment for the full stack. */
+		z-index: 16;
+		background: transparent;
+		/* OrbitControls needs to receive drags on this canvas even though
+		   its background is transparent and Cesium's (input-disabled)
+		   canvas sits directly underneath. */
+		pointer-events: auto;
 	}
 	.volumetric-scene :global(canvas) {
 		display: block;
@@ -259,7 +303,7 @@
 		justify-content: center;
 		gap: 0.75rem;
 		color: #e6ecf3;
-		background: rgba(5, 7, 12, 0.72);
+		background: rgba(5, 7, 12, 0.55);
 		z-index: 1;
 	}
 	.overlay .error {
@@ -287,22 +331,5 @@
 		to {
 			transform: rotate(360deg);
 		}
-	}
-	.exit-button {
-		position: absolute;
-		top: 1rem;
-		right: 1rem;
-		z-index: 2;
-		width: 2.25rem;
-		height: 2.25rem;
-		border-radius: 50%;
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		background: rgba(0, 0, 0, 0.4);
-		color: #e6ecf3;
-		font-size: 1rem;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 	}
 </style>

@@ -30,10 +30,16 @@
     import ShapeVisualiseButton, { type VisualiseTarget } from "$lib/components/ShapeVisualiseButton.svelte";
     import VolumetricScene from "$lib/components/VolumetricScene.svelte";
     import VolumeControlPanel from "$lib/components/VolumeControlPanel.svelte";
+    import PolygonDimOverlay from "$lib/components/PolygonDimOverlay.svelte";
     import { findVolumeLayerForShape, bboxOfPositions } from "$lib/measure/shape-layer-intersection";
     import { findLayerEntry } from "$lib/tiles/data-layer-registry.svelte";
     import { fetchVolumeGrid } from "$lib/render/volume-field";
     import { isTimeCapable, resolveIsoTimeForEntry } from "$lib/tiles/data-layers-catalog";
+    import {
+        captureLocalCameraSnapshot,
+        captureShapeScreenPoints,
+        type LocalFrameCameraSnapshot,
+    } from "$lib/geo/cesium-local-frame";
     import {
         volumetricMode,
         enterVolumetricMode,
@@ -81,6 +87,17 @@
      *  morph snap-back uses). Plain module-local, not $state, same reasoning
      *  as morphSnapBackRemove below. */
     let volumeReturnView: PersistedCameraView | undefined;
+    /** Both captured once (not per-frame) right after the camera parks -
+     *  see recaptureVolumeViewGeometry - and re-derived on resize while
+     *  the popout is active; $state so VolumetricScene/PolygonDimOverlay
+     *  re-render when they change. */
+    let volumeCameraSnapshot = $state<LocalFrameCameraSnapshot | null>(null);
+    let volumeScreenPoints = $state<[number, number][] | null>(null);
+    /** Kept around (not just local to enterVolumeView) so a window resize
+     *  while the popout is active can re-derive both of the above without
+     *  needing to re-look-up the shape/layer from possibly-changed state. */
+    let activeVolumeTarget: VisualiseTarget | undefined;
+    let activeVolumeShape: FinishedMeasurement | undefined;
 
     let viewer: Cesium.Viewer;
     let gridLayer: Cesium.ImageryLayer | undefined;
@@ -522,22 +539,38 @@
         measureTool?.setMeasurementHighlighted(id, highlighted);
     }
     // =========================================================================
-    // "Visualise Data" 3D popout - modal takeover, not composited with
-    // Cesium (see VolumetricScene.svelte's header comment for why). Cesium's
-    // own canvas/globe/render loop are hidden rather than torn down, so
-    // re-entering is cheap and nothing about the restored map state (base
-    // layer, graticule, measurements) needs rebuilding.
+    // "Visualise Data" 3D popout. Cesium's own canvas/globe/render loop
+    // stay live and visible underneath the popout (not hidden/torn down):
+    // PolygonDimOverlay dims everything except the shape's own footprint,
+    // so the globe (and its graticule, if on) still reads as "the ground
+    // this volume stands on" - bottom to top on screen: the shape
+    // (undimmed Cesium), whatever Cesium itself draws there (e.g. the
+    // grid), then VolumetricScene's transparent-background three.js
+    // canvas holding the volume, floating above both. Camera inputs are
+    // disabled instead, so the user can't drag the globe out from under
+    // the popout, and the one-time Cesium->three.js camera sync (see
+    // cesium-local-frame.ts) stays valid without a per-frame update.
     // =========================================================================
-    function hideCesiumForVolumeView(): void {
-        viewer.canvas.style.visibility = "hidden";
-        viewer.scene.globe.show = false;
-        viewer.useDefaultRenderLoop = false;
+    function disableCesiumInputsForVolumeView(): void {
+        viewer.scene.screenSpaceCameraController.enableInputs = false;
     }
 
-    function showCesiumAfterVolumeView(): void {
-        viewer.scene.globe.show = true;
-        viewer.canvas.style.visibility = "visible";
-        viewer.useDefaultRenderLoop = true;
+    function restoreCesiumInputsAfterVolumeView(): void {
+        viewer.scene.screenSpaceCameraController.enableInputs = true;
+    }
+
+    /** Re-captures the camera sync + dim-overlay cutout from Cesium's
+     *  (frozen) camera - called once right after the fly-in lands, and
+     *  again on window resize (the earlier projection is only valid for
+     *  the viewport size it was computed against). */
+    function recaptureVolumeViewGeometry(): void {
+        if (!activeVolumeTarget || !activeVolumeShape) return;
+        volumeCameraSnapshot = captureLocalCameraSnapshot(viewer, activeVolumeTarget.centroid);
+        volumeScreenPoints = captureShapeScreenPoints(viewer, activeVolumeShape.positions);
+    }
+
+    function onWindowResizeDuringVolumeView(): void {
+        if (volumetricMode.active) recaptureVolumeViewGeometry();
     }
 
     async function enterVolumeView(target: VisualiseTarget): Promise<void> {
@@ -546,6 +579,8 @@
         const shapeBbox = bboxOfPositions(shape.positions);
 
         volumeReturnView = captureCurrentView();
+        activeVolumeTarget = target;
+        activeVolumeShape = shape;
         enterVolumetricMode(target.id, target.layer.id);
 
         try {
@@ -560,7 +595,8 @@
             // won't be as clean.
         }
 
-        hideCesiumForVolumeView();
+        disableCesiumInputsForVolumeView();
+        recaptureVolumeViewGeometry();
 
         try {
             // layerTimeIso is the shared slider's raw value, which can sit
@@ -580,9 +616,13 @@
     }
 
     function exitVolumeView(): void {
-        showCesiumAfterVolumeView();
+        restoreCesiumInputsAfterVolumeView();
         if (volumeReturnView) applyRestoredCamera(volumeReturnView, true);
         volumeReturnView = undefined;
+        activeVolumeTarget = undefined;
+        activeVolumeShape = undefined;
+        volumeCameraSnapshot = null;
+        volumeScreenPoints = null;
         exitVolumetricMode();
     }
 
@@ -786,10 +826,12 @@
 
     onMount(() => {
         initScene();
+        window.addEventListener("resize", onWindowResizeDuringVolumeView);
     });
 
     onDestroy(() => {
         if (!browser) return;
+        window.removeEventListener("resize", onWindowResizeDuringVolumeView);
         cancelAnimationFrame(rafId);
         handler?.destroy();
         measureTool?.destroy();
@@ -853,15 +895,22 @@
 
 <ShapeVisualiseButton
     bind:this={shapeVisualiseButtons}
-    targets={volumeTargets}
+    targets={volumetricMode.active
+        ? volumeTargets.filter((t) => t.id !== volumetricMode.measurementId)
+        : volumeTargets}
     onVisualise={enterVolumeView}
 />
 
 {#if volumetricMode.active}
     {@const shape = measureState.finished.find((m) => m.id === volumetricMode.measurementId)}
     {@const activeLayerEntry = volumetricMode.layerId ? findLayerEntry(volumetricMode.layerId) : undefined}
-    <VolumetricScene shapePositions={shape?.positions ?? []} onExit={exitVolumeView} />
-    <VolumeControlPanel layerEntry={activeLayerEntry} onExit={exitVolumeView} />
+    <PolygonDimOverlay points={volumeScreenPoints} />
+    <VolumetricScene
+        shapePositions={shape?.positions ?? []}
+        cameraSnapshot={volumeCameraSnapshot}
+        onExit={exitVolumeView}
+    />
+    <VolumeControlPanel shapeLabel={shape?.label ?? "Data"} layerEntry={activeLayerEntry} onExit={exitVolumeView} />
 {/if}
 
 <style>
