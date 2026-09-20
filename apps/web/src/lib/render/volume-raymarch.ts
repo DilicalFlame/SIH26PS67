@@ -71,9 +71,13 @@ const fragmentShader = /* glsl */ `
 
 		vec4 accumulated = vec4(0.0);
 		for (int i = 0; i < STEPS; i++) {
+			// Local frame is (x=East, y=Up, z=South) - see
+			// cesium-local-frame.ts's header comment for why South, not
+			// North. Row 0 of the fetched grid is the north edge, so
+			// pos.z=-height/2 (north) must map to texCoord.y=0.
 			vec3 texCoord = vec3(
 				(pos.x + 0.5 * uBoxSize.x) / uBoxSize.x,
-				(0.5 * uBoxSize.z - pos.z) / uBoxSize.z,
+				(pos.z + 0.5 * uBoxSize.z) / uBoxSize.z,
 				(0.5 * uBoxSize.y - pos.y) / uBoxSize.y
 			);
 			if (texCoord.z >= uDepthMinFrac && texCoord.z <= uDepthMaxFrac) {

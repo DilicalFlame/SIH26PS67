@@ -35,11 +35,7 @@
     import { findLayerEntry } from "$lib/tiles/data-layer-registry.svelte";
     import { fetchVolumeGrid } from "$lib/render/volume-field";
     import { isTimeCapable, resolveIsoTimeForEntry } from "$lib/tiles/data-layers-catalog";
-    import {
-        captureLocalCameraSnapshot,
-        captureShapeScreenPoints,
-        type LocalFrameCameraSnapshot,
-    } from "$lib/geo/cesium-local-frame";
+    import { captureShapeScreenPoints } from "$lib/geo/cesium-local-frame";
     import {
         volumetricMode,
         enterVolumetricMode,
@@ -82,22 +78,19 @@
     let hasCrashed = $state(false);
     let headingControl: HeadingControl | undefined;
     let shapeVisualiseButtons: ShapeVisualiseButton | undefined;
+    let polygonDimOverlay: PolygonDimOverlay | undefined = $state();
     /** Camera to restore on exitVolumeView() - captured once, right before
      *  the fly-in starts (same captureCurrentView() switchProjection's own
      *  morph snap-back uses). Plain module-local, not $state, same reasoning
      *  as morphSnapBackRemove below. */
     let volumeReturnView: PersistedCameraView | undefined;
-    /** Both captured once (not per-frame) right after the camera parks -
-     *  see recaptureVolumeViewGeometry - and re-derived on resize while
-     *  the popout is active; $state so VolumetricScene/PolygonDimOverlay
-     *  re-render when they change. */
-    let volumeCameraSnapshot = $state<LocalFrameCameraSnapshot | null>(null);
-    let volumeScreenPoints = $state<[number, number][] | null>(null);
-    /** Kept around (not just local to enterVolumeView) so a window resize
-     *  while the popout is active can re-derive both of the above without
-     *  needing to re-look-up the shape/layer from possibly-changed state. */
-    let activeVolumeTarget: VisualiseTarget | undefined;
-    let activeVolumeShape: FinishedMeasurement | undefined;
+    /** The shape currently popped out - read every frame from animate() to
+     *  drive PolygonDimOverlay's cutout (Cesium's camera is fully
+     *  interactive during the popout, so the shape's screen projection
+     *  changes continuously - see cesium-local-frame.ts) and passed to
+     *  VolumetricScene as its `centroid`/`shapePositions` props. */
+    let activeVolumeShape: FinishedMeasurement | undefined = $state();
+    let activeVolumeCentroid: Cesium.Cartesian3 | undefined = $state();
 
     let viewer: Cesium.Viewer;
     let gridLayer: Cesium.ImageryLayer | undefined;
@@ -129,9 +122,17 @@
 
     /** Every finished shape that has a data layer to pop into 3D - see
      *  shape-layer-intersection.ts's gate. Recomputed whenever the finished
-     *  shapes or active layers change; centroid is a plain average of the
-     *  shape's own lon/lat vertices (not a geodesic centroid) - accurate
-     *  enough for anchoring a button, not used for any measurement. */
+     *  shapes or active layers change; centroid is the shape's bbox center
+     *  (not a vertex average, and not a true geodesic centroid) - it MUST
+     *  match bboxOfPositions()'s bbox center exactly, because
+     *  enterVolumeView sends that same bbox to the backend as
+     *  VolumeGrid.bbox, which VolumetricScene's rebuildVolume() then uses
+     *  as the volume mesh's own local-frame origin. A vertex-average
+     *  centroid drifts from the bbox center for any non-symmetric shape
+     *  (confirmed live: an irregular triangle put the camera sync's origin
+     *  ~300km away from the mesh's actual origin, visibly displacing the
+     *  volume from the shape it's supposed to sit over) - centroid here
+     *  and the mesh's origin must be the exact same point. */
     let volumeTargets = $derived<VisualiseTarget[]>(
         measureState.finished.flatMap((m) => {
             const layer = findVolumeLayerForShape(
@@ -140,16 +141,8 @@
                 findLayerEntry,
             );
             if (!layer) return [];
-            let lonSum = 0;
-            let latSum = 0;
-            for (const [lon, lat] of m.positions) {
-                lonSum += lon;
-                latSum += lat;
-            }
-            const centroid = Cesium.Cartesian3.fromDegrees(
-                lonSum / m.positions.length,
-                latSum / m.positions.length,
-            );
+            const [west, south, east, north] = bboxOfPositions(m.positions);
+            const centroid = Cesium.Cartesian3.fromDegrees((west + east) / 2, (south + north) / 2);
             return [{ id: m.id, centroid, layer }];
         }),
     );
@@ -540,47 +533,29 @@
     }
     // =========================================================================
     // "Visualise Data" 3D popout. Cesium's own canvas/globe/render loop
-    // stay live and visible underneath the popout (not hidden/torn down):
-    // PolygonDimOverlay dims everything except the shape's own footprint,
-    // so the globe (and its graticule, if on) still reads as "the ground
-    // this volume stands on" - bottom to top on screen: the shape
-    // (undimmed Cesium), whatever Cesium itself draws there (e.g. the
-    // grid), then VolumetricScene's transparent-background three.js
-    // canvas holding the volume, floating above both. Camera inputs are
-    // disabled instead, so the user can't drag the globe out from under
-    // the popout, and the one-time Cesium->three.js camera sync (see
-    // cesium-local-frame.ts) stays valid without a per-frame update.
+    // stay live and fully interactive underneath the popout (not hidden or
+    // input-disabled): PolygonDimOverlay dims everything except the
+    // shape's own footprint every frame (see animate() below), so the
+    // globe (and its graticule, if on) still reads as "the ground this
+    // volume stands on" - bottom to top on screen: the shape (undimmed
+    // Cesium), whatever Cesium itself draws there (e.g. the grid), then
+    // VolumetricScene's transparent-background three.js canvas holding the
+    // volume, floating above both. VolumetricScene has no camera controls
+    // of its own - it re-derives its camera from Cesium's every frame (see
+    // cesium-local-frame.ts), so dragging/zooming Cesium's own canvas
+    // moves the volume right along with it, as one continuous 3D space
+    // rather than two independently-navigable ones. Loading the depth data
+    // never blocks this - see volumetricMode.loading, surfaced as a small
+    // non-blocking indicator in StatusBar, not an overlay here.
     // =========================================================================
-    function disableCesiumInputsForVolumeView(): void {
-        viewer.scene.screenSpaceCameraController.enableInputs = false;
-    }
-
-    function restoreCesiumInputsAfterVolumeView(): void {
-        viewer.scene.screenSpaceCameraController.enableInputs = true;
-    }
-
-    /** Re-captures the camera sync + dim-overlay cutout from Cesium's
-     *  (frozen) camera - called once right after the fly-in lands, and
-     *  again on window resize (the earlier projection is only valid for
-     *  the viewport size it was computed against). */
-    function recaptureVolumeViewGeometry(): void {
-        if (!activeVolumeTarget || !activeVolumeShape) return;
-        volumeCameraSnapshot = captureLocalCameraSnapshot(viewer, activeVolumeTarget.centroid);
-        volumeScreenPoints = captureShapeScreenPoints(viewer, activeVolumeShape.positions);
-    }
-
-    function onWindowResizeDuringVolumeView(): void {
-        if (volumetricMode.active) recaptureVolumeViewGeometry();
-    }
-
     async function enterVolumeView(target: VisualiseTarget): Promise<void> {
         const shape = measureState.finished.find((m) => m.id === target.id);
         if (!shape || !target.layer.wmts) return;
         const shapeBbox = bboxOfPositions(shape.positions);
 
         volumeReturnView = captureCurrentView();
-        activeVolumeTarget = target;
         activeVolumeShape = shape;
+        activeVolumeCentroid = target.centroid;
         enterVolumetricMode(target.id, target.layer.id);
 
         try {
@@ -590,13 +565,9 @@
                 duration: 1.5,
             });
         } catch {
-            // flyTo's promise rejects if interrupted (e.g. another flight
-            // starts) - proceed with the takeover regardless, framing just
-            // won't be as clean.
+            // flyTo's promise rejects if interrupted (e.g. a drag) - fine,
+            // the camera sync above tracks wherever it actually ends up.
         }
-
-        disableCesiumInputsForVolumeView();
-        recaptureVolumeViewGeometry();
 
         try {
             // layerTimeIso is the shared slider's raw value, which can sit
@@ -616,13 +587,10 @@
     }
 
     function exitVolumeView(): void {
-        restoreCesiumInputsAfterVolumeView();
         if (volumeReturnView) applyRestoredCamera(volumeReturnView, true);
         volumeReturnView = undefined;
-        activeVolumeTarget = undefined;
         activeVolumeShape = undefined;
-        volumeCameraSnapshot = null;
-        volumeScreenPoints = null;
+        activeVolumeCentroid = undefined;
         exitVolumetricMode();
     }
 
@@ -783,13 +751,19 @@
             headingControl?.setHeadingDeg((headingAngle * 180) / Math.PI);
         }
 
-        // Also gated on volumetricMode.active - the compass has nothing
-        // sensible to rotate while Cesium's own canvas is hidden behind the
-        // 3D popout (see hideCesiumForVolumeView), and would otherwise keep
-        // floating on top of it.
+        // Also gated on volumetricMode.active - the compass would otherwise
+        // keep floating on top of the 3D popout's own right-side controls.
         headingControl?.setVisible(!isFlatMode() && !volumetricMode.active);
 
         shapeVisualiseButtons?.updatePositions(viewer);
+
+        // Cesium's camera is fully interactive during the popout (see
+        // enterVolumeView's header comment), so the shape's on-screen
+        // projection changes every frame - keep the dim-overlay cutout in
+        // sync with it, same cadence VolumetricScene syncs its own camera at.
+        if (volumetricMode.active && activeVolumeShape) {
+            polygonDimOverlay?.updatePoints(captureShapeScreenPoints(viewer, activeVolumeShape.positions));
+        }
 
         if (now - lastStatusPushTime >= STATUS_PUSH_INTERVAL_MS) {
             lastStatusPushTime = now;
@@ -826,12 +800,10 @@
 
     onMount(() => {
         initScene();
-        window.addEventListener("resize", onWindowResizeDuringVolumeView);
     });
 
     onDestroy(() => {
         if (!browser) return;
-        window.removeEventListener("resize", onWindowResizeDuringVolumeView);
         cancelAnimationFrame(rafId);
         handler?.destroy();
         measureTool?.destroy();
@@ -901,16 +873,23 @@
     onVisualise={enterVolumeView}
 />
 
-{#if volumetricMode.active}
-    {@const shape = measureState.finished.find((m) => m.id === volumetricMode.measurementId)}
+{#if volumetricMode.active && activeVolumeShape && activeVolumeCentroid}
     {@const activeLayerEntry = volumetricMode.layerId ? findLayerEntry(volumetricMode.layerId) : undefined}
-    <PolygonDimOverlay points={volumeScreenPoints} />
+    <PolygonDimOverlay bind:this={polygonDimOverlay} />
+    <!-- svelte-check warns that `viewer` isn't $state (non_reactive_update)
+         - benign here: it's assigned once in initScene() (onMount) and
+         never reassigned, and this block can only render after the scene
+         has loaded (entering volumetric mode requires clicking an
+         on-shape button that doesn't exist until then). Wrapping the
+         whole Cesium.Viewer instance in $state would proxy a large,
+         performance-sensitive third-party object graph for no benefit. -->
     <VolumetricScene
-        shapePositions={shape?.positions ?? []}
-        cameraSnapshot={volumeCameraSnapshot}
+        shapePositions={activeVolumeShape.positions}
+        {viewer}
+        centroid={activeVolumeCentroid}
         onExit={exitVolumeView}
     />
-    <VolumeControlPanel shapeLabel={shape?.label ?? "Data"} layerEntry={activeLayerEntry} onExit={exitVolumeView} />
+    <VolumeControlPanel shapeLabel={activeVolumeShape.label} layerEntry={activeLayerEntry} onExit={exitVolumeView} />
 {/if}
 
 <style>
