@@ -197,6 +197,13 @@ export function createVolumeMaterial(
 		},
 		setColormap: (lut) => {
 			material.uniforms.uColormap.value = lut;
+			// Swapping a sampler2D uniform's texture reference alone was not
+			// enough to make three.js actually rebind the new texture on the
+			// GPU here (confirmed live: the JS-side uniform value updated
+			// correctly - same object, right pixel data - but the rendered
+			// colour never changed) - forcing a material refresh makes the
+			// swap actually take effect.
+			material.needsUpdate = true;
 		},
 		setDepthRange: (minFrac, maxFrac) => {
 			material.uniforms.uDepthMinFrac.value = minFrac;
