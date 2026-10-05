@@ -1,5 +1,5 @@
 """Unit tests for get_database_url()'s two resolution paths. No live Postgres
-needed — CI has no database service, so this is what actually exercises the
+needed - CI has no database service, so this is what actually exercises the
 URL-construction logic (the encoding bug it exists to avoid is exactly the
 kind of thing that only shows up when you build the string by hand)."""
 
@@ -83,7 +83,7 @@ def test_defaults_host_and_port_when_only_required_vars_set(monkeypatch: pytest.
 
 
 class _FakeAsyncEngine:
-    """Stands in for the AsyncEngine the real fixture would need — the
+    """Stands in for the AsyncEngine the real fixture would need - the
     listener only ever touches .sync_engine, and a plain sync SQLite engine
     exercises the same before/after-cursor-execute event pair without a
     live Postgres (issue #34's slow-query logging)."""

@@ -39,7 +39,7 @@ def test_openapi_lists_every_contract_route_with_a_response_schema() -> None:
         operation = schema["paths"][path][method]
         success_response = next(body for status, body in operation["responses"].items() if status.startswith(("2",)))
         # grid.bin and the SSE endpoint are octet-stream/event-stream, not
-        # JSON, and logout is 204 No Content — every other route must
+        # JSON, and logout is 204 No Content - every other route must
         # declare a JSON response schema.
         if path.endswith(("grid.bin", "/chat/nodes", "/auth/logout")):
             continue

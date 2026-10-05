@@ -65,7 +65,7 @@ async function flushMicrotasks(): Promise<void> {
 
 describe('ScalarFieldRenderer', () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
-	// #45: a fresh cache per test — ScalarFieldRenderer defaults to a module-
+	// #45: a fresh cache per test - ScalarFieldRenderer defaults to a module-
 	// level shared cache in production, but sharing that same instance across
 	// tests would let one test's cached texture answer another test's fetch,
 	// since every test here reuses the same gridUrlTemplate/depth/time.
@@ -172,7 +172,7 @@ describe('ScalarFieldRenderer', () => {
 			makeConfig({ meta: { ...makeConfig().meta, width: 2, height: 2 } })
 		);
 
-		// Grid center: equidistant from all four texels, one of which is NaN —
+		// Grid center: equidistant from all four texels, one of which is NaN -
 		// should renormalize over the remaining three rather than discarding.
 		const value = renderer.sampleAt(0, 0);
 		expect(value).not.toBeNull();
@@ -240,7 +240,7 @@ describe('ScalarFieldRenderer', () => {
 		const p1 = renderer.setTimeIndex(1); // superseded before it resolves
 		const p2 = renderer.setTimeIndex(2);
 
-		// The newer request settles first, then the older, stale one resolves after —
+		// The newer request settles first, then the older, stale one resolves after -
 		// the guard must key off supersession, not arrival order.
 		newer.resolve(gridResponse([222, 222, 222, 222, 222, 222, 222, 222]));
 		await p2;
@@ -305,7 +305,7 @@ describe('ScalarFieldRenderer', () => {
 		expect(renderer.sampleAt(0, 0)).not.toBeNull();
 	});
 
-	it('dispose unpins the bound texture instead of disposing it — the cache still owns it (#45)', async () => {
+	it('dispose unpins the bound texture instead of disposing it - the cache still owns it (#45)', async () => {
 		const renderer = makeRenderer();
 		await renderer.setLayer(makeConfig());
 		const url = 'https://example.test/fields/glorys_thetao/temperature/d0_t0.f32';
@@ -316,6 +316,6 @@ describe('ScalarFieldRenderer', () => {
 		renderer.dispose();
 
 		expect(disposeSpy).not.toHaveBeenCalled();
-		expect(cache.get(url)).toBe(cachedTexture); // still retrievable — not evicted or disposed
+		expect(cache.get(url)).toBe(cachedTexture); // still retrievable - not evicted or disposed
 	});
 });

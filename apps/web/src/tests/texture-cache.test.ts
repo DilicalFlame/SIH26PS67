@@ -29,7 +29,7 @@ describe('TextureCache', () => {
 
 		cache.set('a', a);
 		cache.set('b', b);
-		cache.set('c', c); // evicts 'a' — least recently used, never re-accessed
+		cache.set('c', c); // evicts 'a' - least recently used, never re-accessed
 
 		expect(disposeA).toHaveBeenCalledTimes(1);
 		expect(cache.get('a')).toBeUndefined();

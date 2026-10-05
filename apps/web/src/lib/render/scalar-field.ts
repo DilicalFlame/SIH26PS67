@@ -3,12 +3,12 @@
  *
  * Renders a Float32 lat/lon grid (temperature, salinity, ...) from MinIO as a
  * colour-mapped field on the globe, in both projections. Implements the
- * frozen `ScalarFieldRenderer` interface in contracts §5.2 verbatim — the
+ * frozen `ScalarFieldRenderer` interface in contracts §5.2 verbatim - the
  * layer-control UI is built against this exact method signature, so changing
  * it here breaks that side independently of anything visual.
  *
- * Geometry reuses geofill.vert.glsl's vertex projection path — the same
- * shader the south polar cap draws through (see polar-cap.ts) — rather than
+ * Geometry reuses geofill.vert.glsl's vertex projection path - the same
+ * shader the south polar cap draws through (see polar-cap.ts) - rather than
  * re-deriving lon/lat -> NDC a third time. That shader only carries a dummy
  * `v_tileUV`, so it also passes through the raw `v_lonLat` this fragment
  * shader needs to recover real texture coordinates from `u_bboxRad`.
@@ -29,7 +29,7 @@ const DEG2RAD = Math.PI / 180;
  * `style.order * 1000 + zoom` (tile-manager.ts) with MAX_TILE_ZOOM = 14, so
  * anything below ~10-15k clears every coastline style at every zoom with
  * plenty of headroom for new tile styles. Point/marker layers (#51, #59) are
- * unbuilt, but the AC is "above coastlines, below markers" — leaving five
+ * unbuilt, but the AC is "above coastlines, below markers" - leaving five
  * clear decades above this before markers would need to start justifies
  * reserving 10000 rather than crowding just past the tiles' current max.
  */
@@ -52,7 +52,7 @@ const FRAGMENT_SHADER = `
     // Bilinear tap with NaN-aware weight renormalization: a missing corner
     // just softens that texel instead of retreating the field a full cell
     // (~25-50km at 0.25 deg) from every land boundary. Only discards when all
-    // four corners are invalid. isnan() is unreliable across drivers — v != v
+    // four corners are invalid. isnan() is unreliable across drivers - v != v
     // is the portable IEEE-754 NaN test (see #43's traps).
     bool sampleField(vec2 uv, out float value) {
         vec2 pixelCoord = uv * u_textureSize - 0.5;
@@ -132,7 +132,7 @@ export class ScalarFieldRenderer {
 	private readonly uniforms: Record<string, THREE.IUniform>;
 	private geometry: THREE.BufferGeometry;
 	private texture: THREE.DataTexture;
-	// Never cached, never shared — the one texture this instance disposes
+	// Never cached, never shared - the one texture this instance disposes
 	// itself. Every texture bound after it belongs to `cache` instead (#45):
 	// see bindTexture()/dispose().
 	private readonly placeholderTexture: THREE.DataTexture;
@@ -148,14 +148,14 @@ export class ScalarFieldRenderer {
 
 	// #48: one in-flight grid fetch at a time. Aborting the previous controller
 	// before starting a new one covers both required cases with the same
-	// mechanism — dispose() abort-during-fetch, and setDepthIndex/setTimeIndex
+	// mechanism - dispose() abort-during-fetch, and setDepthIndex/setTimeIndex
 	// called again before the first fetch lands (the second call must win, not
 	// whichever response happens to arrive first).
 	private abortController: AbortController | null = null;
 
 	// #45: LRU of DataTextures keyed by resolved grid URL, shared across
-	// renderer instances by default so revisiting a depth/time — even one
-	// another layer/renderer already loaded — is a cache hit. Injectable so
+	// renderer instances by default so revisiting a depth/time - even one
+	// another layer/renderer already loaded - is a cache hit. Injectable so
 	// tests get isolation instead of leaking cached textures between them.
 	private readonly cache: TextureCache;
 	private readonly prefetchManager: PrefetchManager;
@@ -198,7 +198,7 @@ export class ScalarFieldRenderer {
 		this.mesh = new THREE.Mesh(this.geometry, this.material);
 		// The shader derives position entirely from a_lonLat / the projection
 		// uniforms, so Three's frustum culling (built on `position`/bounding
-		// sphere) can't be trusted — see buildSouthPolarCap() for the same call.
+		// sphere) can't be trusted - see buildSouthPolarCap() for the same call.
 		this.mesh.frustumCulled = false;
 		this.mesh.visible = false;
 		this.mesh.name = 'scalar-field';
@@ -211,7 +211,7 @@ export class ScalarFieldRenderer {
 	}
 
 	/**
-	 * Explicit painter's-algorithm slot (#47) — set() rather than relying on
+	 * Explicit painter's-algorithm slot (#47) - set() rather than relying on
 	 * insertion order, so stacking multiple fields (or moving one past
 	 * coastlines/markers) doesn't depend on the order layers were mounted in.
 	 * `transparent`/`depthWrite: false` are already set on the material
@@ -246,13 +246,13 @@ export class ScalarFieldRenderer {
 		await this.loadGrid(this.config.depthIndex, i);
 	}
 
-	/** Uniform only, synchronous — must not trigger a fetch or a re-upload. */
+	/** Uniform only, synchronous - must not trigger a fetch or a re-upload. */
 	setValueRange(min: number, max: number): void {
 		(this.uniforms.u_valueRange.value as THREE.Vector2).set(min, max);
 	}
 
 	/**
-	 * Uniform only, synchronous — must not trigger a fetch or a re-upload.
+	 * Uniform only, synchronous - must not trigger a fetch or a re-upload.
 	 * Every name currently renders through the one placeholder gradient in
 	 * FRAGMENT_SHADER; real per-name LUT selection lands with #44.
 	 */
@@ -260,7 +260,7 @@ export class ScalarFieldRenderer {
 		if (this.config) this.config.colormap = name;
 	}
 
-	/** Uniform only, synchronous — must not trigger a fetch or a re-upload. */
+	/** Uniform only, synchronous - must not trigger a fetch or a re-upload. */
 	setOpacity(v: number): void {
 		this.uniforms.u_opacity.value = v;
 	}
@@ -318,7 +318,7 @@ export class ScalarFieldRenderer {
 		this.scene?.remove(this.mesh);
 		this.geometry.dispose();
 		this.material.dispose();
-		// #45: a bound-and-cached texture is owned by `cache` from here on —
+		// #45: a bound-and-cached texture is owned by `cache` from here on -
 		// only the cache's own eviction disposes it. Disposing it here too
 		// would leave the cache holding (and later handing back to a hit) a
 		// GPU texture that's already been freed. The placeholder never
@@ -336,7 +336,7 @@ export class ScalarFieldRenderer {
 		(this.uniforms.u_bboxRad.value as THREE.Vector4).set(minLon, minLat, maxLon, maxLat);
 
 		// Subdivided finely enough that the projection blend stays smooth on
-		// the sphere limb; deliberately independent of grid resolution — the
+		// the sphere limb; deliberately independent of grid resolution - the
 		// fragment shader's bilinear tap carries data detail, so this only
 		// needs to bound projection curvature, not texel count.
 		const lonSegments = Math.max(20, Math.floor(width / 2));
@@ -371,7 +371,7 @@ export class ScalarFieldRenderer {
 		this.geometry = new THREE.BufferGeometry();
 		this.geometry.setAttribute('a_lonLat', new THREE.BufferAttribute(lonLat, 2));
 		// The shader derives position entirely from a_lonLat, but Three.js
-		// still needs a `position` attribute to infer the draw range — see
+		// still needs a `position` attribute to infer the draw range - see
 		// tile-manager.ts's buildMeshes() and polar-cap.ts for the same fix.
 		this.geometry.setAttribute(
 			'position',
@@ -385,7 +385,7 @@ export class ScalarFieldRenderer {
 	}
 
 	/** {tilesBase} is the only place the frontend learns where tiles live
-	 * (contracts §1) — everywhere else resolves it from PUBLIC_TILES_BASE_URL,
+	 * (contracts §1) - everywhere else resolves it from PUBLIC_TILES_BASE_URL,
 	 * same as pmtiles-source.ts. */
 	private resolvedGridUrlTemplate(): string {
 		if (!this.config) throw new Error('[ScalarFieldRenderer] resolvedGridUrlTemplate() called before setLayer()');
@@ -397,7 +397,7 @@ export class ScalarFieldRenderer {
 		const meta = this.config.meta;
 		const url = buildGridUrl(this.resolvedGridUrlTemplate(), depthIndex, timeIndex);
 
-		// #48: cancel whatever this renderer was still waiting on — a stale
+		// #48: cancel whatever this renderer was still waiting on - a stale
 		// request left running would otherwise race this one and could bind
 		// its (older) grid last, or write into a texture/uniform this call
 		// already disposed of. Unconditional even on a cache hit below: a
@@ -416,7 +416,7 @@ export class ScalarFieldRenderer {
 		this.abortController = controller;
 
 		const texture = await fetchGridTexture(url, meta.width, meta.height, controller.signal);
-		if (texture === null) return; // superseded or disposed — not a real failure
+		if (texture === null) return; // superseded or disposed - not a real failure
 
 		this.cache.set(url, texture);
 		this.bindTexture(texture);
@@ -431,7 +431,7 @@ export class ScalarFieldRenderer {
 		this.cache.pin(texture);
 
 		// texture.image.{width,height,data} round-trip exactly what was passed
-		// to the THREE.DataTexture constructor — no separate bookkeeping needed
+		// to the THREE.DataTexture constructor - no separate bookkeeping needed
 		// for a cache hit that skipped fetchGridTexture this time.
 		this.rawData = texture.image.data as Float32Array;
 		this.gridWidth = texture.image.width;
@@ -443,7 +443,7 @@ export class ScalarFieldRenderer {
 	}
 
 	/** Fire-and-forget (#45's AC: "full time series prefetched on layer
-	 * load") — must not be awaited, or every depth/time change would block
+	 * load") - must not be awaited, or every depth/time change would block
 	 * on fetching every other time step first. */
 	private prefetchTimeSeries(): void {
 		if (!this.config) return;

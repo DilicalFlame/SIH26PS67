@@ -1,5 +1,5 @@
 # Dev image only: reload-friendly, bind-mounted by infra/docker/compose.yml.
-# Not meant to be deployed as-is (see #33's scope — a slimmer prod build is a
+# Not meant to be deployed as-is (see #33's scope - a slimmer prod build is a
 # separate concern).
 FROM python:3.13-slim
 

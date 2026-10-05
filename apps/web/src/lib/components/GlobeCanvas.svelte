@@ -58,9 +58,9 @@
     let hasCrashed = $state(false);
 
     // Heading-control instance (rendered below), for the same direct-call
-    // pattern used with statusBar — imperative, not a reactive prop.
+    // pattern used with statusBar - imperative, not a reactive prop.
     let headingControl: HeadingControl | undefined;
-    // TEMPORARY diagnostic overlay — see TileDebugOverlay.svelte.
+    // TEMPORARY diagnostic overlay - see TileDebugOverlay.svelte.
     let tileDebugOverlay: TileDebugOverlay | undefined;
     let lastHoverLonDeg = 0;
     let lastHoverLatDeg = 0;
@@ -103,7 +103,7 @@
     // Scale: fraction of the viewport half-height the globe / map occupies.
     const BASE_SCALE = 0.82;
     // Floor chosen so the globe/map always fills a decent share of the
-    // viewport — below this it shrinks into an island in a black void.
+    // viewport - below this it shrinks into an island in a black void.
     const MIN_SCALE = 0.62;
     // Max zoom is derived from MAX_CAMERA_ZOOM (one level past the deepest tile
     // zoom the data carries), so it's a deliberate one-level overzoom rather
@@ -126,14 +126,14 @@
     // Trackball state
     // panQuat accumulates trackball-drag (lon/lat) rotation and the
     // cursor-anchored zoom correction. headingAngle is a separate compass
-    // rotation around the view axis, driven only by the heading control —
+    // rotation around the view axis, driven only by the heading control -
     // kept apart from panQuat so "reset to north" can zero it out without
     // disturbing whatever the user has panned to. rotMat3 (uploaded to the
     // shader as u_globeRotation) is always the two composed together; see
     // updateRotMat3().
     const panQuat = new THREE.Quaternion();
     const headingQuat = new THREE.Quaternion();
-    const HEADING_AXIS = new THREE.Vector3(1, 0, 0); // "depth/forward" — the view axis
+    const HEADING_AXIS = new THREE.Vector3(1, 0, 0); // "depth/forward" - the view axis
     let headingAngle = 0;
     let targetHeadingAngle = 0;
     const HEADING_DAMPING = 0.22;
@@ -141,7 +141,7 @@
     const tmpMat4 = new THREE.Matrix4();
     const tmpQuat = new THREE.Quaternion();
 
-    /** Recomputes rotMat3 = headingQuat * panQuat — heading applied on the
+    /** Recomputes rotMat3 = headingQuat * panQuat - heading applied on the
      *  outside, so it always rotates the current pan's view about the screen
      *  center rather than changing which point is centered. */
     function updateRotMat3(): void {
@@ -158,7 +158,7 @@
     const ZOOM_DAMPING = 0.18;
 
     // Flat projections pan (in map units) instead of rotating the globe, and
-    // are always zoomed in far enough to fill the viewport — you move within
+    // are always zoomed in far enough to fill the viewport - you move within
     // the plane rather than seeing it float as a plate.
     const mapPan = new THREE.Vector2(0, 0);
 
@@ -173,7 +173,7 @@
 
     /**
      * Longitude wraps, so x is folded back into one world width rather than
-     * clamped — panning east past the dateline continues into the next copy.
+     * clamped - panning east past the dateline continues into the next copy.
      * Latitude has real ends, so y stops where the poles reach the viewport.
      */
     function clampPan(): void {
@@ -203,7 +203,7 @@
     const SENSITIVITY = 0.004;
 
     // =========================================================================
-    // Line material — used by the graticule only; coastlines are filled.
+    // Line material - used by the graticule only; coastlines are filled.
     // =========================================================================
     function makeLineMat(): THREE.ShaderMaterial {
         return new THREE.ShaderMaterial({
@@ -242,7 +242,7 @@
             // straight over every landmass.
             transparent: true,
             // Fills are fully opaque and clip with discard, so blending buys
-            // nothing — and it costs: shared triangle edges get composited
+            // nothing - and it costs: shared triangle edges get composited
             // twice, drawing a visible web of seams across every filled area.
             blending: THREE.NoBlending,
             depthTest: false,
@@ -305,8 +305,8 @@
         }
     }
 
-    // The ocean quad covers the whole frustum — its shader masks it to the
-    // current projection shape — so it only needs the aspect fit.
+    // The ocean quad covers the whole frustum - its shader masks it to the
+    // current projection shape - so it only needs the aspect fit.
     function syncOceanScale(): void {
         if (!ocean) return;
         ocean.scale.set(gratMat?.uniforms.u_aspect.value ?? 1, 1, 1);
@@ -361,7 +361,7 @@
         //   - world y ∈ [-1,1]  → NDC y ∈ [-1,1]   (1 world unit = 1 NDC unit)
         //   - world x ∈ [-a,a]  → NDC x ∈ [-1,1]   (1 world unit = 1/aspect NDC unit)
         // A sphere of world-radius r therefore appears as a circle of radius
-        // r × (H/2) pixels — exactly matching the line shader's scale formula.
+        // r × (H/2) pixels - exactly matching the line shader's scale formula.
         camera = new THREE.OrthographicCamera(
             -aspect,
             aspect,
@@ -687,7 +687,7 @@
 
         // R' = Q·R with Q·before = after keeps the same world point under the cursor.
         // Q is computed in the outer (screen) frame, same as heading, but it
-        // belongs to panQuat (zoom shouldn't touch heading) — so it's conjugated
+        // belongs to panQuat (zoom shouldn't touch heading) - so it's conjugated
         // through headingQuat into pan's frame before being applied there.
         const q = new THREE.Quaternion().setFromUnitVectors(before, after);
         const qInPanFrame = tmpQuat
@@ -719,7 +719,7 @@
     }
 
     // =========================================================================
-    // Projection switch — starts u_blend tween
+    // Projection switch - starts u_blend tween
     // =========================================================================
     function switchProjection(next: number): void {
         if (next === currentProjection && !tweenActive) return;
@@ -793,7 +793,7 @@
         if (currentScale < floor) currentScale = floor;
         clampPan();
 
-        // Ease heading back toward its target — only moves when "Reset to
+        // Ease heading back toward its target - only moves when "Reset to
         // North" set a new target; a live drag keeps target == current so
         // this is a no-op while the knob is actually being dragged.
         if (Math.abs(targetHeadingAngle - headingAngle) > 1e-4) {
@@ -828,9 +828,9 @@
 
         // Heading only makes sense while looking at a rotatable sphere. Driven
         // every frame from isFlatMode() (not just at the start of a projection
-        // switch) so reversing direction mid-tween — e.g. Sphere→Map→Sphere
+        // switch) so reversing direction mid-tween - e.g. Sphere→Map→Sphere
         // before the first tween finishes, where switchProjection's `next ===
-        // currentProjection` guard means it's never called again — can't leave
+        // currentProjection` guard means it's never called again - can't leave
         // this stuck hidden; the $state setter behind it already no-ops on an
         // unchanged value, so this costs nothing extra on a steady frame.
         headingControl?.setVisible(!isFlatMode());
@@ -869,7 +869,7 @@
         }
     }
 
-    /** TEMPORARY diagnostic — see TileDebugOverlay.svelte. Reads the last
+    /** TEMPORARY diagnostic - see TileDebugOverlay.svelte. Reads the last
      *  hovered lon/lat (tracked in onPointerMove) so this also refreshes on
      *  zoom changes alone, without requiring the mouse to move. */
     function pushTileDebugInfo(): void {
@@ -885,7 +885,7 @@
                 .join(" ");
             lines.push(`in scene: ${counts || "(none)"}`);
         } else {
-            lines.push("zoom (effective): —");
+            lines.push("zoom (effective): -");
         }
         if (hasHover) {
             const z =
@@ -896,7 +896,7 @@
                 `hover tile: z${z} / x${Math.floor(x)} / y${Math.floor(y)}`,
             );
         } else {
-            lines.push("hover tile: —");
+            lines.push("hover tile: -");
         }
         tileDebugOverlay.setInfo(lines.join("\n"));
     }
@@ -912,7 +912,7 @@
         if (flat) {
             // Vertical direction is scale-accurate everywhere in equirectangular,
             // but a horizontal bar needs the cos(latitude) correction since
-            // longitude spacing shrinks toward the poles — sample the view's
+            // longitude spacing shrinks toward the poles - sample the view's
             // center latitude once per push.
             const centerGeo = unprojectPoint(0, 0, {
                 rotMat3,
@@ -935,7 +935,7 @@
         // Faux altitude: model a pinhole camera with vertical FOV θ looking
         // straight down at a plane of visible width `visibleWidthKm` (the
         // geographic distance spanned by the full canvas width, from the same
-        // kmPerPx used for the scale bar above — so the two readouts can never
+        // kmPerPx used for the scale bar above - so the two readouts can never
         // contradict each other). Triangle half-angle gives:
         //   altitude = (visibleWidthKm / 2) / tan(θ/2)
         // Shared across both projections; at the equator in flat mode this

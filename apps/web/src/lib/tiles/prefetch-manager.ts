@@ -5,12 +5,12 @@
  * series for the active depth loads in the background as soon as a layer
  * is bound, so a later depth/time change is usually a cache hit with no
  * network request. Depth-neighbour prefetch-on-hover is implemented per
- * the issue's notes but not wired to anything yet — ScalarFieldRenderer has
+ * the issue's notes but not wired to anything yet - ScalarFieldRenderer has
  * no hover plumbing, and building that here would be UI scope this file
  * shouldn't own; #55/#58 can call `prefetchDepthNeighbors` once it exists.
  *
  * Deliberately decoupled from ScalarFieldRenderer: it knows nothing about
- * uniforms, meshes, or configs — only URLs and a texture cache — so it can't
+ * uniforms, meshes, or configs - only URLs and a texture cache - so it can't
  * duplicate or drift from scalar-field.ts's own fetch/bind logic.
  */
 
@@ -18,7 +18,7 @@ import { buildGridUrl, fetchGridTexture } from '$lib/render/grid-texture';
 import type { TextureCache } from './texture-cache';
 
 export interface TimeSeriesPrefetchOptions {
-	/** {tilesBase}/{d}/{t} resolved except {d}/{t} — see grid-texture.ts. */
+	/** {tilesBase}/{d}/{t} resolved except {d}/{t} - see grid-texture.ts. */
 	resolvedGridUrlTemplate: string;
 	depthIndex: number;
 	totalTimeSteps: number;
@@ -40,7 +40,7 @@ export class PrefetchManager {
 
 	constructor(private readonly cache: TextureCache) {}
 
-	/** At 96 KB/grid a 60-step series is under 6 MB — fire every request now
+	/** At 96 KB/grid a 60-step series is under 6 MB - fire every request now
 	 * rather than awaiting each in turn; cache/in-flight checks dedupe. */
 	prefetchTimeSeries(options: TimeSeriesPrefetchOptions): void {
 		const { resolvedGridUrlTemplate, depthIndex, totalTimeSteps, width, height } = options;
@@ -56,7 +56,7 @@ export class PrefetchManager {
 		}
 	}
 
-	/** Aborts every in-flight prefetch — call on renderer dispose(). Already-
+	/** Aborts every in-flight prefetch - call on renderer dispose(). Already-
 	 * cached results from prefetches that finished earlier are unaffected. */
 	cancelAll(): void {
 		this.controller.abort();

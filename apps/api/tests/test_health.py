@@ -129,7 +129,7 @@ async def test_check_storage_false_when_unreachable() -> None:
 @pytest.mark.anyio
 async def test_check_storage_false_on_malformed_endpoint() -> None:
     """A bad MINIO_ENDPOINT raises httpx.InvalidURL, not an httpx.HTTPError
-    subclass — this must degrade to False, not propagate into a 500."""
+    subclass - this must degrade to False, not propagate into a 500."""
     result = await check_storage("::::")
 
     assert result is False

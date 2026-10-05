@@ -2,8 +2,8 @@
  * globeBody.frag.glsl
  *
  * The ocean surface behind the land fills. Drawn as a full-screen quad: each
- * fragment tests membership of the projected map shape — a disc for the
- * orthographic globe, a horizontally-endless band for the flat map — and
+ * fragment tests membership of the projected map shape - a disc for the
+ * orthographic globe, a horizontally-endless band for the flat map - and
  * blends shape A to shape B with u_blend so the ocean morphs in lockstep with
  * the fills.
  *
@@ -36,7 +36,7 @@ float coverage(int pType, vec2 ndc) {
         return 1.0 - smoothstep(1.0 - fwidth(r) * 1.5, 1.0, r);
     }
 
-    // The map wraps east-west, so it has no left or right edge — only the
+    // The map wraps east-west, so it has no left or right edge - only the
     // poles bound it.
     float y  = ndc.y / (u_aspect * u_scale) + u_pan.y;
     float d  = abs(y / 0.5);

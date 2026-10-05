@@ -2,7 +2,7 @@
 
 Pure ASGI middleware, not BaseHTTPMiddleware: the latter buffers the
 response, which would break the chat SSE endpoint (contracts §4.6, #71)
-once it exists. Never logs the request body — it will contain chat content.
+once it exists. Never logs the request body - it will contain chat content.
 """
 
 from __future__ import annotations

@@ -37,7 +37,7 @@ def test_docs_renders() -> None:
 
 
 def test_healthz_under_api_v1() -> None:
-    """Mount/shape only — dependency-down behavior is issue #37's, in test_health.py."""
+    """Mount/shape only - dependency-down behavior is issue #37's, in test_health.py."""
     client = TestClient(create_app())
     resp = client.get("/api/v1/healthz")
     assert resp.status_code in (200, 503)

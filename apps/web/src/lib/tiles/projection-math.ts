@@ -3,7 +3,7 @@
  *
  * CPU-side mirror of the inverse of globe.vert.glsl's projectMap()/toNDC()
  * pipeline. Used only to decide which tiles are needed (visible-bbox +
- * cursor-ray unprojection for prefetch) — the actual rendering math lives
+ * cursor-ray unprojection for prefetch) - the actual rendering math lives
  * exclusively in the shader and is untouched by this module.
  */
 
@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { ProjectionType } from '$lib/types/projection';
 
 const PI = Math.PI;
-/** Web Mercator's usual latitude cutoff — the tile pyramid stops here. */
+/** Web Mercator's usual latitude cutoff - the tile pyramid stops here. */
 const MAX_LAT_RAD = 85.0511 * (PI / 180);
 
 export interface CameraState {
@@ -49,7 +49,7 @@ function inverseProject(
 		return { lon: Math.atan2(x, rx), lat: Math.asin(Math.max(-1, Math.min(1, y))) };
 	}
 
-	// The map wraps east-west, so x is deliberately not clamped — longitudes
+	// The map wraps east-west, so x is deliberately not clamped - longitudes
 	// beyond ±180° are meaningful and tilesForBounds normalizes them.
 	const x = ndcX / scale + panX;
 	const y = Math.max(-0.5, Math.min(0.5, ndcY / (aspect * scale) + panY));
@@ -98,19 +98,19 @@ const SPHERE_SAMPLES = 24;
 
 /**
  * Approximate visible lon/lat bounds by sampling the boundary of whatever is
- * SMALLER on screen — the projected content's own edge, or the viewport.
+ * SMALLER on screen - the projected content's own edge, or the viewport.
  *
  * Sampling the sphere's silhouette is only correct while the whole globe fits
  * on screen. Once zoomed in far enough that the viewport sits inside the
  * projected disk, the visible region is the viewport rectangle instead, and
  * sampling the silhouette yields a wildly oversized bbox (hence over-fetching
- * and coverage holes). Good enough for tile selection either way — this does
+ * and coverage holes). Good enough for tile selection either way - this does
  * not need pixel-perfect accuracy.
  */
 export function computeVisibleBounds(cam: CameraState): LonLatBoundsRad {
 	// The flat map: derive bounds from the visible map-space rectangle rather
 	// than by unprojecting viewport corners, which can legitimately fall
-	// outside the map (above the pole) where inverseProject clamps — silently
+	// outside the map (above the pole) where inverseProject clamps - silently
 	// shrinking the bounds and starving the polar tile rows.
 	if (cam.projectionType !== ProjectionType.Sphere) {
 		const panX = cam.pan?.x ?? 0;
@@ -136,7 +136,7 @@ export function computeVisibleBounds(cam: CameraState): LonLatBoundsRad {
 		const proj = inverseProject(ndcX, ndcY, cam.projectionType, cam.scale, cam.aspect,
 			cam.pan?.x ?? 0, cam.pan?.y ?? 0);
 		if (!proj) return;
-		// Flat projections are not rotated — see projectVertex in projection.glsl.
+		// Flat projections are not rotated - see projectVertex in projection.glsl.
 		pts.push(cam.projectionType === ProjectionType.Sphere
 			? unrotate(proj.lon, proj.lat, cam.rotMat3)
 			: proj);
@@ -149,8 +149,8 @@ export function computeVisibleBounds(cam: CameraState): LonLatBoundsRad {
 		cam.projectionType === ProjectionType.Sphere && cam.scale > Math.min(1, cam.aspect);
 
 	if (cam.projectionType === ProjectionType.Sphere && !viewportInsideGlobe) {
-		// The globe's NDC footprint is an ellipse — radius scale/aspect in x,
-		// scale in y (see toNDC) — not the unit circle. Sampling a unit circle
+		// The globe's NDC footprint is an ellipse - radius scale/aspect in x,
+		// scale in y (see toNDC) - not the unit circle. Sampling a unit circle
 		// puts almost every probe outside the disc, where inverseProject
 		// correctly returns null, collapsing the bounds to a single point and
 		// starving every tile row but one.
@@ -197,7 +197,7 @@ export function computeVisibleBounds(cam: CameraState): LonLatBoundsRad {
 	}
 
 	// A view containing a pole spans every longitude, however narrow the
-	// on-screen region looks — near the pole all meridians converge. Detect
+	// on-screen region looks - near the pole all meridians converge. Detect
 	// that from the sampled spread and widen to the full range, otherwise the
 	// bbox collapses to whichever meridians happened to be sampled and most of
 	// the polar tiles are never requested.
@@ -218,7 +218,7 @@ export function computeVisibleBounds(cam: CameraState): LonLatBoundsRad {
  * Pick a tile zoom level from the current scale, matching tile screen
  * footprint to a conventional 256px slippy tile. The orthographic camera
  * frustum is [-aspect,aspect]x[-1,1], so NDC x spans canvasWidthPx already
- * aspect-normalized — world width in px is canvasWidthPx * scale.
+ * aspect-normalized - world width in px is canvasWidthPx * scale.
  */
 export function zoomForScale(scale: number, canvasWidthPx: number): number {
 	const worldPx = canvasWidthPx * scale;
@@ -227,7 +227,7 @@ export function zoomForScale(scale: number, canvasWidthPx: number): number {
 
 const TILE_PX = 256;
 
-/** Inverse of zoomForScale — the camera scale at which tile zoom `z` is requested. */
+/** Inverse of zoomForScale - the camera scale at which tile zoom `z` is requested. */
 export function scaleForZoom(z: number, canvasWidthPx: number): number {
 	return (TILE_PX * 2 ** z) / canvasWidthPx;
 }

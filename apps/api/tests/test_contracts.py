@@ -3,7 +3,7 @@
 Every fixtures/*.json file (fixture data shared with the frontend, per
 contracts §6) must validate against the Pydantic model that serves it, and
 round-trip back to the exact same JSON shape. A test that only hits a route
-and checks 200 wouldn't prove this — FastAPI would coerce or silently drop
+and checks 200 wouldn't prove this - FastAPI would coerce or silently drop
 fields on the way out. This validates the fixture on disk directly.
 
 grid.bin's raw Float32 fixture is not JSON and is exercised in

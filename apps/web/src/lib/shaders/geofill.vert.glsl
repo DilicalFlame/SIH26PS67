@@ -1,9 +1,9 @@
 /**
- * geofill.vert.glsl — fills for geometry defined directly in lon/lat rather
+ * geofill.vert.glsl - fills for geometry defined directly in lon/lat rather
  * than in tile-local coordinates.
  *
  * This exists for the south polar cap. Web Mercator tiles stop at ±85.05°, so
- * no tile covers the ground beneath Antarctica's ice — leaving a hole at the
+ * no tile covers the ground beneath Antarctica's ice - leaving a hole at the
  * pole that no amount of tile loading can fill. The cap is generated
  * analytically instead and drawn through this shader.
  *

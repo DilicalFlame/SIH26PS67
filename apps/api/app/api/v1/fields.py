@@ -12,7 +12,8 @@ from fastapi import APIRouter, Response
 
 from app.core.fixtures import fixture_path
 from app.schemas.common import NOT_FOUND_RESPONSE, ApiError
-from app.schemas.fields import ScalarFieldMeta
+from app.schemas.fields import ScalarFieldMeta, VolumeGridRequest, VolumeGridResponse
+from app.services.copernicus_volume import fetch_volume_grid
 
 router = APIRouter(prefix="/fields", tags=["fields"])
 
@@ -38,7 +39,7 @@ async def get_field_meta(layer_id: str) -> ScalarFieldMeta:
     responses={200: {"content": {"application/octet-stream": {}}}, **NOT_FOUND_RESPONSE},
 )
 async def get_field_grid(layer_id: str, depth_index: int = 0, time_index: int = 0) -> Response:
-    """Fallback path (contracts §4.3) — the browser normally fetches the
+    """Fallback path (contracts §4.3) - the browser normally fetches the
     .f32 object directly via gridUrlTemplate, bypassing this route."""
     meta_path = _find_meta(layer_id)
     if meta_path is None:
@@ -51,3 +52,16 @@ async def get_field_grid(layer_id: str, depth_index: int = 0, time_index: int = 
             f"No grid for '{layer_id}' at depth_index={depth_index}, time_index={time_index}",
         )
     return Response(content=grid_path.read_bytes(), media_type="application/octet-stream")
+
+
+@router.post("/volume", response_model=VolumeGridResponse)
+async def get_volume_grid(req: VolumeGridRequest) -> VolumeGridResponse:
+    """Bulk multi-depth GetFeatureInfo fan-out for the "Visualise Data" 3D
+    popout (see app/services/copernicus_volume.py) - proxies a live
+    Copernicus WMTS layer, not the fixture pipeline above; `layer_id` isn't
+    involved because the caller already has the layer's WMTS identity
+    (apps/web's DataLayerCatalogEntry.wmts)."""
+    try:
+        return await fetch_volume_grid(req)
+    except ValueError as err:
+        raise ApiError("bad_request", str(err)) from err

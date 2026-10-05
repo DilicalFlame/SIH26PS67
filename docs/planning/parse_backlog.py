@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-parse_backlog.py — turn 04-master-backlog.md into issues.json
+parse_backlog.py - turn 04-master-backlog.md into issues.json
 
-Extracts every "### T0XX — Title" block plus its metadata line
+Extracts every "### T0XX - Title" block plus its metadata line
 (`area:x` `size:Y` `M#` · dep: ... · demo: yes/no), an optional
 "**Blocks:**" line, and the Outcome / Notes / AC sections. Also
 extracts the epic table at the top so epics can be created first
@@ -29,13 +29,13 @@ import sys
 
 # Dash-like and dot-like separators are matched permissively (a class of
 # characters, not one exact codepoint) because copy/paste, terminals, and
-# "clean my text" tools routinely flatten em dash (—, U+2014), en dash
+# "clean my text" tools routinely flatten em dash (-, U+2014), en dash
 # (–, U+2013), and middle dot (·, U+00B7) down to a plain hyphen. Relying
-# on the exact byte silently zeroes out every match if that happens —
+# on the exact byte silently zeroes out every match if that happens -
 # which is exactly what broke on a mangled copy of this file: 26 epics
 # parsed fine (their separator survived) but every one of 214 tasks
 # vanished with no error, only a quiet "0 tasks" in the summary line.
-DASH = r"[—–\-]"      # em dash, en dash, or plain hyphen
+DASH = r"[-–\-]"      # em dash, en dash, or plain hyphen
 DOT = r"[·\-]"        # middle dot or plain hyphen
 
 TASK_HEADER = re.compile(rf"^### (T\d{{3}})\s*{DASH}\s*(.+)$")
@@ -53,7 +53,7 @@ TRANGE = re.compile(rf"(T\d{{3}}){DASH}(T\d{{3}})")
 
 def expand_refs(raw: str) -> tuple[list[str], bool]:
     """Expand 'T018–T034' style ranges into every id in between.
-    Returns (ids, had_unresolvable_prose) — the second flag is True
+    Returns (ids, had_unresolvable_prose) - the second flag is True
     when the line contains free text (e.g. 'and every UI task after
     it') that can't be resolved to explicit ids."""
     ids: set[str] = set()
@@ -90,13 +90,13 @@ def extract_epics(text: str) -> list[dict]:
 
 def extract_tasks(text: str) -> list[dict]:
     lines = text.splitlines()
-    # A task's content ends at the next heading of ANY level — not just
-    # the next task header. Missing this was a real bug: epic ("## E—")
-    # and milestone ("# M—") headings, plus their intro text, sit between
+    # A task's content ends at the next heading of ANY level - not just
+    # the next task header. Missing this was a real bug: epic ("## E-")
+    # and milestone ("# M-") headings, plus their intro text, sit between
     # some tasks in the source doc, and the task immediately before one
     # of those headings was silently swallowing it into its own body.
     # The last task in the file (T214) has no heading after it at all,
-    # so it swallowed everything through the end of the document —
+    # so it swallowed everything through the end of the document -
     # all four Appendix sections.
     ANY_HEADING = re.compile(r"^#{1,6}\s")
     heading_idxs = sorted(i for i, l in enumerate(lines) if ANY_HEADING.match(l))
@@ -173,7 +173,7 @@ def main():
     # satisfied by an empty list (expected_ids and got_ids are both the
     # empty set), which is exactly the failure mode that let a 0-task
     # parse slip through as "valid" output before. Epics declare how
-    # many tasks *should* exist via their child_range spans — use that
+    # many tasks *should* exist via their child_range spans - use that
     # as an independent cross-check and refuse to emit output if the
     # actual count is nowhere close.
     expected_from_epics = sum(
@@ -191,7 +191,7 @@ def main():
             f"which tells you whether headers exist but aren't matching,\n"
             f"       or whether the task sections themselves are missing "
             f"from this file.\n"
-            f"       The most common cause: the em dash (—) or middle dot "
+            f"       The most common cause: the em dash (-) or middle dot "
             f"(·) in the source markdown got flattened to a plain hyphen\n"
             f"       by copy/paste, a terminal, or an editor's 'smart "
             f"punctuation' cleanup. Check with:\n"
@@ -199,7 +199,7 @@ def main():
             f"print([hex(ord(c)) for c in l if ord(c)>127])\" {sys.argv[1]}\n"
             f"       Expect to see 0x2014 (em dash) in that output. If you "
             f"see nothing or a different codepoint, the file was altered\n"
-            f"       after I generated it — re-download 04-master-backlog.md "
+            f"       after I generated it - re-download 04-master-backlog.md "
             f"fresh rather than re-typing or re-pasting it.",
             file=sys.stderr,
         )

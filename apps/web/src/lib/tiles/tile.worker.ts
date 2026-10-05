@@ -7,7 +7,7 @@
  *
  * Fills rather than outlines: the source layers (land / lake / island_in_lake /
  * antarctica_*) are polygons, and drawing them as ring outlines makes every
- * coastline appear two or three times over — once from the tile itself, again
+ * coastline appear two or three times over - once from the tile itself, again
  * from its retained parent, and again from the neighbouring tile's buffer.
  * Opaque fills composite cleanly instead, which is how a normal vector basemap
  * renders this data.
@@ -31,7 +31,7 @@ export interface DecodeRequest {
 }
 
 export interface LayerMesh {
-	/** MVT layer name, e.g. "land" — maps to a style entry in layers.config.ts. */
+	/** MVT layer name, e.g. "land" - maps to a style entry in layers.config.ts. */
 	name: string;
 	/** Int16 (x,y) pairs, normalized to [-1,1] across the tile's bbox. */
 	positions: Int16Array;

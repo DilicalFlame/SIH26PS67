@@ -1,10 +1,10 @@
 <script lang="ts">
-	// TEMPORARY diagnostic overlay — shows which tile zoom/coordinate is
+	// TEMPORARY diagnostic overlay - shows which tile zoom/coordinate is
 	// actually rendering under the cursor, to debug tile-selection issues.
 	// Safe to delete this file (and its two call sites in GlobeCanvas.svelte)
 	// once no longer needed.
 
-	// Direct DOM write, not $state — updates on every hover move, same
+	// Direct DOM write, not $state - updates on every hover move, same
 	// reasoning as StatusBar's coordinate readout.
 	let textEl: HTMLPreElement | undefined = $state();
 
@@ -13,7 +13,7 @@
 	}
 </script>
 
-<pre class="tile-debug" bind:this={textEl}>—</pre>
+<pre class="tile-debug" bind:this={textEl}>-</pre>
 
 <style>
 	.tile-debug {

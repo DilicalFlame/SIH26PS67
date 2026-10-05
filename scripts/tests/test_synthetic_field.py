@@ -53,7 +53,7 @@ def test_row_0_is_the_north_west_corner(generated):
 
 
 def test_meta_json_matches_scalar_field_meta_shape(generated):
-    """Contracts §4.3 ScalarFieldMeta — every field the frontend/backend expect."""
+    """Contracts §4.3 ScalarFieldMeta - every field the frontend/backend expect."""
     _, out_dir = generated
     meta = json.loads((out_dir / "meta.json").read_text(encoding="utf-8"))
 
@@ -75,7 +75,7 @@ def test_meta_json_matches_scalar_field_meta_shape(generated):
 
 
 def test_generator_is_deterministic():
-    """Same analytic function, no randomness — two runs must match byte-for-byte."""
+    """Same analytic function, no randomness - two runs must match byte-for-byte."""
     a = gen.generate_field()
     b = gen.generate_field()
     np.testing.assert_array_equal(np.isnan(a), np.isnan(b))
