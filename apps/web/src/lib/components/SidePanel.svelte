@@ -22,9 +22,25 @@
 		onClose: () => void;
 		children: Snippet;
 		footer?: Snippet;
+		/** The body clips overflow by default, so a long scrollable list
+		 *  (Toolbar's own measurements list) doesn't grow the panel past the
+		 *  viewport. A consumer with short, fixed content but its own
+		 *  absolutely-positioned popover (VolumeControlPanel's colour-scale
+		 *  dropdown) needs the opposite - opt out here rather than clipping
+		 *  that popover against the body's own bounds. */
+		bodyOverflowVisible?: boolean;
 	}
-	const { title, icon, onHelp, onUndo, undoDisabled = false, onClose, children, footer }: Props =
-		$props();
+	const {
+		title,
+		icon,
+		onHelp,
+		onUndo,
+		undoDisabled = false,
+		onClose,
+		children,
+		footer,
+		bodyOverflowVisible = false,
+	}: Props = $props();
 </script>
 
 <div class="side-panel">
@@ -66,7 +82,7 @@
 		</div>
 	</header>
 
-	<div class="side-panel-body">
+	<div class="side-panel-body" class:overflow-visible={bodyOverflowVisible}>
 		{@render children()}
 	</div>
 
@@ -182,6 +198,9 @@
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow: hidden;
+	}
+	.side-panel-body.overflow-visible {
+		overflow: visible;
 	}
 
 	.side-panel-footer {

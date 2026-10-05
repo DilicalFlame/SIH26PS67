@@ -348,7 +348,17 @@
 		materialHandle?.setOpacity(volumeControls.opacity);
 	});
 	$effect(() => {
-		if (materialHandle) materialHandle.setColormap(toLUTTexture(volumeControls.colormap));
+		if (materialHandle) {
+			const lut = toLUTTexture(volumeControls.colormap);
+			materialHandle.setColormap(lut);
+			(window as unknown as { __dbgColormap: unknown }).__dbgColormap = {
+				name: volumeControls.colormap,
+				lutUuid: lut.uuid,
+				materialLutUuid: materialHandle.material.uniforms.uColormap.value?.uuid,
+				sameObject: materialHandle.material.uniforms.uColormap.value === lut,
+				first4: Array.from((lut.image.data as Uint8Array).slice(0, 4)),
+			};
+		}
 	});
 	$effect(() => {
 		void volumeControls.verticalExaggeration;
